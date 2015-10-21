@@ -32,7 +32,7 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to get support on this plugin.
 
 
-= Systemvoraussetzungen =
+= System Requirements =
 * PHP >=5.3
 * WordPress >=3.8
 
