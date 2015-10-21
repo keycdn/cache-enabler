@@ -1,4 +1,4 @@
-=== Cache Enabler - WordPress Caching Plugin ===
+=== Cache Enabler - WordPress Caching ===
 Contributors: keycdn
 Tags: cache, caching, performance, wp-cache
 Requires at least: 3.8
