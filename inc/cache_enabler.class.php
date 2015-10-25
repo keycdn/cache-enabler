@@ -21,7 +21,7 @@ final class Cache_Enabler {
 	* @var    array
 	*/
 
-	private static $options;
+	public static $options;
 
 
 	/**
@@ -63,7 +63,7 @@ final class Cache_Enabler {
 	* constructor
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.1
 	*
 	* @param   void
 	* @return  void
@@ -126,7 +126,7 @@ final class Cache_Enabler {
 			'admin_bar_menu',
 			array(
 				__CLASS__,
-				'add_clear_link'
+				'add_admin_links'
 			),
 			90
 		);
@@ -258,7 +258,7 @@ final class Cache_Enabler {
 				'template_redirect',
 				array(
 					__CLASS__,
-					'manage_cache'
+					'handle_cache'
 				),
 				0
 			);
@@ -474,8 +474,10 @@ final class Cache_Enabler {
 		return wp_parse_args(
 			get_option('cache'),
 			array(
+				'expires'		=> 0,
 				'if_loggedin'	=> 1,
 				'new_comment' 	=> 0,
+				'webp'			=> 0,
 				'excl_ids'	 	=> '',
 				'minify_html' 	=> self::MINIFY_DISABLED,
 			)
@@ -631,17 +633,17 @@ final class Cache_Enabler {
 
 
 	/**
-	* add admin clear link
+	* add admin links
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.1
     *
     * @hook    mixed
 	*
 	* @param   object  menu properties
 	*/
 
-	public static function add_clear_link($wp_admin_bar) {
+	public static function add_admin_links($wp_admin_bar) {
 
 		// check user role
 		if ( ! is_admin_bar_showing() OR ! apply_filters('user_can_clear_cache', current_user_can('manage_options')) ) {
@@ -651,13 +653,14 @@ final class Cache_Enabler {
 		// add admin purge link
 		$wp_admin_bar->add_menu(
 			array(
-				'id' 	 => 'cache',
+				'id' 	 => 'clear-cache',
 				'href'   => wp_nonce_url( add_query_arg('_cache', 'clear'), '_cache__clear_nonce'),
 				'parent' => 'top-secondary',
 				'title'	 => '<span class="ab-item">Clear Cache</span>',
 				'meta'   => array( 'title' => esc_html__('clear Cache', 'cache') )
 			)
 		);
+
 	}
 
 
@@ -1076,7 +1079,7 @@ final class Cache_Enabler {
 	* @hook    boolean  skip_cache
 	*/
 
-	private static function _skip_cache() {
+	private static function _bypass_cache() {
 
 		// skip cache hook
 		if ( apply_filters('skip_cache', false) ) {
@@ -1238,20 +1241,20 @@ final class Cache_Enabler {
 
 
 	/**
-	* manage cache
+	* handle cache
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.1
 	*/
 
-	public static function manage_cache() {
+	public static function handle_cache() {
 
-		// skip cache
-		if ( self::_skip_cache() ) {
+		// bypass cache
+		if ( self::_bypass_cache() ) {
 			return;
 		}
 
-		// check if asset is cached
+		// get asset cache status
 		$cached = call_user_func(
 			array(
 				self::$disk,
@@ -1261,6 +1264,20 @@ final class Cache_Enabler {
 
 		// check if cache empty
 		if ( empty($cached) ) {
+			ob_start('Cache_Enabler::set_cache');
+			return;
+		}
+
+		// get expiry status
+		$expired = call_user_func(
+			array(
+				self::$disk,
+				'check_expiry'
+			)
+		);
+
+		// check if expired
+		if ( $expired ) {
 			ob_start('Cache_Enabler::set_cache');
 			return;
 		}
@@ -1466,7 +1483,7 @@ final class Cache_Enabler {
 	* validate settings
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.1
 	*
 	* @param   array  $data  array form data
 	* @return  array         array form data valid
@@ -1483,10 +1500,12 @@ final class Cache_Enabler {
 		self::clear_total_cache(true);
 
 		return array(
+			'expires'		=> (int)$data['expires'],
 			'if_loggedin' 	=> (int)(!empty($data['if_loggedin'])),
-			'minify_html' 	=> (int)$data['minify_html'],
+			'new_comment' 	=> (int)(!empty($data['new_comment'])),
+			'webp'			=> (int)(!empty($data['webp'])),
 			'excl_ids' 		=> (string)sanitize_text_field(@$data['excl_ids']),
-			'new_comment' 	=> (int)(!empty($data['new_comment']))
+			'minify_html' 	=> (int)$data['minify_html']
 		);
 	}
 
@@ -1495,7 +1514,7 @@ final class Cache_Enabler {
 	* settings page
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.1
 	*/
 
 	public static function settings_page() { ?>
@@ -1516,6 +1535,19 @@ final class Cache_Enabler {
 				<table class="form-table">
 					<tr valign="top">
 						<th scope="row">
+							<?php _e("Cache Expiry", "cache") ?>
+						</th>
+						<td>
+							<fieldset>
+								<label for="cache_expires">
+									<input type="text" name="cache[expires]" id="cache_expires" value="<?php echo esc_attr($options['expires']) ?>" />
+									<p class="description"><?php _e("Cache expiry in hours. An expiry time of 0 means that the cache never expires.", "cache"); ?></p>
+								</label>
+							</fieldset>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row">
 							<?php _e("Cache Behavior", "cache") ?>
 						</th>
 						<td>
@@ -1531,6 +1563,13 @@ final class Cache_Enabler {
 									<input type="checkbox" name="cache[new_comment]" id="cache_new_comment" value="1" <?php checked('1', $options['new_comment']); ?> />
 									<?php _e("Clear the complete cache if a new comment has been posted (instead of only the page specific cache).", "cache") ?>
 								</label>
+
+								<br />
+
+								<label for="cache_webp">
+									<input type="checkbox" name="cache[webp]" id="cache_webp" value="1" <?php checked('1', $options['webp']); ?> />
+									<?php _e("Create an additional cached version for WebP image support. Convert your images to WebP with <a href=\"https://optimus.io/en/\" target=\"_blank\">Optimus</a>.", "cache") ?>
+								</label>
 							</fieldset>
 						</td>
 					</tr>
@@ -1543,7 +1582,7 @@ final class Cache_Enabler {
 							<fieldset>
 								<label for="cache_excl_ids">
 									<input type="text" name="cache[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
-									<p class="description" id="admin-email-description"><?php _e("Post or Pages IDs separated by a <code>,</code> that should not be cached.", "cache"); ?></p>
+									<p class="description"><?php _e("Post or Pages IDs separated by a <code>,</code> that should not be cached.", "cache"); ?></p>
 								</label>
 							</fieldset>
 						</td>

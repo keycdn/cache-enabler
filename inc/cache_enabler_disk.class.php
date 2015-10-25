@@ -48,6 +48,7 @@ final class Cache_Enabler_Disk {
 		self::_create_files(
 			$data . self::_cache_signatur()
 		);
+
 	}
 
 
@@ -64,6 +65,38 @@ final class Cache_Enabler_Disk {
 		return is_readable(
 			self::_file_html()
 		);
+	}
+
+
+	/**
+	* check expiry
+	*
+	* @since   1.0.1
+	* @change  1.0.1
+	*
+	* @return  boolean  true if asset expired
+	*/
+
+	public static function check_expiry() {
+
+		// cache enabler options
+		$options = Cache_Enabler::$options;
+
+		// check if expires is active
+		if ($options['expires'] == 0) {
+			return false;
+		}
+
+		$now = time();
+		$expires_seconds = 3600*$options['expires'];
+
+		// check if asset has expired
+		if ( ( filemtime(self::_file_html()) + $expires_seconds ) <= $now ) {
+			return true;
+		}
+
+		return false;
+
 	}
 
 
@@ -117,13 +150,24 @@ final class Cache_Enabler_Disk {
 		if ( function_exists( 'apache_request_headers' ) ) {
 			$headers = apache_request_headers();
 			$http_if_modified_since = ( isset( $headers[ 'If-Modified-Since' ] ) ) ? $headers[ 'If-Modified-Since' ] : '';
+			$http_accept = ( isset( $headers[ 'Accept' ] ) ) ? $headers[ 'Accept' ] : '';
 		} else {
-			$http_if_modified_since = ( isset( $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] ) ) ?$_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] : '';
+			$http_if_modified_since = ( isset( $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] ) ) ? $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] : '';
+			$http_accept = ( isset( $_SERVER[ 'HTTP_ACCEPT' ] ) ) ? $_SERVER[ 'HTTP_ACCEPT' ] : '';
 		}
 
 		// check modified since with cached file and return 304 if no difference
 		if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) == filemtime( self::_file_html() ) ) ) {
 			header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
+			exit;
+		}
+
+		//var_dump($http_accept);
+
+		// check webp support
+		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) ) {
+			header('Content-Encoding: gzip');
+			readfile( self::_file_webp() );
 			exit;
 		}
 
@@ -144,7 +188,7 @@ final class Cache_Enabler_Disk {
 
 	private static function _cache_signatur() {
 		return sprintf(
-			"\n<!-- %s @ %s -->",
+			"\n\n<!-- %s @ %s -->",
 			'Cache Enabler by KeyCDN',
 			date_i18n(
 				'd.m.Y H:i:s',
@@ -172,7 +216,16 @@ final class Cache_Enabler_Disk {
 
 		// create files
 		self::_create_file( self::_file_html(), $data );
-		self::_create_file( self::_file_gzip(), gzencode($data, 9) );
+		self::_create_file( self::_file_gzip(), gzencode($data."\n<!-- (gzip) -->", 9) );
+
+		// cache enabler options
+		$options = Cache_Enabler::$options;
+
+		// create webp supported files
+		if ($options['webp']) {
+			self::_create_file( self::_file_webp(), gzencode(self::_convert_webp($data)."\n<!-- (webp) -->", 9) );
+		}
+
 	}
 
 
@@ -352,8 +405,8 @@ final class Cache_Enabler_Disk {
 	/**
 	* get gzip file path
 	*
-	* @since   1.0.0
-	* @change  1.0.0
+	* @since   1.0.1
+	* @change  1.0.1
 	*
 	* @return  string  path to the gzipped html file
 	*/
@@ -361,4 +414,92 @@ final class Cache_Enabler_Disk {
 	private static function _file_gzip() {
 		return self::_file_path(). 'index.html.gz';
 	}
+
+
+	/**
+	* get webp file path
+	*
+	* @since   1.0.1
+	* @change  1.0.1
+	*
+	* @return  string  path to the webp gzipped html file
+	*/
+
+	private static function _file_webp() {
+		return self::_file_path(). 'index.html.webp';
+	}
+
+
+	/**
+	* convert to webp
+	*
+	* @since   1.0.1
+	* @change  1.0.1
+	*
+	* @return  string  converted HTML file
+	*/
+
+	private static function _convert_webp($data) {
+
+		$dom = new DOMDocument();
+		$dom->loadHTML($data);
+
+		$imgs = $dom->getElementsByTagName("img");
+
+		foreach($imgs as $img){
+
+		    $src = $img->getAttribute('src');
+			$src_webp = self::_convert_webp_src($src);
+			if ($src != $src_webp) {
+				$img->setAttribute('src' , $src_webp);
+			}
+
+		}
+
+		$img_links = $dom->getElementsByTagName("a");
+
+		foreach($img_links as $img_link){
+
+			$src = $img_link->getAttribute('href');
+			$src_webp = self::_convert_webp_src($src);
+			if ($src != $src_webp) {
+				$img_link->setAttribute('href' , $src_webp);
+			}
+
+		}
+
+		return $dom->saveHtml();
+
+	}
+
+
+	/**
+	* convert to webp source
+	*
+	* @since   1.0.1
+	* @change  1.0.1
+	*
+	* @return  string  converted webp source
+	*/
+
+	private static function _convert_webp_src($src) {
+		if ( strpos($src, 'wp-content') !== false ) {
+
+			$src_webp = str_replace('.jpg', '.webp', $src);
+			$src_webp = str_replace('.png', '.webp', $src_webp);
+
+			$relative_path = str_replace(get_site_url().'/wp-content/uploads', '', $src_webp);
+
+			$upload_path = wp_upload_dir();
+			$base_dir = $upload_path['basedir'];
+
+			if ( file_exists($base_dir.$relative_path) ) {
+				return $src_webp;
+			}
+
+		}
+
+		return $src;
+	}
+
 }

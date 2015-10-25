@@ -51,5 +51,8 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 == Changelog ==
 
+= 1.0.1 =
+* Added WebP support and expiry directive
+
 = 1.0.0 =
 * Initial Release
