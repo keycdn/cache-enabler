@@ -141,7 +141,7 @@ final class Cache_Enabler_Disk {
 	* get asset
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.3
 	*/
 
 	public static function get_asset() {
@@ -163,7 +163,7 @@ final class Cache_Enabler_Disk {
 		}
 
 		// check webp support
-		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) ) {
+		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) && is_readable( self::_file_webp() ) ) {
 			header('Content-Encoding: gzip');
 			readfile( self::_file_webp() );
 			exit;
@@ -475,7 +475,7 @@ final class Cache_Enabler_Disk {
 	* convert to webp source
 	*
 	* @since   1.0.1
-	* @change  1.0.1
+	* @change  1.0.2
 	*
 	* @return  string  converted webp source
 	*/

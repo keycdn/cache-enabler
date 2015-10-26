@@ -51,6 +51,9 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 == Changelog ==
 
+= 1.0.3 =
+* Fixed WebP version switch issue
+
 = 1.0.2 =
 * Added support for WebP and CDN Enabler plugin
 
