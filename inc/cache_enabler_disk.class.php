@@ -162,8 +162,6 @@ final class Cache_Enabler_Disk {
 			exit;
 		}
 
-		//var_dump($http_accept);
-
 		// check webp support
 		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) ) {
 			header('Content-Encoding: gzip');
@@ -488,7 +486,8 @@ final class Cache_Enabler_Disk {
 			$src_webp = str_replace('.jpg', '.webp', $src);
 			$src_webp = str_replace('.png', '.webp', $src_webp);
 
-			$relative_path = str_replace(get_site_url().'/wp-content/uploads', '', $src_webp);
+			$parts = explode('/wp-content/uploads', $src_webp);
+			$relative_path = $parts[1];
 
 			$upload_path = wp_upload_dir();
 			$base_dir = $upload_path['basedir'];

@@ -1,7 +1,7 @@
 === Cache Enabler - WordPress Caching ===
 Contributors: keycdn
 Tags: cache, caching, performance
-Requires at least: 3.8
+Requires at least: 4.1
 Tested up to: 4.3
 Stable tag: trunk
 License: GPLv2 or later
@@ -50,6 +50,9 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 
 == Changelog ==
+
+= 1.0.2 =
+* Added support for WebP and CDN Enabler plugin
 
 = 1.0.1 =
 * Added WebP support and expiry directive
