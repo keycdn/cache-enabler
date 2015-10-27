@@ -9,7 +9,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 
 
-A lightweight caching plugin for WordPress that makes your website faster by generating static HTML files, caching to disk, and WebP support.
+A lightweight caching plugin for WordPress that makes your website faster by generating static HTML files plus WebP support.
 
 
 
