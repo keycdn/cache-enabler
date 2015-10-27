@@ -9,7 +9,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 
 
-A lightweight caching plugin for WordPress that makes your website faster by generating static HTML files.
+A lightweight caching plugin for WordPress that makes your website faster by generating static HTML files, caching to disk, and WebP support.
 
 
 
@@ -22,11 +22,15 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 = Features =
 * Efficient and fast disk cache engine
 * Automated and/or manual clearing of the cache
-* Display of the actual cache size
-* Minification of the HTML doc
+* Display of the actual cache size in your dashboard
+* Minification of HTML and inline JavaScript
 * WordPress multisite support
 * Custom Post Type support
+* Expiry Directive
+* WebP Support (when combined with [Optimus](https://optimus.io/en/ "Optimus")
+* HTTP/2 Focused
 
+> Cache Enabler is the first WP plugin to allow you to serve WebP images without JavaScript. WebP is a new image format that provides lossless and lossy compression for images on the web. WebP lossless images are [26% smaller](https://developers.google.com/speed/webp/docs/webp_lossless_alpha_study#results "webp lossless alpha study") in size compared to PNGs.
 
 = Support =
 Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to get support on this plugin.
@@ -34,7 +38,7 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 = System Requirements =
 * PHP >=5.3
-* WordPress >=3.8
+* WordPress >=4.1
 
 
 = Website =
