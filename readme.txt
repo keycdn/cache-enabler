@@ -42,7 +42,7 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 
 = Website =
-* [Cache Enabler by KeyCDN](https://www.keycdn.com "KeyCDN")
+* [Cache Enabler by KeyCDN](https://www.keycdn.com/support/wordpress-cache-enabler-plugin/ "Cache Enabler Documentation")
 
 
 = Autor =

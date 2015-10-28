@@ -563,7 +563,7 @@ final class Cache_Enabler {
 		return array_merge(
 			$input,
 			array(
-				'<a href="https://www.keycdn.com/support/" target="_blank">Support Page</a>',
+				'<a href="https://www.keycdn.com/support/wordpress-cache-enabler-plugin/" target="_blank">Support Page</a>',
 			)
 		);
 	}
