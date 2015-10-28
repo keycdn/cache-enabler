@@ -52,7 +52,6 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 
 
-
 == Changelog ==
 
 = 1.0.3 =
@@ -66,3 +65,9 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 = 1.0.0 =
 * Initial Release
+
+
+== Screenshots ==
+
+1. Display of the cache size in your dashboard
+2. Cache Enabler settings page and "Clear Cache" link in the dashboard
