@@ -27,7 +27,7 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 * WordPress multisite support
 * Custom Post Type support
 * Expiry Directive
-* WebP Support (when combined with [Optimus](https://optimus.io/en/ "Optimus")
+* WebP Support (when combined with [Optimus](https://optimus.io/en/ "Optimus"))
 * HTTP/2 Focused
 
 > Cache Enabler is the first WP plugin to allow you to serve WebP images without JavaScript. WebP is a new image format that provides lossless and lossy compression for images on the web. WebP lossless images are [26% smaller](https://developers.google.com/speed/webp/docs/webp_lossless_alpha_study#results "webp lossless alpha study") in size compared to PNGs.
