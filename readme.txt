@@ -54,6 +54,9 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 == Changelog ==
 
+= 1.0.4 =
+* Changed WebP static file naming
+
 = 1.0.3 =
 * Fixed WebP version switch issue
 

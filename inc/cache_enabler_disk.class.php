@@ -418,13 +418,13 @@ final class Cache_Enabler_Disk {
 	* get webp file path
 	*
 	* @since   1.0.1
-	* @change  1.0.1
+	* @change  1.0.4
 	*
 	* @return  string  path to the webp gzipped html file
 	*/
 
 	private static function _file_webp() {
-		return self::_file_path(). 'index.html.webp';
+		return self::_file_path(). 'index-webp.html.gz';
 	}
 
 
