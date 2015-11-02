@@ -10,6 +10,7 @@ Version: 1.0.5
 */
 
 /*
+Copyright (C)  2011-2015 Sergej Müller
 Copyright (C)  2015 KeyCDN
 
 This program is free software; you can redistribute it and/or modify

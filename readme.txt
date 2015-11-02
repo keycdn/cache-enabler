@@ -42,7 +42,7 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 
 = Website =
-* [Cache Enabler by KeyCDN](https://www.keycdn.com/support/wordpress-cache-enabler-plugin/ "Cache Enabler Documentation")
+* [Cache Enabler Documentation](https://www.keycdn.com/support/wordpress-cache-enabler-plugin/ "Cache Enabler Documentation")
 
 
 = Maintainer =
@@ -52,7 +52,7 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 
 = Credits =
-This plugin is partially based on the Cachify plugin developed by [Sergej Müller](https://sergejmueller.github.io/ "Author Sergej Müller").
+This plugin is partially based on the Cachify plugin developed by [Sergej Müller](https://wordpress.org/plugins/cachify/ "Author Sergej Müller").
 
 
 == Changelog ==
