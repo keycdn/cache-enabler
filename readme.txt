@@ -45,14 +45,20 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 * [Cache Enabler by KeyCDN](https://www.keycdn.com/support/wordpress-cache-enabler-plugin/ "Cache Enabler Documentation")
 
 
-= Autor =
+= Maintainer =
 * [Twitter](https://twitter.com/keycdn)
 * [Google+](https://plus.google.com/+Keycdn "Google+")
 * [KeyCDN](https://www.keycdn.com "KeyCDN")
 
 
+= Credits =
+This plugin is partially based on the Cachify plugin developed by [Sergej Müller](https://sergejmueller.github.io/ "Author Sergej Müller").
+
 
 == Changelog ==
+
+= 1.0.5 =
+* Credits update
 
 = 1.0.4 =
 * Changed WebP static file naming
