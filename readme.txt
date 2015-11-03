@@ -57,6 +57,9 @@ This plugin is partially based on the Cachify plugin developed by [Sergej Mülle
 
 == Changelog ==
 
+= 1.0.6 =
+* Fixed query string related caching issue
+
 = 1.0.5 =
 * Credits update
 
