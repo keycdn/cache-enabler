@@ -475,7 +475,7 @@ final class Cache_Enabler_Disk {
 	* convert to webp source
 	*
 	* @since   1.0.1
-	* @change  1.0.2
+	* @change  1.0.6
 	*
 	* @return  string  converted webp source
 	*/
@@ -492,7 +492,8 @@ final class Cache_Enabler_Disk {
 			$upload_path = wp_upload_dir();
 			$base_dir = $upload_path['basedir'];
 
-			if ( file_exists($base_dir.$relative_path) ) {
+			// check if relative path is not empty and file exists
+			if ( !empty($relative_path) && file_exists($base_dir.$relative_path) ) {
 				return $src_webp;
 			}
 

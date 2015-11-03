@@ -1069,20 +1069,20 @@ final class Cache_Enabler {
 
 
 	/**
-	* definitaion of cache expection
+	* check to bypass the cache
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.6
 	*
 	* @return  boolean  true if exception
 	*
-	* @hook    boolean  skip_cache
+	* @hook    boolean  bypass cache
 	*/
 
 	private static function _bypass_cache() {
 
 		// skip cache hook
-		if ( apply_filters('skip_cache', false) ) {
+		if ( apply_filters('bypass_cache', false) ) {
 			return true;
 		}
 
@@ -1101,6 +1101,11 @@ final class Cache_Enabler {
 
 		// Request method GET
 		if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] != 'GET' ) {
+			return true;
+		}
+
+		// Request with query strings
+		if ( ! empty($_GET) && get_option('permalink_structure') ) {
 			return true;
 		}
 
