@@ -57,6 +57,11 @@ This plugin is partially based on the Cachify plugin developed by [Sergej Mülle
 
 == Changelog ==
 
+= 1.0.7 =
+* Added cache behavior option for new posts
+* Improved metainformation of the signature
+* Optimized cache handling for nginx
+
 = 1.0.6 =
 * Fixed query string related caching issue
 

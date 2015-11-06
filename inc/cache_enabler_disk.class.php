@@ -15,6 +15,21 @@ final class Cache_Enabler_Disk {
 
 
 	/**
+	* cached filename settings
+	*
+	* @since  	1.0.7
+	* @change 	1.0.7
+	*
+	* @var    string
+	*/
+
+	const FILE_HTML = 'index.html';
+	const FILE_GZIP = 'index.html.gz';
+	const FILE_WEBP_HTML = 'index-webp.html';
+	const FILE_WEBP_GZIP = 'index-webp.html.gz';
+
+
+	/**
 	* permalink check
 	*
 	* @since   1.0.0
@@ -46,7 +61,7 @@ final class Cache_Enabler_Disk {
 
 		// save asset
 		self::_create_files(
-			$data . self::_cache_signatur()
+			$data
 		);
 
 	}
@@ -138,10 +153,33 @@ final class Cache_Enabler_Disk {
 
 
 	/**
+	* clear home cache
+	*
+	* @since   1.0.7
+	* @change  1.0.7
+	*/
+
+	public static function clear_home() {
+		$path = sprintf(
+			'%s%s%s%s',
+			CE_CACHE_DIR,
+			DIRECTORY_SEPARATOR,
+			preg_replace('#^https?://#', '', get_option('siteurl')),
+			DIRECTORY_SEPARATOR
+		);
+
+		unlink($path.self::FILE_HTML);
+		unlink($path.self::FILE_GZIP);
+		unlink($path.self::FILE_WEBP_HTML);
+		unlink($path.self::FILE_WEBP_GZIP);
+	}
+
+
+	/**
 	* get asset
 	*
 	* @since   1.0.0
-	* @change  1.0.3
+	* @change  1.0.7
 	*/
 
 	public static function get_asset() {
@@ -151,9 +189,11 @@ final class Cache_Enabler_Disk {
 			$headers = apache_request_headers();
 			$http_if_modified_since = ( isset( $headers[ 'If-Modified-Since' ] ) ) ? $headers[ 'If-Modified-Since' ] : '';
 			$http_accept = ( isset( $headers[ 'Accept' ] ) ) ? $headers[ 'Accept' ] : '';
+			$http_accept_encoding = ( isset( $headers[ 'Accept-Encoding' ] ) ) ? $headers[ 'Accept-Encoding' ] : '';
 		} else {
 			$http_if_modified_since = ( isset( $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] ) ) ? $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] : '';
 			$http_accept = ( isset( $_SERVER[ 'HTTP_ACCEPT' ] ) ) ? $_SERVER[ 'HTTP_ACCEPT' ] : '';
+			$http_accept_encoding = ( isset( $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] ) ) ? $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] : '';
 		}
 
 		// check modified since with cached file and return 304 if no difference
@@ -162,14 +202,21 @@ final class Cache_Enabler_Disk {
 			exit;
 		}
 
-		// check webp support
-		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) && is_readable( self::_file_webp() ) ) {
+		// check webp and deliver gzip webp file if support
+		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) && is_readable( self::_file_webp_gzip() ) ) {
 			header('Content-Encoding: gzip');
-			readfile( self::_file_webp() );
+			readfile( self::_file_webp_gzip() );
 			exit;
 		}
 
-		// deliver cached file
+		// check encoding and deliver gzip file if support
+		if ( $http_accept_encoding && ( strpos($http_accept_encoding, 'gzip') !== false ) ) {
+			header('Content-Encoding: gzip');
+			readfile( self::_file_gzip() );
+			exit;
+		}
+
+		// deliver cached file (default)
 		readfile( self::_file_html() );
 		exit;
 	}
@@ -186,7 +233,7 @@ final class Cache_Enabler_Disk {
 
 	private static function _cache_signatur() {
 		return sprintf(
-			"\n\n<!-- %s @ %s -->",
+			"\n\n<!-- %s @ %s",
 			'Cache Enabler by KeyCDN',
 			date_i18n(
 				'd.m.Y H:i:s',
@@ -212,16 +259,21 @@ final class Cache_Enabler_Disk {
 			wp_die('Unable to create directory.');
 		}
 
+		// get base signature
+		$cache_signature = self::_cache_signatur();
+
 		// create files
-		self::_create_file( self::_file_html(), $data );
-		self::_create_file( self::_file_gzip(), gzencode($data."\n<!-- (gzip) -->", 9) );
+		self::_create_file( self::_file_html(), $data.$cache_signature." (html) -->" );
+		self::_create_file( self::_file_gzip(), gzencode($data.$cache_signature." (html gzip) -->", 9) );
 
 		// cache enabler options
 		$options = Cache_Enabler::$options;
 
 		// create webp supported files
 		if ($options['webp']) {
-			self::_create_file( self::_file_webp(), gzencode(self::_convert_webp($data)."\n<!-- (webp) -->", 9) );
+			$converted_data = self::_convert_webp($data);
+			self::_create_file( self::_file_webp_html(), $converted_data.$cache_signature." (webp) -->" );
+			self::_create_file( self::_file_webp_gzip(), gzencode($converted_data.$cache_signature." (webp gzip) -->", 9) );
 		}
 
 	}
@@ -390,13 +442,13 @@ final class Cache_Enabler_Disk {
 	* get file path
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.7
 	*
 	* @return  string  path to the html file
 	*/
 
 	private static function _file_html() {
-		return self::_file_path(). 'index.html';
+		return self::_file_path(). self::FILE_HTML;
 	}
 
 
@@ -404,27 +456,41 @@ final class Cache_Enabler_Disk {
 	* get gzip file path
 	*
 	* @since   1.0.1
-	* @change  1.0.1
+	* @change  1.0.7
 	*
 	* @return  string  path to the gzipped html file
 	*/
 
 	private static function _file_gzip() {
-		return self::_file_path(). 'index.html.gz';
+		return self::_file_path(). self::FILE_GZIP;
 	}
 
 
 	/**
 	* get webp file path
 	*
+	* @since   1.0.7
+	* @change  1.0.7
+	*
+	* @return  string  path to the webp html file
+	*/
+
+	private static function _file_webp_html() {
+		return self::_file_path(). self::FILE_WEBP_HTML;
+	}
+
+
+	/**
+	* get gzip webp file path
+	*
 	* @since   1.0.1
-	* @change  1.0.4
+	* @change  1.0.7
 	*
 	* @return  string  path to the webp gzipped html file
 	*/
 
-	private static function _file_webp() {
-		return self::_file_path(). 'index-webp.html.gz';
+	private static function _file_webp_gzip() {
+		return self::_file_path(). self::FILE_WEBP_GZIP;
 	}
 
 

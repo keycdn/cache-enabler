@@ -63,7 +63,7 @@ final class Cache_Enabler {
 	* constructor
 	*
 	* @since   1.0.0
-	* @change  1.0.1
+	* @change  1.0.7
 	*
 	* @param   void
 	* @return  void
@@ -86,7 +86,7 @@ final class Cache_Enabler {
 
 		// clear cache hooks
 		add_action(
-			'ce_remove_post_cache',
+			'ce_clear_post_cache',
 			array(
 				__CLASS__,
 				'clear_page_cache_by_post_id'
@@ -464,7 +464,7 @@ final class Cache_Enabler {
 	* get options
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.7
 	*
 	* @return  array  options array
 	*/
@@ -475,7 +475,7 @@ final class Cache_Enabler {
 			get_option('cache'),
 			array(
 				'expires'		=> 0,
-				'if_loggedin'	=> 1,
+				'new_post'		=> 0,
 				'new_comment' 	=> 0,
 				'webp'			=> 0,
 				'excl_ids'	 	=> '',
@@ -895,7 +895,7 @@ final class Cache_Enabler {
 	* delete post type cache on post updates
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.7
 	*
 	* @param   integer  $post_ID  Post ID
 	*/
@@ -914,7 +914,14 @@ final class Cache_Enabler {
 
 		// purge cache if clean post on update
 		if ( ! isset($_POST['_clear_post_cache_on_update']) ) {
-			return self::clear_total_cache();
+
+			// clear complete cache if option enabled
+			if ( self::$options['new_post'] ) {
+				return self::clear_total_cache();
+			} else {
+				return self::clear_home_page_cache();
+			}
+
 		}
 
 		// validate nonce
@@ -996,6 +1003,26 @@ final class Cache_Enabler {
 
 
 	/**
+	* clear home page cache
+	*
+	* @since   1.0.7
+	* @change  1.0.7
+	*
+	*/
+
+	public static function clear_home_page_cache() {
+
+		call_user_func(
+			array(
+				self::$disk,
+				'clear_home'
+			)
+		);
+
+	}
+
+
+	/**
 	* explode on comma
 	*
 	* @since   1.0.0
@@ -1072,7 +1099,7 @@ final class Cache_Enabler {
 	* check to bypass the cache
 	*
 	* @since   1.0.0
-	* @change  1.0.6
+	* @change  1.0.7
 	*
 	* @return  boolean  true if exception
 	*
@@ -1081,7 +1108,7 @@ final class Cache_Enabler {
 
 	private static function _bypass_cache() {
 
-		// skip cache hook
+		// bypass cache hook
 		if ( apply_filters('bypass_cache', false) ) {
 			return true;
 		}
@@ -1105,12 +1132,12 @@ final class Cache_Enabler {
 		}
 
 		// Request with query strings
-		if ( ! empty($_GET) && get_option('permalink_structure') ) {
+		if ( ! empty($_GET) && ! isset( $_GET['utm_source'], $_GET['utm_medium'], $_GET['utm_campaign'] ) && get_option('permalink_structure') ) {
 			return true;
 		}
 
 		// if logged in
-		if ( $options['if_loggedin'] && self::_is_logged_in() ) {
+		if ( self::_is_logged_in() ) {
 			return true;
 		}
 
@@ -1488,7 +1515,7 @@ final class Cache_Enabler {
 	* validate settings
 	*
 	* @since   1.0.0
-	* @change  1.0.1
+	* @change  1.0.7
 	*
 	* @param   array  $data  array form data
 	* @return  array         array form data valid
@@ -1506,7 +1533,7 @@ final class Cache_Enabler {
 
 		return array(
 			'expires'		=> (int)$data['expires'],
-			'if_loggedin' 	=> (int)(!empty($data['if_loggedin'])),
+			'new_post' 	=> (int)(!empty($data['new_post'])),
 			'new_comment' 	=> (int)(!empty($data['new_comment'])),
 			'webp'			=> (int)(!empty($data['webp'])),
 			'excl_ids' 		=> (string)sanitize_text_field(@$data['excl_ids']),
@@ -1519,7 +1546,7 @@ final class Cache_Enabler {
 	* settings page
 	*
 	* @since   1.0.0
-	* @change  1.0.1
+	* @change  1.0.7
 	*/
 
 	public static function settings_page() { ?>
@@ -1557,9 +1584,9 @@ final class Cache_Enabler {
 						</th>
 						<td>
 							<fieldset>
-								<label for="cache_if_loggedin">
-									<input type="checkbox" name="cache[if_loggedin]" id="cache_if_loggedin" value="1" <?php checked('1', $options['if_loggedin']); ?> />
-									<?php _e("Disable caching if logged in.", "cache") ?>
+								<label for="cache_new_post">
+									<input type="checkbox" name="cache[new_post]" id="cache_new_post" value="1" <?php checked('1', $options['new_post']); ?> />
+									<?php _e("Clear the complete cache if a new post has been published (instead of only the home page cache).", "cache") ?>
 								</label>
 
 								<br />
