@@ -1,4 +1,4 @@
-=== Cache Enabler - WordPress Caching ===
+=== Cache Enabler - WordPress Cache ===
 Contributors: keycdn
 Tags: cache, caching, performance
 Requires at least: 4.1
@@ -15,8 +15,8 @@ A lightweight caching plugin for WordPress that makes your website faster by gen
 
 == Description ==
 
-
-The Cache Enabler plugin creates static HTML files and stores them on the servers disk. The web server will deliver the static HTML file and avoids the resource intensive backend processes (core, plugins and database). This will improve the performance of your WordPress installation.
+= WordPress Cache Engine =
+The Cache Enabler plugin creates static HTML files and stores them on the servers disk. The web server will deliver the static HTML file and avoids the resource intensive backend processes (core, plugins and database). This WordPress cache engine will improve the performance of your website.
 
 
 = Features =
@@ -42,7 +42,7 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 
 = Website =
-* [Cache Enabler Documentation](https://www.keycdn.com/support/wordpress-cache-enabler-plugin/ "Cache Enabler Documentation")
+* [WordPress Cache Enabler - Documentation](https://www.keycdn.com/support/wordpress-cache-enabler-plugin/ "WordPress Cache Enabler - Documentation")
 
 
 = Maintainer =
@@ -52,7 +52,7 @@ Just [contact us](https://www.keycdn.com/contacts "Support Request") directly to
 
 
 = Credits =
-This plugin is partially based on the Cachify plugin developed by [Sergej Müller](https://wordpress.org/plugins/cachify/ "Author Sergej Müller").
+This WordPress cache plugin is partially based on Cachify developed by [Sergej Müller](https://wordpress.org/plugins/cachify/ "Author Sergej Müller").
 
 
 == Changelog ==
