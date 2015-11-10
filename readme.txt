@@ -27,6 +27,7 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 * WordPress multisite support
 * Custom Post Type support
 * Expiry Directive
+* Support of *304 Not Modified* if page has not modified since last cached (client request If-Modified-Since)
 * WebP Support (when combined with [Optimus](https://optimus.io/en/ "Optimus"))
 * HTTP/2 Focused
 
@@ -38,7 +39,7 @@ This plugin requires minimal setup time and allows you to easily take advantage 
 
 The Wordpress Cache Enabler has the ability to create 2 cached files. One is plain HTML and the other version is gzipped (gzip level 9). These static files are then used to deliver content faster to your users directly via PHP without any database lookups or gzipping as the files are already pre-compressed. In the event that your PHP is not optimized, you can use our advanced configuration snippets to even bypass the PHP calls required to fetch the static HTML files.
 
-When combined with Optimus, the Wordpress Cache Enabler allows you to easily deliver WebP images. The plugin will check your wp-content/uploads directory for any JPG or PNG images that have an equivalent WebP file. If there is, the URI of these image will be cached in a WebP static file by Cache Enabler. It is not required for all images to be converted to WebP when the “Create an additional cached version for WebP image support” option is enabled. This will not break any images that are not in WebP format. The plugin will deliver images that do have a WebP equivalent and will fall back to the JPG or PNG format for images that don’t.
+When combined with Optimus, the Wordpress Cache Enabler allows you to easily deliver WebP images. The plugin will check your wp-content/uploads directory for any JPG or PNG images that have an equivalent WebP file. If there is, the URI of these image will be cached in a WebP static file by Cache Enabler. It is not required for all images to be converted to WebP when the “Create an additional cached version for WebP image support” option is enabled. This will not break any images that are not in WebP format. The plugin will deliver images that do have a WebP equivalent and will fall back to the JPG or PNG format for images that don't.
 
 
 = Support =
