@@ -27,7 +27,7 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 * WordPress multisite support
 * Custom Post Type support
 * Expiry Directive
-* Support of *304 Not Modified* if page has not modified since last cached (client request If-Modified-Since)
+* Support of *304 Not Modified* if page has not modified since last cached
 * WebP Support (when combined with [Optimus](https://optimus.io/en/ "Optimus"))
 * HTTP/2 Focused
 
