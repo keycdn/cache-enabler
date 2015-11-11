@@ -498,7 +498,7 @@ final class Cache_Enabler_Disk {
 	* convert to webp
 	*
 	* @since   1.0.1
-	* @change  1.0.1
+	* @change  1.0.8
 	*
 	* @return  string  converted HTML file
 	*/
@@ -506,7 +506,7 @@ final class Cache_Enabler_Disk {
 	private static function _convert_webp($data) {
 
 		$dom = new DOMDocument();
-		$dom->loadHTML($data);
+		@$dom->loadHTML($data);
 
 		$imgs = $dom->getElementsByTagName("img");
 
