@@ -205,6 +205,7 @@ final class Cache_Enabler_Disk {
 		// check webp and deliver gzip webp file if support
 		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) && is_readable( self::_file_webp_gzip() ) ) {
 			header('Content-Encoding: gzip');
+			//header('Content-Type: text/html; charset=UTF-8');
 			readfile( self::_file_webp_gzip() );
 			exit;
 		}
@@ -212,6 +213,7 @@ final class Cache_Enabler_Disk {
 		// check encoding and deliver gzip file if support
 		if ( $http_accept_encoding && ( strpos($http_accept_encoding, 'gzip') !== false ) ) {
 			header('Content-Encoding: gzip');
+			//header('Content-Type: text/html; charset=UTF-8');
 			readfile( self::_file_gzip() );
 			exit;
 		}
@@ -498,7 +500,7 @@ final class Cache_Enabler_Disk {
 	* convert to webp
 	*
 	* @since   1.0.1
-	* @change  1.0.8
+	* @change  1.0.9
 	*
 	* @return  string  converted HTML file
 	*/
@@ -506,7 +508,7 @@ final class Cache_Enabler_Disk {
 	private static function _convert_webp($data) {
 
 		$dom = new DOMDocument();
-		@$dom->loadHTML($data);
+		@$dom->loadHTML(mb_convert_encoding($data, 'HTML-ENTITIES', 'UTF-8'));
 
 		$imgs = $dom->getElementsByTagName("img");
 
