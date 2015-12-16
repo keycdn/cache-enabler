@@ -2,7 +2,7 @@
 Contributors: keycdn
 Tags: cache, caching, wordpress cache, performance, gzip, webp, http2
 Requires at least: 4.1
-Tested up to: 4.3
+Tested up to: 4.4
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -27,7 +27,7 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 * WordPress multisite support
 * Custom Post Type support
 * Expiry Directive
-* Support of *304 Not Modified* if page has not modified since last cached
+* Support of *304 Not Modified* if the page has not modified since last cached
 * WebP Support (when combined with [Optimus](https://optimus.io/en/ "Optimus"))
 * HTTP/2 Focused
 
@@ -66,6 +66,10 @@ This WordPress cache plugin is partially based on Cachify developed by [Sergej M
 
 
 == Changelog ==
+
+= 1.0.8 =
+* Added support for srcset in WP 4.4
+* Improved encoding (utf8)
 
 = 1.0.7 =
 * Added cache behavior option for new posts

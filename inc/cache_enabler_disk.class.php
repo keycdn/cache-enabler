@@ -500,7 +500,7 @@ final class Cache_Enabler_Disk {
 	* convert to webp
 	*
 	* @since   1.0.1
-	* @change  1.0.9
+	* @change  1.0.8
 	*
 	* @return  string  converted HTML file
 	*/
@@ -518,6 +518,10 @@ final class Cache_Enabler_Disk {
 			$src_webp = self::_convert_webp_src($src);
 			if ($src != $src_webp) {
 				$img->setAttribute('src' , $src_webp);
+
+				// convert srcset attributes
+				$srcset = $img->getAttribute('srcset');
+				$img->setAttribute('srcset' , self::_convert_webp_srcset($srcset));
 			}
 
 		}
@@ -540,12 +544,12 @@ final class Cache_Enabler_Disk {
 
 
 	/**
-	* convert to webp source
+	* convert src to webp source
 	*
 	* @since   1.0.1
 	* @change  1.0.6
 	*
-	* @return  string  converted webp source
+	* @return  string  converted src webp source
 	*/
 
 	private static function _convert_webp_src($src) {
@@ -568,6 +572,48 @@ final class Cache_Enabler_Disk {
 		}
 
 		return $src;
+	}
+
+
+	/**
+	* convert srcset to webp source
+	*
+	* @since   1.0.8
+	* @change  1.0.8
+	*
+	* @return  string  converted srcset webp source
+	*/
+
+	private static function _convert_webp_srcset($srcset) {
+
+		$sizes = explode(', ', $srcset);
+
+		for ($i=0; $i<count($sizes); $i++) {
+
+			if ( strpos($sizes[$i], 'wp-content') !== false ) {
+
+				$src_webp = str_replace('.jpg', '.webp', $sizes[$i]);
+				$src_webp = str_replace('.png', '.webp', $src_webp);
+
+				$sizeParts = explode(' ', $src_webp);
+				$parts = explode('/wp-content/uploads', $sizeParts[0]);
+				$relative_path = $parts[1];
+
+				$upload_path = wp_upload_dir();
+				$base_dir = $upload_path['basedir'];
+
+				// check if relative path is not empty and file exists
+				if ( !empty($relative_path) && file_exists($base_dir.$relative_path) ) {
+					$sizes[$i] = $src_webp;
+				}
+
+			}
+
+		}
+
+		$srcset = implode(', ', $sizes);
+
+		return $srcset;
 	}
 
 }
