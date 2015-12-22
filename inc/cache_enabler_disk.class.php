@@ -205,7 +205,7 @@ final class Cache_Enabler_Disk {
 		// check webp and deliver gzip webp file if support
 		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) && is_readable( self::_file_webp_gzip() ) ) {
 			header('Content-Encoding: gzip');
-			//header('Content-Type: text/html; charset=UTF-8');
+			header('Content-Type: text/html; charset=UTF-8');
 			readfile( self::_file_webp_gzip() );
 			exit;
 		}
@@ -213,7 +213,7 @@ final class Cache_Enabler_Disk {
 		// check encoding and deliver gzip file if support
 		if ( $http_accept_encoding && ( strpos($http_accept_encoding, 'gzip') !== false ) ) {
 			header('Content-Encoding: gzip');
-			//header('Content-Type: text/html; charset=UTF-8');
+			header('Content-Type: text/html; charset=UTF-8');
 			readfile( self::_file_gzip() );
 			exit;
 		}
