@@ -156,7 +156,7 @@ final class Cache_Enabler_Disk {
 	* clear home cache
 	*
 	* @since   1.0.7
-	* @change  1.0.7
+	* @change  1.0.9
 	*/
 
 	public static function clear_home() {
@@ -168,10 +168,10 @@ final class Cache_Enabler_Disk {
 			DIRECTORY_SEPARATOR
 		);
 
-		unlink($path.self::FILE_HTML);
-		unlink($path.self::FILE_GZIP);
-		unlink($path.self::FILE_WEBP_HTML);
-		unlink($path.self::FILE_WEBP_GZIP);
+		@unlink($path.self::FILE_HTML);
+		@unlink($path.self::FILE_GZIP);
+		@unlink($path.self::FILE_WEBP_HTML);
+		@unlink($path.self::FILE_WEBP_GZIP);
 	}
 
 
