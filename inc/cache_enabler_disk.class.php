@@ -179,7 +179,7 @@ final class Cache_Enabler_Disk {
 	* get asset
 	*
 	* @since   1.0.0
-	* @change  1.0.7
+	* @change  1.0.9
 	*/
 
 	public static function get_asset() {
@@ -203,17 +203,20 @@ final class Cache_Enabler_Disk {
 		}
 
 		// check webp and deliver gzip webp file if support
-		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) && is_readable( self::_file_webp_gzip() ) ) {
-			header('Content-Encoding: gzip');
-			header('Content-Type: text/html; charset=UTF-8');
-			readfile( self::_file_webp_gzip() );
-			exit;
+		if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) ) {
+			if ( is_readable( self::_file_webp_gzip() ) ) {
+				header('Content-Encoding: gzip');
+				readfile( self::_file_webp_gzip() );
+				exit;
+			} else {
+				readfile( self::_file_webp_html() );
+				exit;
+			}
 		}
 
 		// check encoding and deliver gzip file if support
-		if ( $http_accept_encoding && ( strpos($http_accept_encoding, 'gzip') !== false ) ) {
+		if ( $http_accept_encoding && ( strpos($http_accept_encoding, 'gzip') !== false ) && is_readable( self::_file_gzip() )  ) {
 			header('Content-Encoding: gzip');
-			header('Content-Type: text/html; charset=UTF-8');
 			readfile( self::_file_gzip() );
 			exit;
 		}
@@ -249,7 +252,7 @@ final class Cache_Enabler_Disk {
 	* create files
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.0.9
 	*
 	* @param   string  $data  html content
 	*/
@@ -264,18 +267,26 @@ final class Cache_Enabler_Disk {
 		// get base signature
 		$cache_signature = self::_cache_signatur();
 
-		// create files
-		self::_create_file( self::_file_html(), $data.$cache_signature." (html) -->" );
-		self::_create_file( self::_file_gzip(), gzencode($data.$cache_signature." (html gzip) -->", 9) );
-
 		// cache enabler options
 		$options = Cache_Enabler::$options;
+
+		// create files
+		self::_create_file( self::_file_html(), $data.$cache_signature." (html) -->" );
+
+		// create pre-compressed file
+		if ($options['compress']) {
+			self::_create_file( self::_file_gzip(), gzencode($data.$cache_signature." (html gzip) -->", 9) );
+		}
 
 		// create webp supported files
 		if ($options['webp']) {
 			$converted_data = self::_convert_webp($data);
 			self::_create_file( self::_file_webp_html(), $converted_data.$cache_signature." (webp) -->" );
-			self::_create_file( self::_file_webp_gzip(), gzencode($converted_data.$cache_signature." (webp gzip) -->", 9) );
+
+			// create pre-compressed file
+			if ($options['compress']) {
+				self::_create_file( self::_file_webp_gzip(), gzencode($converted_data.$cache_signature." (webp gzip) -->", 9) );
+			}
 		}
 
 	}

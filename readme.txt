@@ -68,6 +68,9 @@ This WordPress cache plugin is partially based on Cachify developed by [Sergej M
 
 == Changelog ==
 
+= 1.0.9 =
+* Option to disable pre-compression of cached pages if decoding fails
+
 = 1.0.8 =
 * Added support for srcset in WP 4.4
 * Improved encoding (utf8)

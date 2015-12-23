@@ -464,7 +464,7 @@ final class Cache_Enabler {
 	* get options
 	*
 	* @since   1.0.0
-	* @change  1.0.7
+	* @change  1.0.9
 	*
 	* @return  array  options array
 	*/
@@ -477,6 +477,7 @@ final class Cache_Enabler {
 				'expires'		=> 0,
 				'new_post'		=> 0,
 				'new_comment' 	=> 0,
+				'compress' 		=> 1,
 				'webp'			=> 0,
 				'excl_ids'	 	=> '',
 				'minify_html' 	=> self::MINIFY_DISABLED,
@@ -1515,7 +1516,7 @@ final class Cache_Enabler {
 	* validate settings
 	*
 	* @since   1.0.0
-	* @change  1.0.7
+	* @change  1.0.9
 	*
 	* @param   array  $data  array form data
 	* @return  array         array form data valid
@@ -1536,6 +1537,7 @@ final class Cache_Enabler {
 			'new_post' 	=> (int)(!empty($data['new_post'])),
 			'new_comment' 	=> (int)(!empty($data['new_comment'])),
 			'webp'			=> (int)(!empty($data['webp'])),
+			'compress'		=> (int)(!empty($data['compress'])),
 			'excl_ids' 		=> (string)sanitize_text_field(@$data['excl_ids']),
 			'minify_html' 	=> (int)$data['minify_html']
 		);
@@ -1546,7 +1548,7 @@ final class Cache_Enabler {
 	* settings page
 	*
 	* @since   1.0.0
-	* @change  1.0.7
+	* @change  1.0.9
 	*/
 
 	public static function settings_page() { ?>
@@ -1594,6 +1596,13 @@ final class Cache_Enabler {
 								<label for="cache_new_comment">
 									<input type="checkbox" name="cache[new_comment]" id="cache_new_comment" value="1" <?php checked('1', $options['new_comment']); ?> />
 									<?php _e("Clear the complete cache if a new comment has been posted (instead of only the page specific cache).", "cache") ?>
+								</label>
+
+								<br />
+
+								<label for="cache_compress">
+									<input type="checkbox" name="cache[compress]" id="cache_compress" value="1" <?php checked('1', $options['compress']); ?> />
+									<?php _e("Pre-compression of cached pages. Needs to be disabled if the decoding fails in the web browser.", "cache") ?>
 								</label>
 
 								<br />
