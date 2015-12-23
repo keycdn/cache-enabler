@@ -208,7 +208,7 @@ final class Cache_Enabler_Disk {
 				header('Content-Encoding: gzip');
 				readfile( self::_file_webp_gzip() );
 				exit;
-			} else {
+			} elseif ( is_readable( self::_file_webp_html() ) ) {
 				readfile( self::_file_webp_html() );
 				exit;
 			}
