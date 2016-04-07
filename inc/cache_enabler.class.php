@@ -1558,6 +1558,10 @@ final class Cache_Enabler {
 				<?php _e("Cache Enabler Settings", "cache") ?>
 			</h2>
 
+			<div class="notice notice-info" style="margin-bottom: 35px;">
+				<p>Combine <strong><a href="https://www.keycdn.com?utm_source=wp-admin&utm_medium=plugins&utm_campaign=cache-enabler">KeyCDN</a></strong> with Cache Enabler for even better WordPress performance and achieve the next level of caching with a CDN.</p>
+			</div>
+
 			<p><?php $size=self::get_cache_size(); printf( __("Current cache size: <b>%s</b>", "cache"), ( empty($size) ? esc_html__("Empty", "cache") : size_format($size) ) ); ?></p>
 
 
@@ -1657,7 +1661,6 @@ final class Cache_Enabler {
 				</table>
 			</form>
 			<p class="description"><?php _e("It is recommended to enable HTTP/2 on your origin server and use a CDN that supports HTTP/2. Avoid domain sharding and concatenation of your assets to benefit from parallelism of HTTP/2.","cache") ?></p>
-
 		</div><?php
 	}
 }
