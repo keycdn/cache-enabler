@@ -565,8 +565,10 @@ final class Cache_Enabler_Disk {
 
 	private static function _convert_webp_src($src) {
 		$upload_dir = wp_upload_dir();
+		$src_url = parse_url($upload_dir['baseurl']);
+		$upload_path = $src_url['path'];
 
-		if ( strpos($src, $upload_dir['baseurl']) !== false ) {
+		if ( strpos($src, $upload_path) !== false ) {
 
 			$src_webp = str_replace('.jpg', '.webp', $src);
 			$src_webp = str_replace('.png', '.webp', $src_webp);
@@ -580,7 +582,7 @@ final class Cache_Enabler_Disk {
 			} else {
 				// try appended webp extension
 				$src_webp_appended = $src.'.webp';
-				$parts_appended = explode($upload_dir['baseurl'], $src_webp_appended);
+				$parts_appended = explode($upload_path, $src_webp_appended);
 				$relative_path_appended = $parts_appended[1];
 
 				// check if relative path is not empty and file exists
@@ -608,6 +610,8 @@ final class Cache_Enabler_Disk {
 
 		$sizes = explode(', ', $srcset);
 		$upload_dir = wp_upload_dir();
+		$src_url = parse_url($upload_dir['baseurl']);
+		$upload_path = $src_url['path'];
 
 		for ($i=0; $i<count($sizes); $i++) {
 
@@ -617,7 +621,7 @@ final class Cache_Enabler_Disk {
 				$src_webp = str_replace('.png', '.webp', $src_webp);
 
 				$size_parts = explode(' ', $src_webp);
-				$parts = explode($upload_dir['baseurl'], $size_parts[0]);
+				$parts = explode($upload_path, $size_parts[0]);
 				$relative_path = $parts[1];
 
 				// check if relative path is not empty and file exists
@@ -627,7 +631,7 @@ final class Cache_Enabler_Disk {
 					// try appended webp extension
 					$size_parts_appended = explode(' ', $sizes[$i]);
 					$src_webp_appended = $size_parts_appended[0].'.webp';
-					$parts_appended = explode($upload_dir['baseurl'], $src_webp_appended);
+					$parts_appended = explode($upload_path, $src_webp_appended);
 					$relative_path_appended = $parts_appended[1];
 					$src_webp_appended = $src_webp_appended.' '.$size_parts_appended[1];
 
