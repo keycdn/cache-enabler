@@ -573,7 +573,7 @@ final class Cache_Enabler_Disk {
 			$src_webp = str_replace('.jpg', '.webp', $src);
 			$src_webp = str_replace('.png', '.webp', $src_webp);
 
-			$parts = explode($upload_dir['baseurl'], $src_webp);
+			$parts = explode($upload_path, $src_webp);
 			$relative_path = $parts[1];
 
 			// check if relative path is not empty and file exists
@@ -615,7 +615,7 @@ final class Cache_Enabler_Disk {
 
 		for ($i=0; $i<count($sizes); $i++) {
 
-			if ( strpos($sizes[$i], $upload_dir['baseurl']) !== false ) {
+			if ( strpos($sizes[$i], $upload_path) !== false ) {
 
 				$src_webp = str_replace('.jpg', '.webp', $sizes[$i]);
 				$src_webp = str_replace('.png', '.webp', $src_webp);
