@@ -464,7 +464,7 @@ final class Cache_Enabler {
 	* get options
 	*
 	* @since   1.0.0
-	* @change  1.0.9
+	* @change  1.1.0
 	*
 	* @return  array  options array
 	*/
@@ -477,7 +477,7 @@ final class Cache_Enabler {
 				'expires'		=> 0,
 				'new_post'		=> 0,
 				'new_comment' 	=> 0,
-				'compress' 		=> 1,
+				'compress' 		=> 0,
 				'webp'			=> 0,
 				'excl_ids'	 	=> '',
 				'minify_html' 	=> self::MINIFY_DISABLED,

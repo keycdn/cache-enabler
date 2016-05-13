@@ -558,26 +558,35 @@ final class Cache_Enabler_Disk {
 	* convert src to webp source
 	*
 	* @since   1.0.1
-	* @change  1.0.6
+	* @change  1.1.0
 	*
 	* @return  string  converted src webp source
 	*/
 
 	private static function _convert_webp_src($src) {
-		if ( strpos($src, 'wp-content') !== false ) {
+		$upload_dir = wp_upload_dir();
+
+		if ( strpos($src, $upload_dir['baseurl']) !== false ) {
 
 			$src_webp = str_replace('.jpg', '.webp', $src);
 			$src_webp = str_replace('.png', '.webp', $src_webp);
 
-			$parts = explode('/wp-content/uploads', $src_webp);
+			$parts = explode($upload_dir['baseurl'], $src_webp);
 			$relative_path = $parts[1];
 
-			$upload_path = wp_upload_dir();
-			$base_dir = $upload_path['basedir'];
-
 			// check if relative path is not empty and file exists
-			if ( !empty($relative_path) && file_exists($base_dir.$relative_path) ) {
+			if ( !empty($relative_path) && file_exists($upload_dir['basedir'].$relative_path) ) {
 				return $src_webp;
+			} else {
+				// try appended webp extension
+				$src_webp_appended = $src.'.webp';
+				$parts_appended = explode($upload_dir['baseurl'], $src_webp_appended);
+				$relative_path_appended = $parts_appended[1];
+
+				// check if relative path is not empty and file exists
+				if ( !empty($relative_path_appended) && file_exists($upload_dir['basedir'].$relative_path_appended) ) {
+					return $src_webp_appended;
+				}
 			}
 
 		}
@@ -590,7 +599,7 @@ final class Cache_Enabler_Disk {
 	* convert srcset to webp source
 	*
 	* @since   1.0.8
-	* @change  1.0.8
+	* @change  1.1.0
 	*
 	* @return  string  converted srcset webp source
 	*/
@@ -598,23 +607,21 @@ final class Cache_Enabler_Disk {
 	private static function _convert_webp_srcset($srcset) {
 
 		$sizes = explode(', ', $srcset);
+		$upload_dir = wp_upload_dir();
 
 		for ($i=0; $i<count($sizes); $i++) {
 
-			if ( strpos($sizes[$i], 'wp-content') !== false ) {
+			if ( strpos($sizes[$i], $upload_dir['baseurl']) !== false ) {
 
 				$src_webp = str_replace('.jpg', '.webp', $sizes[$i]);
 				$src_webp = str_replace('.png', '.webp', $src_webp);
 
 				$sizeParts = explode(' ', $src_webp);
-				$parts = explode('/wp-content/uploads', $sizeParts[0]);
+				$parts = explode($upload_dir['baseurl'], $sizeParts[0]);
 				$relative_path = $parts[1];
 
-				$upload_path = wp_upload_dir();
-				$base_dir = $upload_path['basedir'];
-
 				// check if relative path is not empty and file exists
-				if ( !empty($relative_path) && file_exists($base_dir.$relative_path) ) {
+				if ( !empty($relative_path) && file_exists($upload_dir['basedir'].$relative_path) ) {
 					$sizes[$i] = $src_webp;
 				}
 
