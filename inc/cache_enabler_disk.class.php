@@ -616,13 +616,25 @@ final class Cache_Enabler_Disk {
 				$src_webp = str_replace('.jpg', '.webp', $sizes[$i]);
 				$src_webp = str_replace('.png', '.webp', $src_webp);
 
-				$sizeParts = explode(' ', $src_webp);
-				$parts = explode($upload_dir['baseurl'], $sizeParts[0]);
+				$size_parts = explode(' ', $src_webp);
+				$parts = explode($upload_dir['baseurl'], $size_parts[0]);
 				$relative_path = $parts[1];
 
 				// check if relative path is not empty and file exists
 				if ( !empty($relative_path) && file_exists($upload_dir['basedir'].$relative_path) ) {
 					$sizes[$i] = $src_webp;
+				} else {
+					// try appended webp extension
+					$size_parts_appended = explode(' ', $sizes[$i]);
+					$src_webp_appended = $size_parts_appended[0].'.webp';
+					$parts_appended = explode($upload_dir['baseurl'], $src_webp_appended);
+					$relative_path_appended = $parts_appended[1];
+					$src_webp_appended = $src_webp_appended.' '.$size_parts_appended[1];
+
+					// check if relative path is not empty and file exists
+					if ( !empty($relative_path_appended) && file_exists($upload_dir['basedir'].$relative_path_appended) ) {
+						$sizes[$i] = $src_webp_appended;
+					}
 				}
 
 			}
