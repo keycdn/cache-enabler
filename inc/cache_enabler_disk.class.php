@@ -184,6 +184,9 @@ final class Cache_Enabler_Disk {
 
 	public static function get_asset() {
 
+		// set cache handler header
+		header('X-Cache-Handler: php');
+
 		// get if-modified request headers
 		if ( function_exists( 'apache_request_headers' ) ) {
 			$headers = apache_request_headers();
@@ -511,7 +514,7 @@ final class Cache_Enabler_Disk {
 	* convert to webp
 	*
 	* @since   1.0.1
-	* @change  1.0.8
+	* @change  1.1.0
 	*
 	* @return  string  converted HTML file
 	*/
@@ -528,11 +531,13 @@ final class Cache_Enabler_Disk {
 		    $src = $img->getAttribute('src');
 			$src_webp = self::_convert_webp_src($src);
 			if ($src != $src_webp) {
-				$img->setAttribute('src' , $src_webp);
+				$img->setAttribute('src', $src_webp);
 
 				// convert srcset attributes
-				$srcset = $img->getAttribute('srcset');
-				$img->setAttribute('srcset' , self::_convert_webp_srcset($srcset));
+				if ($img->hasAttribute('srcset')) {
+					$srcset = $img->getAttribute('srcset');
+					$img->setAttribute('srcset', self::_convert_webp_srcset($srcset));
+				}
 			}
 
 		}

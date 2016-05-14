@@ -637,7 +637,7 @@ final class Cache_Enabler {
 	* add admin links
 	*
 	* @since   1.0.0
-	* @change  1.0.1
+	* @change  1.1.0
     *
     * @hook    mixed
 	*
@@ -658,9 +658,22 @@ final class Cache_Enabler {
 				'href'   => wp_nonce_url( add_query_arg('_cache', 'clear'), '_cache__clear_nonce'),
 				'parent' => 'top-secondary',
 				'title'	 => '<span class="ab-item">Clear Cache</span>',
-				'meta'   => array( 'title' => esc_html__('clear Cache', 'cache') )
+				'meta'   => array( 'title' => esc_html__('Clear Cache', 'cache') )
 			)
 		);
+
+		if ( ! is_admin() ) {
+			// add admin purge link
+			$wp_admin_bar->add_menu(
+				array(
+					'id' 	 => 'clear-url-cache',
+					'href'   => wp_nonce_url( add_query_arg('_cache', 'clearurl'), '_cache__clear_nonce'),
+					'parent' => 'top-secondary',
+					'title'	 => '<span class="ab-item">Clear URL Cache</span>',
+					'meta'   => array( 'title' => esc_html__('Clear URL Cache', 'cache') )
+				)
+			);
+		}
 
 	}
 
@@ -669,7 +682,7 @@ final class Cache_Enabler {
 	* process clear request
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.1.0
 	*
 	* @param   array  $data  array of metadata
 	*/
@@ -677,7 +690,7 @@ final class Cache_Enabler {
 	public static function process_clear_request($data) {
 
 		// check if clear request
-		if ( empty($_GET['_cache']) OR $_GET['_cache'] !== 'clear' ) {
+		if ( empty($_GET['_cache']) OR ( $_GET['_cache'] !== 'clear' && $_GET['_cache'] !== 'clearurl' ) ) {
 			return;
 		}
 
@@ -696,47 +709,77 @@ final class Cache_Enabler {
 			require_once( ABSPATH. 'wp-admin/includes/plugin.php' );
 		}
 
+		// set clear url w/o query string
+		$clear_url = preg_replace('/\?.*/', '', home_url( add_query_arg( NULL, NULL ) ));
+
 		// multisite and network setup
 		if ( is_multisite() && is_plugin_active_for_network(CE_BASE) ) {
 
-			// legacy blog
-			$legacy = $GLOBALS['wpdb']->blogid;
+			if ( is_network_admin() ) {
 
-			// blog ids
-			$ids = self::_get_blog_ids();
+				// legacy blog
+				$legacy = $GLOBALS['wpdb']->blogid;
 
-			// switch blogs
-			foreach ($ids as $id) {
-				switch_to_blog($id);
-				self::clear_total_cache();
-			}
+				// blog ids
+				$ids = self::_get_blog_ids();
 
-			// restore
-			switch_to_blog($legacy);
+				// switch blogs
+				foreach ($ids as $id) {
+					switch_to_blog($id);
+					self::clear_page_cache_by_url(home_url());
+				}
 
-			// clear notice
-			if ( is_admin() ) {
-				add_action(
-					'network_admin_notices',
-					array(
-						__CLASS__,
-						'clear_notice'
-					)
-				);
+				// restore
+				switch_to_blog($legacy);
+
+				// clear notice
+				if ( is_admin() ) {
+					add_action(
+						'network_admin_notices',
+						array(
+							__CLASS__,
+							'clear_notice'
+						)
+					);
+				}
+			} else {
+				if ($_GET['_cache'] == 'clearurl') {
+					// clear specific multisite url cache
+					self::clear_page_cache_by_url($clear_url);
+				} else {
+					// clear specific multisite cache
+					self::clear_page_cache_by_url(home_url());
+
+					// clear notice
+					if ( is_admin() ) {
+						add_action(
+							'admin_notices',
+							array(
+								__CLASS__,
+								'clear_notice'
+							)
+						);
+					}
+				}
 			}
 		} else {
-			// clear cache
-			self::clear_total_cache();
+			if ($_GET['_cache'] == 'clearurl') {
+				// clear url cache
+				self::clear_page_cache_by_url($clear_url);
+			} else {
+				// clear cache
+				self::clear_total_cache();
 
-			// clear notice
-			if ( is_admin() ) {
-				add_action(
-					'admin_notices',
-					array(
-						__CLASS__,
-						'clear_notice'
-					)
-				);
+				// clear notice
+				if ( is_admin() ) {
+					add_action(
+						'admin_notices',
+						array(
+							__CLASS__,
+							'clear_notice'
+						)
+					);
+				}
 			}
 		}
 
@@ -771,7 +814,7 @@ final class Cache_Enabler {
 
 		echo sprintf(
 			'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
-			esc_html__('The cache has been deleted.', 'cache')
+			esc_html__('The cache has been cleared.', 'cache')
 		);
 	}
 
@@ -1563,7 +1606,6 @@ final class Cache_Enabler {
 			</div>
 
 			<p><?php $size=self::get_cache_size(); printf( __("Current cache size: <b>%s</b>", "cache"), ( empty($size) ? esc_html__("Empty", "cache") : size_format($size) ) ); ?></p>
-
 
 			<form method="post" action="options.php">
 				<?php settings_fields('cache-enabler') ?>
