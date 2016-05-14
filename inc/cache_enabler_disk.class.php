@@ -576,6 +576,7 @@ final class Cache_Enabler_Disk {
 		if ( strpos($src, $upload_path) !== false ) {
 
 			$src_webp = str_replace('.jpg', '.webp', $src);
+			$src_webp = str_replace('.jpeg', '.webp', $src_webp);
 			$src_webp = str_replace('.png', '.webp', $src_webp);
 
 			$parts = explode($upload_path, $src_webp);
@@ -623,6 +624,7 @@ final class Cache_Enabler_Disk {
 			if ( strpos($sizes[$i], $upload_path) !== false ) {
 
 				$src_webp = str_replace('.jpg', '.webp', $sizes[$i]);
+				$src_webp = str_replace('.jpeg', '.webp', $src_webp);
 				$src_webp = str_replace('.png', '.webp', $src_webp);
 
 				$size_parts = explode(' ', $src_webp);
