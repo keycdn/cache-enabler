@@ -216,7 +216,6 @@ final class Cache_Enabler {
 					'add_clear_dropdown'
 				)
 			);
-
 			add_filter(
 				'plugin_row_meta',
 				array(
@@ -240,6 +239,13 @@ final class Cache_Enabler {
 				array(
 					__CLASS__,
 					'warning_is_permalink'
+				)
+			);
+			add_action(
+				'admin_notices',
+				array(
+					__CLASS__,
+					'requirements_check'
 				)
 			);
 
@@ -500,7 +506,7 @@ final class Cache_Enabler {
 		if ( !Cache_Enabler_Disk::is_permalink() AND current_user_can('manage_options') ) { ?>
 
 			<div class="error">
-				<p><?php printf( __('The <b>%s</b> plugin requires a custom permalink structure to start caching properly. Please go to <a href="%s">Permalink</a> to enable it.', 'cache'), 'Cache Enabler', admin_url( 'options-permalink.php' ) ); ?></p>
+				<p><?php printf( __('The <b>%s</b> plugin requires a custom permalink structure to start caching properly. Please go to <a href="%s">Permalink</a> to enable it.', 'cache-enabler'), 'Cache Enabler', admin_url( 'options-permalink.php' ) ); ?></p>
 			</div>
 
 		<?php
@@ -536,7 +542,7 @@ final class Cache_Enabler {
 						),
 						admin_url('options-general.php')
 					),
-					__('Settings')
+					esc_html__('Settings')
 				)
 			)
 		);
@@ -574,7 +580,7 @@ final class Cache_Enabler {
 	* add dashboard cache size count
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.1.0
 	*
 	* @param   array  $items  initial array with dashboard items
 	* @return  array  $items  merged array with dashboard items
@@ -592,14 +598,16 @@ final class Cache_Enabler {
 
 		// display items
 		$items[] = sprintf(
-			'<a href="%s" title="Disk Cache">%s Cache Size</a>',
+			'<a href="%s" title="%s">%s %s</a>',
 			add_query_arg(
 				array(
 					'page' => 'cache-enabler'
 				),
 				admin_url('options-general.php')
 			),
-			( empty($size) ? esc_html__('Empty', 'cache') : size_format($size) )
+			esc_html__('Disk Cache', 'cache-enabler'),
+			( empty($size) ? esc_html__('Empty', 'cache-enabler') : size_format($size) ),
+			esc_html__('Cache Size', 'cache-enabler')
 		);
 
 		return $items;
@@ -657,8 +665,8 @@ final class Cache_Enabler {
 				'id' 	 => 'clear-cache',
 				'href'   => wp_nonce_url( add_query_arg('_cache', 'clear'), '_cache__clear_nonce'),
 				'parent' => 'top-secondary',
-				'title'	 => '<span class="ab-item">Clear Cache</span>',
-				'meta'   => array( 'title' => esc_html__('Clear Cache', 'cache') )
+				'title'	 => '<span class="ab-item">'.esc_html__('Clear Cache', 'cache-enabler').'</span>',
+				'meta'   => array( 'title' => esc_html__('Clear Cache', 'cache-enabler') )
 			)
 		);
 
@@ -669,12 +677,11 @@ final class Cache_Enabler {
 					'id' 	 => 'clear-url-cache',
 					'href'   => wp_nonce_url( add_query_arg('_cache', 'clearurl'), '_cache__clear_nonce'),
 					'parent' => 'top-secondary',
-					'title'	 => '<span class="ab-item">Clear URL Cache</span>',
-					'meta'   => array( 'title' => esc_html__('Clear URL Cache', 'cache') )
+					'title'	 => '<span class="ab-item">'.esc_html__('Clear URL Cache', 'cache-enabler').'</span>',
+					'meta'   => array( 'title' => esc_html__('Clear URL Cache', 'cache-enabler') )
 				)
 			);
 		}
-
 	}
 
 
@@ -814,7 +821,7 @@ final class Cache_Enabler {
 
 		echo sprintf(
 			'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
-			esc_html__('The cache has been cleared.', 'cache')
+			esc_html__('The cache has been cleared.', 'cache-enabler')
 		);
 	}
 
@@ -1400,8 +1407,8 @@ final class Cache_Enabler {
 		// init variables
 		$dropdown_options = '';
 		$available_options = array(
-			esc_html__('Completely', 'cache'),
-			esc_html__('Page specific', 'cache')
+			esc_html__('Completely', 'cache-enabler'),
+			esc_html__('Page specific', 'cache-enabler')
 		);
 
 		// set dropdown options
@@ -1431,7 +1438,7 @@ final class Cache_Enabler {
 	 				<a href="#" class="cancel-cache-action hide-if-no-js button-cancel">%6$s</a>
 	 			</div>
 			</div>',
-			esc_html__('Clear cache', 'cache'),
+			esc_html__('Clear cache', 'cache-enabler'),
 			$available_options[$current_action],
 			esc_html__('Edit'),
 			$dropdown_options,
@@ -1511,10 +1518,52 @@ final class Cache_Enabler {
 	private static function _minify_select() {
 
 		return array(
-			self::MINIFY_DISABLED  => esc_html__('Disabled', 'cache'),
-			self::MINIFY_HTML_ONLY => 'HTML',
-			self::MINIFY_HTML_JS   => 'HTML & Inline JS'
+			self::MINIFY_DISABLED  => esc_html__('Disabled', 'cache-enabler'),
+			self::MINIFY_HTML_ONLY => esc_html__('HTML', 'cache-enabler'),
+			self::MINIFY_HTML_JS   => esc_html__('HTML & Inline JS', 'cache-enabler')
 		);
+	}
+
+
+	/**
+	* Check plugin requirements
+	*
+	* @since   1.1.0
+	* @change  1.1.0
+	*/
+
+	public static function requirements_check() {
+
+		// cache enabler options
+		$options = self::$options;
+
+		// WordPress version check
+		if ( version_compare($GLOBALS['wp_version'], CE_MIN_WP.'alpha', '<') ) {
+			show_message(
+				sprintf(
+					'<div class="error"><p>%s</p></div>',
+					sprintf(
+						__('The <b>%s</b> is optimized for WordPress %s. Please disable the plugin or upgrade your WordPress installation (recommended).', 'cache-enabler'),
+						'Cache Enabler',
+						CE_MIN_WP
+					)
+				)
+			);
+		}
+
+		// mb string check
+		if ( !function_exists('mb_convert_encoding') && $options['webp'] ) {
+			show_message(
+				sprintf(
+					'<div class="error"><p>%s</p></div>',
+					sprintf(
+						__('The <b>%s</b> WebP option requires the <a href="%s" target="_blank">PHP Multibyte String Library (php-mbstring)</a>. Please contact your hosting provider to get <b>php-mbstring</b> installed.', 'cache-enabler'),
+						'Cache Enabler',
+						'http://php.net/manual/en/book.mbstring.php'
+					)
+				)
+			);
+		}
 	}
 
 
@@ -1528,7 +1577,7 @@ final class Cache_Enabler {
 	public static function register_textdomain() {
 
 		load_plugin_textdomain(
-			'cache',
+			'cache-enabler',
 			false,
 			'cache-enabler/lang'
 		);
@@ -1591,21 +1640,21 @@ final class Cache_Enabler {
 	* settings page
 	*
 	* @since   1.0.0
-	* @change  1.0.9
+	* @change  1.1.0
 	*/
 
 	public static function settings_page() { ?>
 
 		<div class="wrap" id="cache-settings">
 			<h2>
-				<?php _e("Cache Enabler Settings", "cache") ?>
+				<?php _e("Cache Enabler Settings", "cache-enabler") ?>
 			</h2>
 
 			<div class="notice notice-info" style="margin-bottom: 35px;">
-				<p>Combine <strong><a href="https://www.keycdn.com?utm_source=wp-admin&utm_medium=plugins&utm_campaign=cache-enabler">KeyCDN</a></strong> with Cache Enabler for even better WordPress performance and achieve the next level of caching with a CDN.</p>
+				<p><?php printf( __('Combine <b><a href="%s">%s</a></b> with Cache Enabler for even better WordPress performance and achieve the next level of caching with a CDN.', 'cache-enabler'), 'https://www.keycdn.com?utm_source=wp-admin&utm_medium=plugins&utm_campaign=cache-enabler', 'KeyCDN'); ?></p>
 			</div>
 
-			<p><?php $size=self::get_cache_size(); printf( __("Current cache size: <b>%s</b>", "cache"), ( empty($size) ? esc_html__("Empty", "cache") : size_format($size) ) ); ?></p>
+			<p><?php $size=self::get_cache_size(); printf( __("Current cache size: <b>%s</b>", "cache-enabler"), ( empty($size) ? esc_html__("Empty", "cache-enabler") : size_format($size) ) ); ?></p>
 
 			<form method="post" action="options.php">
 				<?php settings_fields('cache-enabler') ?>
@@ -1615,47 +1664,47 @@ final class Cache_Enabler {
 				<table class="form-table">
 					<tr valign="top">
 						<th scope="row">
-							<?php _e("Cache Expiry", "cache") ?>
+							<?php _e("Cache Expiry", "cache-enabler") ?>
 						</th>
 						<td>
 							<fieldset>
 								<label for="cache_expires">
 									<input type="text" name="cache[expires]" id="cache_expires" value="<?php echo esc_attr($options['expires']) ?>" />
-									<p class="description"><?php _e("Cache expiry in hours. An expiry time of 0 means that the cache never expires.", "cache"); ?></p>
+									<p class="description"><?php _e("Cache expiry in hours. An expiry time of 0 means that the cache never expires.", "cache-enabler"); ?></p>
 								</label>
 							</fieldset>
 						</td>
 					</tr>
 					<tr valign="top">
 						<th scope="row">
-							<?php _e("Cache Behavior", "cache") ?>
+							<?php _e("Cache Behavior", "cache-enabler") ?>
 						</th>
 						<td>
 							<fieldset>
 								<label for="cache_new_post">
 									<input type="checkbox" name="cache[new_post]" id="cache_new_post" value="1" <?php checked('1', $options['new_post']); ?> />
-									<?php _e("Clear the complete cache if a new post has been published (instead of only the home page cache).", "cache") ?>
+									<?php _e("Clear the complete cache if a new post has been published (instead of only the home page cache).", "cache-enabler") ?>
 								</label>
 
 								<br />
 
 								<label for="cache_new_comment">
 									<input type="checkbox" name="cache[new_comment]" id="cache_new_comment" value="1" <?php checked('1', $options['new_comment']); ?> />
-									<?php _e("Clear the complete cache if a new comment has been posted (instead of only the page specific cache).", "cache") ?>
+									<?php _e("Clear the complete cache if a new comment has been posted (instead of only the page specific cache).", "cache-enabler") ?>
 								</label>
 
 								<br />
 
 								<label for="cache_compress">
 									<input type="checkbox" name="cache[compress]" id="cache_compress" value="1" <?php checked('1', $options['compress']); ?> />
-									<?php _e("Pre-compression of cached pages. Needs to be disabled if the decoding fails in the web browser.", "cache") ?>
+									<?php _e("Pre-compression of cached pages. Needs to be disabled if the decoding fails in the web browser.", "cache-enabler") ?>
 								</label>
 
 								<br />
 
 								<label for="cache_webp">
 									<input type="checkbox" name="cache[webp]" id="cache_webp" value="1" <?php checked('1', $options['webp']); ?> />
-									<?php _e("Create an additional cached version for WebP image support. Convert your images to WebP with <a href=\"https://optimus.io/en/\" target=\"_blank\">Optimus</a>.", "cache") ?>
+									<?php _e("Create an additional cached version for WebP image support. Convert your images to WebP with <a href=\"https://optimus.io/en/\" target=\"_blank\">Optimus</a>.", "cache-enabler") ?>
 								</label>
 							</fieldset>
 						</td>
@@ -1663,13 +1712,13 @@ final class Cache_Enabler {
 
 					<tr valign="top">
 						<th scope="row">
-							<?php _e("Cache Exclusions", "cache") ?>
+							<?php _e("Cache Exclusions", "cache-enabler") ?>
 						</th>
 						<td>
 							<fieldset>
 								<label for="cache_excl_ids">
 									<input type="text" name="cache[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
-									<p class="description"><?php _e("Post or Pages IDs separated by a <code>,</code> that should not be cached.", "cache"); ?></p>
+									<p class="description"><?php _e("Post or Pages IDs separated by a <code>,</code> that should not be cached.", "cache-enabler"); ?></p>
 								</label>
 							</fieldset>
 						</td>
@@ -1677,7 +1726,7 @@ final class Cache_Enabler {
 
 					<tr valign="top">
 						<th scope="row">
-							<?php _e("Cache Minification", "cache") ?>
+							<?php _e("Cache Minification", "cache-enabler") ?>
 						</th>
 						<td>
 							<label for="cache_minify_html">
@@ -1697,12 +1746,12 @@ final class Cache_Enabler {
 							<?php submit_button() ?>
 						</th>
 						<td>
-							<p class="description"><?php _e("Saving these settings will clear the complete cache.","cache") ?></p>
+							<p class="description"><?php _e("Saving these settings will clear the complete cache.", "cache-enabler") ?></p>
 						</td>
 					</tr>
 				</table>
 			</form>
-			<p class="description"><?php _e("It is recommended to enable HTTP/2 on your origin server and use a CDN that supports HTTP/2. Avoid domain sharding and concatenation of your assets to benefit from parallelism of HTTP/2.","cache") ?></p>
+			<p class="description"><?php _e("It is recommended to enable HTTP/2 on your origin server and use a CDN that supports HTTP/2. Avoid domain sharding and concatenation of your assets to benefit from parallelism of HTTP/2.", "cache-enabler") ?></p>
 		</div><?php
 	}
 }

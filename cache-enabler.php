@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Cache Enabler
-Text Domain: cache
+Text Domain: cache-enabler
 Description: Simple and fast WordPress disk caching plugin.
 Author: KeyCDN
 Author URI: https://www.keycdn.com
@@ -38,7 +38,7 @@ define('CE_FILE', __FILE__);
 define('CE_DIR', dirname(__FILE__));
 define('CE_BASE', plugin_basename(__FILE__));
 define('CE_CACHE_DIR', WP_CONTENT_DIR. '/cache/cache-enabler');
-
+define('CE_MIN_WP', '4.1');
 
 // hooks
 add_action(

@@ -521,8 +521,11 @@ final class Cache_Enabler_Disk {
 
 	private static function _convert_webp($data) {
 
+		// convert encoding to UTF-8
+		if(function_exists('mb_convert_encoding')) $data = mb_convert_encoding($data, 'HTML-ENTITIES', 'UTF-8');
+
 		$dom = new DOMDocument();
-		@$dom->loadHTML(mb_convert_encoding($data, 'HTML-ENTITIES', 'UTF-8'));
+		@$dom->loadHTML($data);
 
 		$imgs = $dom->getElementsByTagName("img");
 

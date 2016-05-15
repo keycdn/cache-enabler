@@ -1,6 +1,6 @@
 === Cache Enabler - WordPress Cache ===
 Contributors: keycdn
-Tags: cache, caching, wordpress cache, performance, gzip, webp, http2
+Tags: cache, caching, wordpress cache, wp cache, performance, gzip, webp, http2
 Requires at least: 4.1
 Tested up to: 4.5
 Stable tag: trunk
