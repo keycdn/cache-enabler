@@ -424,7 +424,7 @@ final class Cache_Enabler_Disk {
 	* cache path
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.1.0
 	*
 	* @param   string  $path  uri or permlink
 	* @return  string  $diff  path to cached asset
@@ -446,7 +446,7 @@ final class Cache_Enabler_Disk {
 			)
 		);
 
-		if ( validate_file($path) > 0 ) {
+		if ( is_file($path) > 0 ) {
 			wp_die('Path is not valid.');
 		}
 
