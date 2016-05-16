@@ -1551,6 +1551,23 @@ final class Cache_Enabler {
 			);
 		}
 
+		// permission check
+		if ( !is_writable( CE_CACHE_DIR ) ) {
+			show_message(
+				sprintf(
+					'<div class="error"><p>%s</p></div>',
+					sprintf(
+						__('The <b>%s</b> requires write permissions %s on %s. Please <a href="%s" target="_blank">change the permissions</a>.', 'cache-enabler'),
+						'Cache Enabler',
+						'755',
+						'wp-content/cache/cache-enabler',
+						'http://codex.wordpress.org/Changing_File_Permissions',
+						CE_MIN_WP
+					)
+				)
+			);
+		}
+
 		// mb string check
 		if ( !function_exists('mb_convert_encoding') && $options['webp'] ) {
 			show_message(
