@@ -1552,7 +1552,7 @@ final class Cache_Enabler {
 		}
 
 		// permission check
-		if ( file_exists( CE_CACHE_DIR ) && is_writable( CE_CACHE_DIR ) ) {
+		if ( file_exists( CE_CACHE_DIR ) && !is_writable( CE_CACHE_DIR ) ) {
 			show_message(
 				sprintf(
 					'<div class="error"><p>%s</p></div>',
