@@ -120,6 +120,13 @@ final class Cache_Enabler {
 				'clear_total_cache'
 			)
 		);
+		add_action(
+			'autoptimize_action_cachepurged',
+			array(
+				__CLASS__,
+				'clear_total_cache'
+			)
+		);
 
         // add admin clear link
 		add_action(
