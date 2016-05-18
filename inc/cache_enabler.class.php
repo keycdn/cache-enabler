@@ -1588,6 +1588,20 @@ final class Cache_Enabler {
 				)
 			);
 		}
+
+		// autoptimize minification check
+		if ( defined('AUTOPTIMIZE_PLUGIN_DIR') && $options['minify_html'] ) {
+			show_message(
+				sprintf(
+					'<div class="error"><p>%s</p></div>',
+					sprintf(
+						__('The <b>%s</b> plugin is already active. Please disable minification in the <b>%s</b> settings.', 'cache-enabler'),
+						'Autoptimize',
+						'Cache Enabler'
+					)
+				)
+			);
+		}
 	}
 
 
