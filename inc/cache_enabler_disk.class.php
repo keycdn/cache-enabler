@@ -255,7 +255,7 @@ final class Cache_Enabler_Disk {
 	* create files
 	*
 	* @since   1.0.0
-	* @change  1.0.9
+	* @change  1.1.1
 	*
 	* @param   string  $data  html content
 	*/
@@ -283,7 +283,12 @@ final class Cache_Enabler_Disk {
 
 		// create webp supported files
 		if ($options['webp']) {
-			$converted_data = self::_convert_webp($data);
+			// magic regex rule
+			$regex_rule = '#(?<=(?:(ref|src|set)=[\"\']))(?:http[s]?[^\"\']+)(\.png|\.jp[e]?g)(?:[^\"\']+)?(?=[\"\')])#';
+
+			// call the webp converter callback
+			$converted_data = preg_replace_callback($regex_rule,'self::_convert_webp',$data);
+
 			self::_create_file( self::_file_webp_html(), $converted_data.$cache_signature." (webp) -->" );
 
 			// create pre-compressed file
@@ -514,50 +519,22 @@ final class Cache_Enabler_Disk {
 	* convert to webp
 	*
 	* @since   1.0.1
-	* @change  1.1.0
+	* @change  1.1.1
 	*
 	* @return  string  converted HTML file
 	*/
 
-	private static function _convert_webp($data) {
+	private static function _convert_webp($asset) {
 
-		// convert encoding to UTF-8
-		if(function_exists('mb_convert_encoding')) $data = mb_convert_encoding($data, 'HTML-ENTITIES', 'UTF-8');
-
-		$dom = new DOMDocument();
-		@$dom->loadHTML($data);
-
-		$imgs = $dom->getElementsByTagName("img");
-
-		foreach($imgs as $img){
-
-		    $src = $img->getAttribute('src');
-			$src_webp = self::_convert_webp_src($src);
-			if ($src != $src_webp) {
-				$img->setAttribute('src', $src_webp);
-
-				// convert srcset attributes
-				if ($img->hasAttribute('srcset')) {
-					$srcset = $img->getAttribute('srcset');
-					$img->setAttribute('srcset', self::_convert_webp_srcset($srcset));
-				}
-			}
-
+		if ($asset[1] == 'src') {
+			return self::_convert_webp_src($asset[0]);
+		} elseif ($asset[1] == 'ref') {
+			return self::_convert_webp_src($asset[0]);
+		} elseif ($asset[1] == 'set') {
+			return self::_convert_webp_srcset($asset[0]);
 		}
 
-		$img_links = $dom->getElementsByTagName("a");
-
-		foreach($img_links as $img_link){
-
-			$src = $img_link->getAttribute('href');
-			$src_webp = self::_convert_webp_src($src);
-			if ($src != $src_webp) {
-				$img_link->setAttribute('href' , $src_webp);
-			}
-
-		}
-
-		return $dom->saveHtml();
+		return $asset[0];
 
 	}
 
