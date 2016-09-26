@@ -283,11 +283,19 @@ final class Cache_Enabler {
 	* deactivation hook
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.1.1
 	*/
 
 	public static function on_deactivation() {
 		self::clear_total_cache(true);
+
+		if ( defined( 'WP_CACHE' ) && WP_CACHE ) {
+			// unset WP_CACHE
+			self::_set_wp_cache(false);
+		}
+
+		// delete advanced cache file
+		unlink(WP_CONTENT_DIR . '/advanced-cache.php');
 	}
 
 
@@ -295,7 +303,7 @@ final class Cache_Enabler {
 	* activation hook
 	*
 	* @since   1.0.0
-	* @change  1.0.0
+	* @change  1.1.1
 	*/
 
 	public static function on_activation() {
@@ -317,6 +325,14 @@ final class Cache_Enabler {
 		} else {
 			self::_install_backend();
 		}
+
+		if ( !defined( 'WP_CACHE' ) || !WP_CACHE ) {
+			// set WP_CACHE
+			self::_set_wp_cache(true);
+		}
+
+		// copy advanced cache file
+		copy(CE_DIR . '/advanced-cache.php', WP_CONTENT_DIR . '/advanced-cache.php');
 	}
 
 
@@ -361,6 +377,53 @@ final class Cache_Enabler {
 
 		// clear
 		self::clear_total_cache(true);
+	}
+
+
+	/**
+	* installation WP_CACHE (advanced cache)
+	*
+	* @since   1.1.1
+	* @change  1.1.1
+	*/
+
+	private static function _set_wp_cache($wp_cache_value = true) {
+		$wp_config_file = ABSPATH . 'wp-config.php';
+
+		if ( file_exists( $wp_config_file ) && is_writable( $wp_config_file ) ) {
+			// get wp config as array
+		    $wp_config = file( $wp_config_file );
+
+			if ($wp_cache_value) {
+		    	$wp_cache_ce_line = "define('WP_CACHE', true); // Added by Cache Enabler". "\r\n";
+			} else {
+				$wp_cache_ce_line = '';
+			}
+
+		    $found_wp_cache = false;
+
+		    foreach ( $wp_config as &$line ) {
+		        if ( preg_match( '/^\s*define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,\s*(.*)\s*\)/', $line ) ) {
+		            $line = $wp_cache_ce_line;
+		            $found_wp_cache = true;
+		            break;
+		        }
+		    }
+
+		    // add wp cache ce line if not found yet
+		    if ( ! $found_wp_cache ) {
+		        array_shift( $wp_config );
+		        array_unshift( $wp_config, "<?php\r\n", $wp_cache_ce_line );
+		    }
+
+		    // write wp-config.php file
+		    $fh = @fopen( $wp_config_file, 'w' );
+		    foreach( $wp_config as $ln ) {
+		        @fwrite( $fh, $ln );
+		    }
+
+		    @fclose( $fh );
+		}
 	}
 
 
@@ -1575,20 +1638,6 @@ final class Cache_Enabler {
 			);
 		}
 
-		// mb string check
-		if ( !function_exists('mb_convert_encoding') && $options['webp'] ) {
-			show_message(
-				sprintf(
-					'<div class="error"><p>%s</p></div>',
-					sprintf(
-						__('The <b>%s</b> WebP option requires the <a href="%s" target="_blank">PHP Multibyte String Library (php-mbstring)</a>. Please contact your hosting provider to get <b>php-mbstring</b> installed.', 'cache-enabler'),
-						'Cache Enabler',
-						'http://php.net/manual/en/book.mbstring.php'
-					)
-				)
-			);
-		}
-
 		// autoptimize minification check
 		if ( defined('AUTOPTIMIZE_PLUGIN_DIR') && $options['minify_html'] ) {
 			show_message(
@@ -1678,10 +1727,24 @@ final class Cache_Enabler {
 	* settings page
 	*
 	* @since   1.0.0
-	* @change  1.1.0
+	* @change  1.1.1
 	*/
 
-	public static function settings_page() { ?>
+	public static function settings_page() {
+
+		// wp cache check
+		if ( !defined('WP_CACHE') || !WP_CACHE ) {
+			echo sprintf(
+					'<div class="notice notice-warning"><p>%s</p></div>',
+					sprintf(
+						__("%s is not set in %s.", 'cache-enabler'),
+						"<code>define('WP_CACHE', true);</code>",
+						"wp-config.php"
+					)
+			);
+		}
+
+		?>
 
 		<div class="wrap" id="cache-settings">
 			<h2>

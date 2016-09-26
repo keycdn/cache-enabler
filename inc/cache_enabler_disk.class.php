@@ -185,7 +185,7 @@ final class Cache_Enabler_Disk {
 	public static function get_asset() {
 
 		// set cache handler header
-		header('X-Cache-Handler: php');
+		header('x-cache-handler: php');
 
 		// get if-modified request headers
 		if ( function_exists( 'apache_request_headers' ) ) {
