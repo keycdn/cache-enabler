@@ -64,6 +64,10 @@ This WordPress cache plugin is partially based on Cachify developed by [Sergej M
 
 == Changelog ==
 
+= 1.2.0 =
+* Added advanced cache feature
+* Clear cache if reply to a comment in WP admin
+
 = 1.1.0 =
 * Added the possibility to clear the cache of a specific URL
 * Supports now Windows filesystems
