@@ -64,6 +64,9 @@ This WordPress cache plugin is partially based on Cachify developed by [Sergej M
 
 == Changelog ==
 
+= 1.2.2 =
+* Fixed settings form issue
+
 = 1.2.1 =
 * Minor fixes
 

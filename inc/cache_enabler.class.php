@@ -1772,7 +1772,7 @@ final class Cache_Enabler {
     * settings page
     *
     * @since   1.0.0
-    * @change  1.1.1
+    * @change  1.2.2
     */
 
     public static function settings_page() {
@@ -1815,7 +1815,7 @@ final class Cache_Enabler {
                         <td>
                             <fieldset>
                                 <label for="cache_expires">
-                                    <input type="text" name="cache[expires]" id="cache_expires" value="<?php echo esc_attr($options['expires']) ?>" />
+                                    <input type="text" name="cache-enabler[expires]" id="cache_expires" value="<?php echo esc_attr($options['expires']) ?>" />
                                     <p class="description"><?php _e("Cache expiry in hours. An expiry time of 0 means that the cache never expires.", "cache-enabler"); ?></p>
                                 </label>
                             </fieldset>
@@ -1828,28 +1828,28 @@ final class Cache_Enabler {
                         <td>
                             <fieldset>
                                 <label for="cache_new_post">
-                                    <input type="checkbox" name="cache[new_post]" id="cache_new_post" value="1" <?php checked('1', $options['new_post']); ?> />
+                                    <input type="checkbox" name="cache-enabler[new_post]" id="cache_new_post" value="1" <?php checked('1', $options['new_post']); ?> />
                                     <?php _e("Clear the complete cache if a new post has been published (instead of only the home page cache).", "cache-enabler") ?>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_new_comment">
-                                    <input type="checkbox" name="cache[new_comment]" id="cache_new_comment" value="1" <?php checked('1', $options['new_comment']); ?> />
+                                    <input type="checkbox" name="cache-enabler[new_comment]" id="cache_new_comment" value="1" <?php checked('1', $options['new_comment']); ?> />
                                     <?php _e("Clear the complete cache if a new comment has been posted (instead of only the page specific cache).", "cache-enabler") ?>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_compress">
-                                    <input type="checkbox" name="cache[compress]" id="cache_compress" value="1" <?php checked('1', $options['compress']); ?> />
+                                    <input type="checkbox" name="cache-enabler[compress]" id="cache_compress" value="1" <?php checked('1', $options['compress']); ?> />
                                     <?php _e("Pre-compression of cached pages. Needs to be disabled if the decoding fails in the web browser.", "cache-enabler") ?>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_webp">
-                                    <input type="checkbox" name="cache[webp]" id="cache_webp" value="1" <?php checked('1', $options['webp']); ?> />
+                                    <input type="checkbox" name="cache-enabler[webp]" id="cache_webp" value="1" <?php checked('1', $options['webp']); ?> />
                                     <?php _e("Create an additional cached version for WebP image support. Convert your images to WebP with <a href=\"https://optimus.io/en/\" target=\"_blank\">Optimus</a>.", "cache-enabler") ?>
                                 </label>
                             </fieldset>
@@ -1863,7 +1863,7 @@ final class Cache_Enabler {
                         <td>
                             <fieldset>
                                 <label for="cache_excl_ids">
-                                    <input type="text" name="cache[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
+                                    <input type="text" name="cache-enabler[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
                                     <p class="description"><?php _e("Post or Pages IDs separated by a <code>,</code> that should not be cached.", "cache-enabler"); ?></p>
                                 </label>
                             </fieldset>
@@ -1876,7 +1876,7 @@ final class Cache_Enabler {
                         </th>
                         <td>
                             <label for="cache_minify_html">
-                                <select name="cache[minify_html]" id="cache_minify_html">
+                                <select name="cache-enabler[minify_html]" id="cache_minify_html">
                                     <?php foreach( self::_minify_select() as $k => $v ) { ?>
                                         <option value="<?php echo esc_attr($k) ?>" <?php selected($options['minify_html'], $k); ?>>
                                             <?php echo esc_html($v) ?>
