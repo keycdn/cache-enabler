@@ -6,7 +6,7 @@ Description: Simple and fast WordPress disk caching plugin.
 Author: KeyCDN
 Author URI: https://www.keycdn.com
 License: GPLv2 or later
-Version: 1.2.0
+Version: 1.2.1
 */
 
 /*
@@ -42,32 +42,32 @@ define('CE_MIN_WP', '4.1');
 
 // hooks
 add_action(
-	'plugins_loaded',
-	array(
-		'Cache_Enabler',
-		'instance'
-	)
+    'plugins_loaded',
+    array(
+        'Cache_Enabler',
+        'instance'
+    )
 );
 register_activation_hook(
-	__FILE__,
-	array(
-		'Cache_Enabler',
-		'on_activation'
-	)
+    __FILE__,
+    array(
+        'Cache_Enabler',
+        'on_activation'
+    )
 );
 register_deactivation_hook(
-	__FILE__,
-	array(
-		'Cache_Enabler',
-		'on_deactivation'
-	)
+    __FILE__,
+    array(
+        'Cache_Enabler',
+        'on_deactivation'
+    )
 );
 register_uninstall_hook(
-	__FILE__,
-	array(
-		'Cache_Enabler',
-		'on_uninstall'
-	)
+    __FILE__,
+    array(
+        'Cache_Enabler',
+        'on_uninstall'
+    )
 );
 
 
@@ -76,13 +76,13 @@ spl_autoload_register('cache_autoload');
 
 // autoload function
 function cache_autoload($class) {
-	if ( in_array($class, array('Cache_Enabler', 'Cache_Enabler_Disk')) ) {
-		require_once(
-			sprintf(
-				'%s/inc/%s.class.php',
-				CE_DIR,
-				strtolower($class)
-			)
-		);
-	}
+    if ( in_array($class, array('Cache_Enabler', 'Cache_Enabler_Disk')) ) {
+        require_once(
+            sprintf(
+                '%s/inc/%s.class.php',
+                CE_DIR,
+                strtolower($class)
+            )
+        );
+    }
 }

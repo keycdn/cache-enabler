@@ -381,7 +381,7 @@ final class Cache_Enabler {
     private static function _install_backend() {
 
         add_option(
-            'cache',
+            'cache-enabler',
             array()
         );
 
@@ -504,7 +504,7 @@ final class Cache_Enabler {
     private static function _uninstall_backend() {
 
         // delete options
-        delete_option('cache');
+        delete_option('cache-enabler');
 
         // clear cache
         self::clear_total_cache(true);
@@ -550,15 +550,25 @@ final class Cache_Enabler {
     * get options
     *
     * @since   1.0.0
-    * @change  1.1.0
+    * @change  1.2.1
     *
     * @return  array  options array
     */
 
     private static function _get_options() {
 
+        // decom
+        $ce_leg = get_option('cache');
+        if (!empty($ce_leg)) {
+            delete_option('cache');
+            add_option(
+                'cache-enabler',
+                $ce_leg
+            );
+        }
+
         return wp_parse_args(
-            get_option('cache'),
+            get_option('cache-enabler'),
             array(
                 'expires'        => 0,
                 'new_post'        => 0,
@@ -1717,7 +1727,7 @@ final class Cache_Enabler {
 
         register_setting(
             'cache-enabler',
-            'cache',
+            'cache-enabler',
             array(
                 __CLASS__,
                 'validate_settings'

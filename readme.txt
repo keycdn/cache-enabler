@@ -64,6 +64,9 @@ This WordPress cache plugin is partially based on Cachify developed by [Sergej M
 
 == Changelog ==
 
+= 1.2.1 =
+* Minor fixes
+
 = 1.2.0 =
 * Added advanced cache feature
 * Clear cache if reply to a comment in WP admin
