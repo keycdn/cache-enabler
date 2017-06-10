@@ -59,7 +59,7 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 
 = Credits =
-This WordPress cache plugin is partially based on Cachify developed by [Sergej Müller](https://wordpress.org/plugins/cachify/ "Author Sergej Müller").
+* Inspired by [Cachify](https://wordpress.org/plugins/cachify/).
 
 
 == Changelog ==
