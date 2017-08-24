@@ -54,6 +54,11 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 * WordPress >=4.1
 
 
+= Contribute =
+* Anyone is welcome to contribute to the plugin on [GitHub](https://github.com/keycdn/cache-enabler).
+* Please merge (squash) all your changes into a single commit before you open a pull request.
+
+
 = Maintainer =
 * [KeyCDN](https://www.keycdn.com "KeyCDN")
 
