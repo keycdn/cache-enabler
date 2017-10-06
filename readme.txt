@@ -1,7 +1,7 @@
 === Cache Enabler - WordPress Cache ===
 Contributors: keycdn
 Tags: cache, caching, wordpress cache, wp cache, performance, gzip, webp, http2
-Requires at least: 4.1
+Requires at least: 4.6
 Tested up to: 4.8
 Stable tag: trunk
 License: GPLv2 or later
@@ -50,8 +50,8 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 
 = System Requirements =
-* PHP >=5.3
-* WordPress >=4.1
+* PHP >=5.4
+* WordPress >=4.6
 
 
 = Contribute =
