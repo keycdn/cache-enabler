@@ -272,6 +272,9 @@ final class Cache_Enabler_Disk {
 
         // cache enabler options
         $options = Cache_Enabler::$options;
+        
+        //Filter HTML
+        $data = apply_filters( 'cache_html', $data );
 
         // create files
         self::_create_file( self::_file_html(), $data.$cache_signature." (html) -->" );
