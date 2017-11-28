@@ -2,7 +2,7 @@
 Contributors: keycdn
 Tags: cache, caching, wordpress cache, wp cache, performance, gzip, webp, http2
 Requires at least: 4.6
-Tested up to: 4.8
+Tested up to: 4.9
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
