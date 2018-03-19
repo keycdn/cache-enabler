@@ -1395,7 +1395,7 @@ final class Cache_Enabler {
     * clear complete cache
     *
     * @since   1.0.0
-    * @change  1.0.0
+    * @change  1.2.3
     */
 
     public static function clear_total_cache() {
@@ -1405,6 +1405,9 @@ final class Cache_Enabler {
 
         // delete transient
         delete_transient('cache_size');
+
+        // clear cache post hook
+        do_action('ce_action_cache_cleared');
     }
 
 
