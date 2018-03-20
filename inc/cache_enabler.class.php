@@ -1146,7 +1146,7 @@ final class Cache_Enabler {
     * clear page cache by url
     *
     * @since   1.0.0
-    * @change  1.0.0
+    * @change  1.2.3
     *
     * @param  string  $url  url of a page
     */
@@ -1165,6 +1165,9 @@ final class Cache_Enabler {
             ),
             $url
         );
+
+        // clear cache by url post hook
+        do_action('ce_action_cache_by_url_cleared');
     }
 
 
@@ -1172,7 +1175,7 @@ final class Cache_Enabler {
     * clear home page cache
     *
     * @since   1.0.7
-    * @change  1.0.7
+    * @change  1.2.3
     *
     */
 
@@ -1185,6 +1188,8 @@ final class Cache_Enabler {
             )
         );
 
+        // clear home page cache post hook
+        do_action('ce_action_home_page_cache_cleared');
     }
 
 
