@@ -12,8 +12,14 @@ if ( ! empty($_GET) && ! isset( $_GET['utm_source'], $_GET['utm_medium'], $_GET[
 
 // check cookie values
 if ( !empty($_COOKIE) ) {
+    if ( defined('CACHE_BYPASS_COOKIES') ) {
+        $cookies_regex = CACHE_BYPASS_COOKIES;
+    } else {
+        $cookies_regex = '/^(wp-postpass|wordpress_logged_in|comment_author)_/';
+    }
+
     foreach ( $_COOKIE as $k => $v) {
-        if ( preg_match('/^(wp-postpass|wordpress_logged_in|comment_author)_/', $k) ) {
+        if ( preg_match($cookies_regex, $k) ) {
             return false;
         }
     }
