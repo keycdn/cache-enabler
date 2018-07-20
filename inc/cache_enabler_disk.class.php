@@ -515,6 +515,35 @@ final class Cache_Enabler_Disk {
     }
 
 
+   /**
+    * set or remove expiry time file as appropriate
+    *
+    * @since   1.2.3
+    *
+    * @param   int      expiry time in hours
+    * @return  boolean  true if successful
+    */
+
+    public static function set_expires($expires) {
+        $cache_path = self::_file_path("/");
+
+        if ( $expires > 0 ) {
+            // create folder if neccessary
+            if ( ! wp_mkdir_p($cache_path) ) {
+                wp_die('Unable to create directory.');
+            }
+
+            // record expire time
+            file_put_contents( $cache_path . ".ce_expires", $expires );
+        } elseif ( file_exists($cache_path . ".ce_expires") ) {
+            // no expiry time set - make sure file isn't there
+            unlink( $cache_path . ".ce_expires" );
+        }
+
+        return true;
+    }
+
+
     /**
     * convert to webp
     *

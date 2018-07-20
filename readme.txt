@@ -69,6 +69,10 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.2.3 =
+* Fix expiry time
+* Allow to customize bypass cookies by setting CACHE_BYPASS_COOKIES
+
 = 1.2.2 =
 * Fixed settings form issue
 
