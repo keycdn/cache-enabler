@@ -26,30 +26,6 @@ if ( !empty($_COOKIE) ) {
 }
 
 // base path
-function _ce_file_path($path = NULL) {
-    $path = sprintf(
-        '%s%s%s%s',
-        WP_CONTENT_DIR . '/cache/cache-enabler',
-        DIRECTORY_SEPARATOR,
-        parse_url(
-            'http://' .strtolower($_SERVER['HTTP_HOST']),
-            PHP_URL_HOST
-        ),
-        parse_url(
-            ( $path ? $path : $_SERVER['REQUEST_URI'] ),
-            PHP_URL_PATH
-        )
-    );
-
-    if ( is_file($path) > 0 ) {
-        wp_die('Path is not valid.');
-    }
-
-    // add trailing slash
-    $path = rtrim( $path, '/\\' ) . '/';
-
-    return $path;
-}
 $path = _ce_file_path();
 
 // path to cached variants
@@ -119,4 +95,30 @@ if ( is_readable( $path_html ) ) {
 
 } else {
     return false;
+}
+
+// generate cache path
+function _ce_file_path($path = NULL) {
+    $path = sprintf(
+        '%s%s%s%s',
+        WP_CONTENT_DIR . '/cache/cache-enabler',
+        DIRECTORY_SEPARATOR,
+        parse_url(
+            'http://' .strtolower($_SERVER['HTTP_HOST']),
+            PHP_URL_HOST
+        ),
+        parse_url(
+            ( $path ? $path : $_SERVER['REQUEST_URI'] ),
+            PHP_URL_PATH
+        )
+    );
+
+    if ( is_file($path) > 0 ) {
+        wp_die('Path is not valid.');
+    }
+
+    // add trailing slash
+    $path = rtrim( $path, '/\\' ) . '/';
+
+    return $path;
 }
