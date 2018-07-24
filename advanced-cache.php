@@ -26,22 +26,7 @@ if ( !empty($_COOKIE) ) {
 }
 
 // base path
-$path = sprintf(
-    '%s%s%s%s',
-    WP_CONTENT_DIR . '/cache/cache-enabler',
-    DIRECTORY_SEPARATOR,
-    parse_url(
-        'http://' .strtolower($_SERVER['HTTP_HOST']),
-        PHP_URL_HOST
-    ),
-    parse_url(
-        $_SERVER['REQUEST_URI'],
-        PHP_URL_PATH
-    )
-);
-
-// add trailing slash
-$path = rtrim( $path, '/\\' ) . '/';
+$path = _ce_file_path();
 
 // path to cached variants
 $path_html = $path . 'index.html';
@@ -50,6 +35,17 @@ $path_webp_html = $path . 'index-webp.html';
 $path_webp_gzip = $path . 'index-webp.html.gz';
 
 if ( is_readable( $path_html ) ) {
+    // if an expiry time is set, check the file against it
+    $expires_file = _ce_file_path("/").".ce_expires";
+    if ( file_exists($expires_file) and $expires = (int)file_get_contents($expires_file) ) {
+        $now = time();
+        $expires_seconds = 3600*$expires;
+
+        // check if asset has expired
+        if ( ( filemtime($path_html) + $expires_seconds ) <= $now ) {
+            return false;
+        }
+    }
 
     // set cache handler header
     header('x-cache-handler: wp');
@@ -99,4 +95,30 @@ if ( is_readable( $path_html ) ) {
 
 } else {
     return false;
+}
+
+// generate cache path
+function _ce_file_path($path = NULL) {
+    $path = sprintf(
+        '%s%s%s%s',
+        WP_CONTENT_DIR . '/cache/cache-enabler',
+        DIRECTORY_SEPARATOR,
+        parse_url(
+            'http://' .strtolower($_SERVER['HTTP_HOST']),
+            PHP_URL_HOST
+        ),
+        parse_url(
+            ( $path ? $path : $_SERVER['REQUEST_URI'] ),
+            PHP_URL_PATH
+        )
+    );
+
+    if ( is_file($path) > 0 ) {
+        wp_die('Path is not valid.');
+    }
+
+    // add trailing slash
+    $path = rtrim( $path, '/\\' ) . '/';
+
+    return $path;
 }

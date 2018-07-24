@@ -1754,7 +1754,7 @@ final class Cache_Enabler {
     * validate settings
     *
     * @since   1.0.0
-    * @change  1.0.9
+    * @change  1.2.3
     *
     * @param   array  $data  array form data
     * @return  array         array form data valid
@@ -1769,6 +1769,9 @@ final class Cache_Enabler {
 
         // clear complete cache
         self::clear_total_cache(true);
+
+        // record expiry time value for advanced-cache.php
+        Cache_Enabler_Disk::set_expires($data['expires']);
 
         return array(
             'expires'        => (int)$data['expires'],
