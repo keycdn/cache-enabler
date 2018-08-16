@@ -71,7 +71,12 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 = 1.2.3 =
 * Fix expiry time
-* Allow to customize bypass cookies by setting CACHE_BYPASS_COOKIES
+* Allow to customize bypass cookies
+* Fix Autoptimize config warning
+* Pages can now be excluded from cache by a path matching regex
+* Plugin upgrades can now trigger cache clear
+* Scheduled posts and drafts are now properly handled
+* A missing trailing slash will now redirect like wordpress does by default
 
 = 1.2.2 =
 * Fixed settings form issue

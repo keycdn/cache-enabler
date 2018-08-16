@@ -63,7 +63,7 @@ final class Cache_Enabler {
     * constructor
     *
     * @since   1.0.0
-    * @change  1.2.0
+    * @change  1.2.3
     *
     * @param   void
     * @return  void
@@ -115,9 +115,18 @@ final class Cache_Enabler {
         );
         add_action(
             'wp_trash_post',
+            function( $post_id ) {
+                if ( get_post_status ( $post_id ) == 'publish' ) {
+                    self::clear_total_cache();
+                }
+                self::check_future_posts();
+            }
+        );
+        add_action(
+            'save_post',
             array(
                 __CLASS__,
-                'clear_total_cache'
+                'check_future_posts'
             )
         );
         add_action(
@@ -126,6 +135,14 @@ final class Cache_Enabler {
                 __CLASS__,
                 'clear_total_cache'
             )
+        );
+        add_action(
+            'upgrader_process_complete',
+            function() {
+                if ( self::$options['clear_on_upgrade'] ) {
+                    self::clear_total_cache();
+                }
+            }
         );
 
         // add admin clear link
@@ -550,7 +567,7 @@ final class Cache_Enabler {
     * get options
     *
     * @since   1.0.0
-    * @change  1.2.1
+    * @change  1.2.3
     *
     * @return  array  options array
     */
@@ -570,13 +587,17 @@ final class Cache_Enabler {
         return wp_parse_args(
             get_option('cache-enabler'),
             array(
-                'expires'        => 0,
-                'new_post'        => 0,
-                'new_comment'     => 0,
-                'compress'         => 0,
-                'webp'            => 0,
-                'excl_ids'         => '',
-                'minify_html'     => self::MINIFY_DISABLED,
+                'expires'           => 0,
+                'new_post'          => 0,
+                'new_comment'       => 0,
+                'compress'          => 0,
+                'webp'              => 0,
+                'clear_on_upgrade'  => 0,
+                'excl_ids'          => '',
+                'excl_regexp'       => '',
+                'excl_cookies'      => '',
+                'excl_querystrings' => '',
+                'minify_html'       => self::MINIFY_DISABLED,
             )
         );
     }
@@ -1017,7 +1038,7 @@ final class Cache_Enabler {
     * register publish hooks for custom post types
     *
     * @since   1.0.0
-    * @since   1.0.0
+    * @since   1.2.3
     *
     * @param   void
     * @return  void
@@ -1048,10 +1069,14 @@ final class Cache_Enabler {
             );
             add_action(
                 'publish_future_' .$post_type,
-                array(
-                    __CLASS__,
-                    'clear_total_cache'
-                )
+                function( $post_id ) {
+                    // clear complete cache if option enabled
+                    if ( self::$options['new_post'] ) {
+                        self::clear_total_cache();
+                    } else {
+                        self::clear_home_page_cache();
+                    }
+                }
             );
         }
     }
@@ -1194,21 +1219,6 @@ final class Cache_Enabler {
 
 
     /**
-    * explode on comma
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @param   string  $input  input string
-    * @return  array           array of strings
-    */
-
-    private static function _preg_split($input) {
-        return (array)preg_split('/,/', $input, -1, PREG_SPLIT_NO_EMPTY);
-    }
-
-
-    /**
     * check if index.php
     *
     * @since   1.0.0
@@ -1258,8 +1268,9 @@ final class Cache_Enabler {
         }
 
         // check cookie values
-        if ( defined('CACHE_BYPASS_COOKIES') ) {
-            $cookies_regex = CACHE_BYPASS_COOKIES;
+        $options = self::$options;
+        if ( $options['excl_cookies'] ) {
+            $cookies_regex = $options['excl_cookies'];
         } else {
             $cookies_regex = '/^(wp-postpass|wordpress_logged_in|comment_author)_/';
         }
@@ -1271,12 +1282,44 @@ final class Cache_Enabler {
         }
     }
 
+    private static function warn_deprecated_option($option) { ?>
+        <div class="notice notice-warning">
+        <p><b>Cache Enabler</b> -- Using <?php printf( __('%s', 'cache-enabler'), $option ); ?>
+        has been deprecated and will be removed in a future release. Please move the
+        configuration over to the regular cache-enabler settings.</p>
+        </div>
+    <?php
+    }
+
+    /**
+    * check if there are post to be published in the future
+    *
+    * @since   1.2.3
+    *
+    * @return  void
+    *
+    */
+
+    public static function check_future_posts() {
+
+        $future_posts = new WP_Query(array('post_status' => array('future')));
+
+        if ( $future_posts->have_posts() ) {
+            $post_dates = array_column($future_posts->get_posts(), "post_date");
+            sort($post_dates);
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "cache_timeout" => strtotime($post_dates[0])));
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array("cache_timeout"));
+        }
+    }
+
 
     /**
     * check to bypass the cache
     *
     * @since   1.0.0
-    * @change  1.0.7
+    * @change  1.2.3
     *
     * @return  boolean  true if exception
     *
@@ -1308,9 +1351,18 @@ final class Cache_Enabler {
             return true;
         }
 
-        // Request with query strings
-        if ( ! empty($_GET) && ! isset( $_GET['utm_source'], $_GET['utm_medium'], $_GET['utm_campaign'] ) && get_option('permalink_structure') ) {
-            return true;
+        // whitelisted query strings
+        if ( $options['excl_querystings'] ) {
+            $query_strings_regex = $options['excl_querystrings'];
+        } else {
+            $query_strings_regex = '/^utm_(source|medium|campaign|term|content)/';
+        }
+
+        // check request query strings
+        foreach ( (array)$_GET as $key => $value ) {
+            if ( preg_match($query_strings_regex, $key) ) {
+                return true;
+            }
         }
 
         // if logged in
@@ -1325,7 +1377,16 @@ final class Cache_Enabler {
 
         // if post id excluded
         if ( $options['excl_ids'] && is_singular() ) {
-            if ( in_array( $GLOBALS['wp_query']->get_queried_object_id(), self::_preg_split($options['excl_ids']) ) ) {
+            if ( in_array( $GLOBALS['wp_query']->get_queried_object_id(), (array)explode(',', $options['excl_ids']) ) ) {
+                return true;
+            }
+        }
+
+        // if post path excluded
+        if ( $options['excl_regexp'] && is_singular() ) {
+            $url_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+            if ( preg_match($options['excl_regexp'], $url_path) ) {
                 return true;
             }
         }
@@ -1491,6 +1552,11 @@ final class Cache_Enabler {
         // check if expired
         if ( $expired ) {
             ob_start('Cache_Enabler::set_cache');
+            return;
+        }
+
+        // check if we are missing a trailing slash
+        if ( self::missing_trailing_slash() ) {
             return;
         }
 
@@ -1698,7 +1764,7 @@ final class Cache_Enabler {
         }
 
         // autoptimize minification check
-        if ( defined('AUTOPTIMIZE_PLUGIN_DIR') && $options['minify_html'] ) {
+        if ( defined('AUTOPTIMIZE_PLUGIN_DIR') && $options['minify_html'] && get_option('autoptimize_html', '') != '' ) {
             show_message(
                 sprintf(
                     '<div class="error"><p>%s</p></div>',
@@ -1729,6 +1795,35 @@ final class Cache_Enabler {
         );
     }
 
+    /**
+     * missing training slash
+     *
+     * we only have to really check that in advanced-cache.php
+     *
+     * @since 1.2.3
+     *
+     * @return boolean  true if we need to redirct, otherwise false
+     */
+
+    public static function missing_trailing_slash() {
+        if ( ($permalink_structure = get_option('permalink_structure')) &&
+             preg_match("/\/$/", $permalink_structure) ) {
+
+            // record permalink structure for advanced-cache
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "permalink_trailing_slash" => true
+            ));
+
+            if ( ! preg_match("/\/$/", $_SERVER["REQUEST_URI"]) ) {
+                return true;
+            }
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array(
+                "permalink_trailing_slash"));
+        }
+
+        return false;
+    }
 
     /**
     * register settings
@@ -1751,6 +1846,32 @@ final class Cache_Enabler {
 
 
     /**
+    * validate regexps
+    *
+    * @since   1.2.3
+    *
+    * @param   string  $re   string containing regexps
+    * @return  string        string containing regexps or emty string if input invalid
+    */
+
+    public static function validate_regexps($re) {
+        if ( $re != '' ) {
+
+            if ( ! preg_match('/^\/.*\/$/', $re) ) {
+                $re = '/'.$re.'/';
+            }
+
+            if ( @preg_match($re, null) === false ) {
+                return '';
+            }
+
+            return sanitize_text_field($re);
+        }
+
+        return '';
+    }
+
+    /**
     * validate settings
     *
     * @since   1.0.0
@@ -1770,17 +1891,45 @@ final class Cache_Enabler {
         // clear complete cache
         self::clear_total_cache(true);
 
+        // ignore result, but call for settings recording
+        self::missing_trailing_slash();
+
         // record expiry time value for advanced-cache.php
-        Cache_Enabler_Disk::set_expires($data['expires']);
+        if ( $data['expires'] > 0 ){
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "expires" => $data['expires']));
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array("expires"));
+        }
+
+        // custom cookie exceptions
+        if ( strlen($data["excl_cookies"]) > 0 ) {
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "excl_cookies" => $data["excl_cookies"]));
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array("excl_cookies"));
+        }
+
+        // custom querystrings exceptions
+        if ( strlen($data["excl_querystrings"]) > 0 ) {
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "excl_querystrings" => $data["excl_querystrings"]));
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array("excl_querystrings"));
+        }
 
         return array(
-            'expires'        => (int)$data['expires'],
-            'new_post'     => (int)(!empty($data['new_post'])),
-            'new_comment'     => (int)(!empty($data['new_comment'])),
-            'webp'            => (int)(!empty($data['webp'])),
-            'compress'        => (int)(!empty($data['compress'])),
-            'excl_ids'         => (string)sanitize_text_field(@$data['excl_ids']),
-            'minify_html'     => (int)$data['minify_html']
+            'expires'           => (int)$data['expires'],
+            'new_post'          => (int)(!empty($data['new_post'])),
+            'new_comment'       => (int)(!empty($data['new_comment'])),
+            'webp'              => (int)(!empty($data['webp'])),
+            'clear_on_upgrade'  => (int)(!empty($data['clear_on_upgrade'])),
+            'compress'          => (int)(!empty($data['compress'])),
+            'excl_ids'          => (string)sanitize_text_field(@$data['excl_ids']),
+            'excl_regexp'       => (string)self::validate_regexps(@$data['excl_regexp']),
+            'excl_cookies'      => (string)self::validate_regexps(@$data['excl_cookies']),
+            'excl_querystrings' => (string)self::validate_regexps(@$data['excl_querystrings']),
+            'minify_html'       => (int)$data['minify_html']
         );
     }
 
@@ -1789,7 +1938,7 @@ final class Cache_Enabler {
     * settings page
     *
     * @since   1.0.0
-    * @change  1.2.2
+    * @change  1.2.3
     */
 
     public static function settings_page() {
@@ -1869,6 +2018,13 @@ final class Cache_Enabler {
                                     <input type="checkbox" name="cache-enabler[webp]" id="cache_webp" value="1" <?php checked('1', $options['webp']); ?> />
                                     <?php _e("Create an additional cached version for WebP image support. Convert your images to WebP with <a href=\"https://optimus.io/en/\" target=\"_blank\">Optimus</a>.", "cache-enabler") ?>
                                 </label>
+
+                                <br />
+
+                                <label for="cache_clear_on_upgrade">
+                                    <input type="checkbox" name="cache-enabler[clear_on_upgrade]" id="cache_clear_on_upgrade" value="1" <?php checked('1', $options['clear_on_upgrade']); ?> />
+                                    <?php _e("Clear the complete cache if any plugin has been upgraded.", "cache-enabler") ?>
+                                </label>
                             </fieldset>
                         </td>
                     </tr>
@@ -1882,6 +2038,30 @@ final class Cache_Enabler {
                                 <label for="cache_excl_ids">
                                     <input type="text" name="cache-enabler[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
                                     <p class="description"><?php _e("Post or Pages IDs separated by a <code>,</code> that should not be cached.", "cache-enabler"); ?></p>
+                                </label>
+
+                                <br />
+
+                                <label for="cache_excl_regexp">
+                                    <input type="text" name="cache-enabler[excl_regexp]" id="cache_excl_regexp" value="<?php echo esc_attr($options['excl_regexp']) ?>" />
+                                    <p class="description"><?php _e("Regexp matching page paths that should not be cached. e.g. <code>/(^\/$|\/robot\/$|^\/2018\/.*\/test\/)/</code>", "cache-enabler"); ?></p>
+                                </label>
+
+                                <br />
+
+                                <label for="cache_excl_cookies">
+                                    <input type="text" name="cache-enabler[excl_cookies]" id="cache_excl_cookies" value="<?php echo esc_attr($options['excl_cookies']) ?>" />
+                                    <p class="description"><?php _e("Regexp matching cookies that should cause the cache to be bypassed. <br>
+                                        <nobr>e.g. <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code></nobr><br>
+                                        default if unset: <nobr><code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code></nobr>", "cache-enabler"); ?></p>
+                                </label>
+
+                                <br />
+
+                                <label for="cache_excl_querystrings">
+                                    <input type="text" name="cache-enabler[excl_querystrings]" id="cache_excl_querystrings" value="<?php echo esc_attr($options['excl_querystrings']) ?>" />
+                                    <p class="description"><?php _e("Regexp matching query strings that should cause the cache to be bypassed. <br>
+                                        default if unset: <nobr><code>/^utm_(source|medium|campaign|term|content)/</code></nobr>", "cache-enabler"); ?></p>
                                 </label>
                             </fieldset>
                         </td>
