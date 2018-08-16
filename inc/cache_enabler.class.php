@@ -1282,14 +1282,6 @@ final class Cache_Enabler {
         }
     }
 
-    private static function warn_deprecated_option($option) { ?>
-        <div class="notice notice-warning">
-        <p><b>Cache Enabler</b> -- Using <?php printf( __('%s', 'cache-enabler'), $option ); ?>
-        has been deprecated and will be removed in a future release. Please move the
-        configuration over to the regular cache-enabler settings.</p>
-        </div>
-    <?php
-    }
 
     /**
     * check if there are post to be published in the future
