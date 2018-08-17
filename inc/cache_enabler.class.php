@@ -138,12 +138,10 @@ final class Cache_Enabler {
         );
         add_action(
             'upgrader_process_complete',
-            function() {
-                if ( self::$options['clear_on_upgrade'] ) {
-                    self::clear_total_cache();
-                }
-            }
-        );
+            array(
+                __CLASS__,
+                'on_upgrade_hook'
+            ), 10, 2);
 
         // add admin clear link
         add_action(
@@ -359,6 +357,42 @@ final class Cache_Enabler {
         }
 
         // copy advanced cache file
+        copy(CE_DIR . '/advanced-cache.php', WP_CONTENT_DIR . '/advanced-cache.php');
+    }
+
+
+    /**
+     * upgrade hook actions
+     *
+     * @since 1.2.3
+     */
+
+    public static function on_upgrade_hook( $obj, $options ) {
+        // clear cache on other plugins being upgraded
+        if ( self::$options['clear_on_upgrade'] ) {
+            self::clear_total_cache();
+        }
+
+        // check if we got upgraded ourselves
+        if ( $options['action'] == 'update' && $options['type'] == 'plugin' ) {
+            foreach ( $options['plugins'] as $each_plugin ) {
+                if ( preg_match("/^cache-enabler\//", $each_plugin) ) {
+                    // we got updated!
+                    self::on_upgrade();
+                }
+            }
+        }
+    }
+
+
+    /**
+     * upgrade actions
+     *
+     * @since 1.2.3
+     */
+
+    public static function on_upgrade() {
+        // copy advanced cache file which might have changed
         copy(CE_DIR . '/advanced-cache.php', WP_CONTENT_DIR . '/advanced-cache.php');
     }
 
@@ -1269,7 +1303,7 @@ final class Cache_Enabler {
 
         // check cookie values
         $options = self::$options;
-        if ( $options['excl_cookies'] ) {
+        if ( isset($options['excl_cookies']) ) {
             $cookies_regex = $options['excl_cookies'];
         } else {
             $cookies_regex = '/^(wp-postpass|wordpress_logged_in|comment_author)_/';
@@ -1344,7 +1378,7 @@ final class Cache_Enabler {
         }
 
         // whitelisted query strings
-        if ( $options['excl_querystings'] ) {
+        if ( isset($options['excl_querystings']) ) {
             $query_strings_regex = $options['excl_querystrings'];
         } else {
             $query_strings_regex = '/^utm_(source|medium|campaign|term|content)/';
@@ -1375,7 +1409,7 @@ final class Cache_Enabler {
         }
 
         // if post path excluded
-        if ( $options['excl_regexp'] && is_singular() ) {
+        if ( isset($options['excl_regexp']) && is_singular() ) {
             $url_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
             if ( preg_match($options['excl_regexp'], $url_path) ) {
@@ -1463,6 +1497,8 @@ final class Cache_Enabler {
     */
 
     public static function clear_total_cache() {
+        // we need this here to update advanced-cache.php for the 1.2.3 upgrade
+        self::on_upgrade();
 
         // clear disk cache
         Cache_Enabler_Disk::clear_cache();
