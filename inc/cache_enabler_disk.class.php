@@ -515,30 +515,115 @@ final class Cache_Enabler_Disk {
     }
 
 
+    /**
+     * read settings file
+     *
+     * @since 1.2.3
+     *
+     * @return array  settings or emtpy
+     */
+
+    private static function _read_settings($settings_file) {
+        if (! file_exists($settings_file) ) {
+            return [];
+        }
+
+        @include $settings_file;
+
+        return isset($settings) ? $settings : [];
+    }
+
+
+    /**
+     * write settings file
+     *
+     * @since 1.2.3
+     *
+     * @return void
+     */
+
+    private static function _write_settings($settings_file, $settings) {
+        $settings = var_export($settings, true);
+
+        // Write to temp file first to ensure atomicity
+        $tmp = $settings_file .".". uniqid('', true) .".tmp";
+
+        file_put_contents($tmp, '<?php $settings = ' . $settings .';', LOCK_EX);
+        rename($tmp, $settings_file);
+    }
+
+
    /**
-    * set or remove expiry time file as appropriate
+    * record settings for advanced-cache.php
     *
     * @since   1.2.3
     *
-    * @param   int      expiry time in hours
+    * @param   array    settings as array pairs
     * @return  boolean  true if successful
     */
 
-    public static function set_expires($expires) {
-        $cache_path = self::_file_path("/");
+    public static function record_advcache_settings($settings) {
+        $settings_file = sprintf('%s-%s.settings',
+            WP_CONTENT_DIR. "/cache/cache-enabler-advcache",
+            parse_url(
+                'http://' .strtolower($_SERVER['HTTP_HOST']),
+                PHP_URL_HOST
+            )
+        );
 
-        if ( $expires > 0 ) {
-            // create folder if neccessary
-            if ( ! wp_mkdir_p($cache_path) ) {
-                wp_die('Unable to create directory.');
-            }
-
-            // record expire time
-            file_put_contents( $cache_path . ".ce_expires", $expires );
-        } elseif ( file_exists($cache_path . ".ce_expires") ) {
-            // no expiry time set - make sure file isn't there
-            unlink( $cache_path . ".ce_expires" );
+        // create folder if neccessary
+        if ( ! wp_mkdir_p(dirname($settings_file)) ) {
+            wp_die('Unable to create directory.');
         }
+
+        // merge with old settings
+        $settings = array_merge(self::_read_settings($settings_file), $settings);
+
+        // update settings file
+        //file_put_contents( $settings_file, wp_json_encode($settings) );
+        self::_write_settings($settings_file, $settings);
+
+        return true;
+    }
+
+
+   /**
+    * delete settings for advanced-cache.php
+    *
+    * @since   1.2.3
+    *
+    * @param   array    settings as array or empty for delete all
+    * @return  boolean  true if successful
+    */
+
+    public static function delete_advcache_settings($settings = array()) {
+        $settings_file = sprintf('%s-%s.settings',
+            WP_CONTENT_DIR. "/cache/cache-enabler-advcache",
+            parse_url(
+                'http://' .strtolower($_SERVER['HTTP_HOST']),
+                PHP_URL_HOST
+            )
+        );
+
+        if ( ! file_exists($settings_file) ) {
+            return true;
+        } elseif (empty($settings)) {
+            unlink($settings_file);
+            return true;
+        }
+
+        $settings = array_merge(self::_read_settings($settings_file), $settings);
+        foreach ($settings as $key) {
+            unset($settings[$key]);
+        }
+
+        if (empty($settings)) {
+            unlink($settings_file);
+            return true;
+        }
+
+        // update settings file
+        self::_write_settings($settings_file, $settings);
 
         return true;
     }
@@ -605,7 +690,6 @@ final class Cache_Enabler_Disk {
                     return $src_webp_appended;
                 }
             }
-
         }
 
         return $src;
