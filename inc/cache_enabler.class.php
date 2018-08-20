@@ -1218,7 +1218,7 @@ final class Cache_Enabler {
     */
 
     private static function _is_index() {
-        return basename($_SERVER['SCRIPT_NAME']) != 'index.php';
+        return strtolower(basename($_SERVER['SCRIPT_NAME'])) != 'index.php';
     }
 
 
