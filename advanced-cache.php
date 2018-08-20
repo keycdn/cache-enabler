@@ -31,7 +31,7 @@ $settings_file = sprintf('%s-%s.settings',
 $settings = _read_settings($settings_file);
 
 // whitelisted query strings
-if ( isset($settings['excl_querystings']) ) {
+if ( isset($settings['excl_querystings']) && $settings['excl_querystings'] != '' ) {
     $query_strings_regex = $options['excl_querystrings'];
 } else {
     $query_strings_regex = '/^utm_(source|medium|campaign|term|content)/';
@@ -47,7 +47,7 @@ foreach ( (array)$_GET as $key => $value ) {
 // check cookie values
 if ( !empty($_COOKIE) ) {
     // check cookie values
-    if ( isset($settings['excl_cookies']) ) {
+    if ( isset($settings['excl_cookies']) && $settings['excl_cookies'] != '' ) {
         // if custom cookie regexps exist, we merge them
         $cookies_regex = $settings['excl_cookies'];
     } else {
