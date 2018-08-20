@@ -1303,7 +1303,7 @@ final class Cache_Enabler {
 
         // check cookie values
         $options = self::$options;
-        if ( isset($options['excl_cookies']) && $options['excl_cookies'] != '' ) {
+        if ( !empty($options['excl_cookies']) ) {
             $cookies_regex = $options['excl_cookies'];
         } else {
             $cookies_regex = '/^(wp-postpass|wordpress_logged_in|comment_author)_/';
@@ -1378,7 +1378,7 @@ final class Cache_Enabler {
         }
 
         // whitelisted query strings
-        if ( isset($options['excl_querystings']) && $options['excl_querystings'] != '' ) {
+        if ( !empty($options['excl_querystings']) ) {
             $query_strings_regex = $options['excl_querystrings'];
         } else {
             $query_strings_regex = '/^utm_(source|medium|campaign|term|content)/';
@@ -1409,7 +1409,7 @@ final class Cache_Enabler {
         }
 
         // if post path excluded
-        if ( isset($options['excl_regexp']) && $options['excl_regexp'] != '' && is_singular() ) {
+        if ( !empty($options['excl_regexp']) && is_singular() ) {
             $url_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
             if ( preg_match($options['excl_regexp'], $url_path) ) {
