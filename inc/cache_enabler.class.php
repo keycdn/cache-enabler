@@ -1409,7 +1409,7 @@ final class Cache_Enabler {
         }
 
         // if post path excluded
-        if ( !empty($options['excl_regexp']) && is_singular() ) {
+        if ( !empty($options['excl_regexp']) ) {
             $url_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
             if ( preg_match($options['excl_regexp'], $url_path) ) {

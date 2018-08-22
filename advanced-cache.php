@@ -31,6 +31,15 @@ $settings_file = sprintf('%s-%s%s.json',
 );
 $settings = _read_settings($settings_file);
 
+// if post path excluded
+if ( !empty($settings['excl_regexp']) ) {
+    $url_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    if ( preg_match($settings['excl_regexp'], $url_path) ) {
+        return false;
+    }
+}
+
 // whitelisted query strings
 if ( !empty($settings['excl_querystrings']) ) {
     $query_strings_regex = $settings['excl_querystrings'];
