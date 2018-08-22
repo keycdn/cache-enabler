@@ -21,18 +21,28 @@ if ( ! is_readable( $path_html ) ) {
 }
 
 // check if there are settings passed out to us
-$settings_file = sprintf('%s-%s.settings',
+$settings_file = sprintf('%s-%s%s.json',
     WP_CONTENT_DIR. "/cache/cache-enabler-advcache",
     parse_url(
         'http://' .strtolower($_SERVER['HTTP_HOST']),
         PHP_URL_HOST
-    )
+    ),
+    is_multisite() ? '-'. get_current_blog_id() : ''
 );
 $settings = _read_settings($settings_file);
 
+// if post path excluded
+if ( !empty($settings['excl_regexp']) ) {
+    $url_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    if ( preg_match($settings['excl_regexp'], $url_path) ) {
+        return false;
+    }
+}
+
 // whitelisted query strings
-if ( !empty($settings['excl_querystings']) ) {
-    $query_strings_regex = $options['excl_querystrings'];
+if ( !empty($settings['excl_querystrings']) ) {
+    $query_strings_regex = $settings['excl_querystrings'];
 } else {
     $query_strings_regex = '/^utm_(source|medium|campaign|term|content)/';
 }
@@ -169,7 +179,10 @@ function _read_settings($settings_file) {
         return [];
     }
 
-    @include $settings_file;
+    if ( ! $settings = json_decode(file_get_contents($settings_file), true) ) {
+        // if there is an error reading our settings
+        return [];
+    }
 
-    return isset($settings) ? $settings : [];
+    return $settings;
 }

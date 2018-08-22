@@ -528,9 +528,12 @@ final class Cache_Enabler_Disk {
             return [];
         }
 
-        @include $settings_file;
+        if ( ! $settings = json_decode(file_get_contents($settings_file), true) ) {
+            // if there is an error reading our settings
+            return [];
+        }
 
-        return isset($settings) ? $settings : [];
+        return $settings;
     }
 
 
@@ -543,13 +546,7 @@ final class Cache_Enabler_Disk {
      */
 
     private static function _write_settings($settings_file, $settings) {
-        $settings = var_export($settings, true);
-
-        // Write to temp file first to ensure atomicity
-        $tmp = $settings_file .".". uniqid('', true) .".tmp";
-
-        file_put_contents($tmp, '<?php $settings = ' . $settings .';', LOCK_EX);
-        rename($tmp, $settings_file);
+        file_put_contents( $settings_file, wp_json_encode($settings) );
     }
 
 
@@ -563,12 +560,13 @@ final class Cache_Enabler_Disk {
     */
 
     public static function record_advcache_settings($settings) {
-        $settings_file = sprintf('%s-%s.settings',
+        $settings_file = sprintf('%s-%s%s.json',
             WP_CONTENT_DIR. "/cache/cache-enabler-advcache",
             parse_url(
                 'http://' .strtolower($_SERVER['HTTP_HOST']),
                 PHP_URL_HOST
-            )
+            ),
+            is_multisite() ? '-'. get_current_blog_id() : ''
         );
 
         // create folder if neccessary
@@ -580,7 +578,6 @@ final class Cache_Enabler_Disk {
         $settings = array_merge(self::_read_settings($settings_file), $settings);
 
         // update settings file
-        //file_put_contents( $settings_file, wp_json_encode($settings) );
         self::_write_settings($settings_file, $settings);
 
         return true;
@@ -596,25 +593,25 @@ final class Cache_Enabler_Disk {
     * @return  boolean  true if successful
     */
 
-    public static function delete_advcache_settings($settings = array()) {
-        $settings_file = sprintf('%s-%s.settings',
+    public static function delete_advcache_settings($remsettings = array()) {
+        $settings_file = sprintf('%s-%s%s.json',
             WP_CONTENT_DIR. "/cache/cache-enabler-advcache",
             parse_url(
                 'http://' .strtolower($_SERVER['HTTP_HOST']),
                 PHP_URL_HOST
-            )
+            ),
+            is_multisite() ? '-'. get_current_blog_id() : ''
         );
 
-        if ( ! file_exists($settings_file) ) {
-            return true;
-        } elseif (empty($settings)) {
-            unlink($settings_file);
+        if ( ! file_exists($settings_file) or empty($remsettings)) {
             return true;
         }
 
-        $settings = array_merge(self::_read_settings($settings_file), $settings);
-        foreach ($settings as $key) {
-            unset($settings[$key]);
+        $settings = self::_read_settings($settings_file);
+        foreach ($remsettings as $key) {
+            if ( array_key_exists($key, $settings) ) {
+                unset($settings[$key]);
+            }
         }
 
         if (empty($settings)) {

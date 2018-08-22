@@ -1378,7 +1378,7 @@ final class Cache_Enabler {
         }
 
         // whitelisted query strings
-        if ( !empty($options['excl_querystings']) ) {
+        if ( !empty($options['excl_querystrings']) ) {
             $query_strings_regex = $options['excl_querystrings'];
         } else {
             $query_strings_regex = '/^utm_(source|medium|campaign|term|content)/';
@@ -1409,7 +1409,7 @@ final class Cache_Enabler {
         }
 
         // if post path excluded
-        if ( !empty($options['excl_regexp']) && is_singular() ) {
+        if ( !empty($options['excl_regexp']) ) {
             $url_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
             if ( preg_match($options['excl_regexp'], $url_path) ) {
@@ -1928,6 +1928,14 @@ final class Cache_Enabler {
                 "expires" => $data['expires']));
         } else {
             Cache_Enabler_Disk::delete_advcache_settings(array("expires"));
+        }
+
+        // path bypass regexp
+        if ( strlen($data["excl_regexp"]) > 0 ) {
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "excl_regexp" => $data["excl_regexp"]));
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array("excl_regexp"));
         }
 
         // custom cookie exceptions
