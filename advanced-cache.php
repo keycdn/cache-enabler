@@ -40,18 +40,9 @@ if ( !empty($settings['excl_regexp']) ) {
     }
 }
 
-// whitelisted query strings
-if ( !empty($settings['excl_querystrings']) ) {
-    $query_strings_regex = $settings['excl_querystrings'];
-} else {
-    $query_strings_regex = '/^utm_(source|medium|campaign|term|content)/';
-}
-
-// check request query strings
-foreach ( (array)$_GET as $key => $value ) {
-    if ( preg_match($query_strings_regex, $key) ) {
-        return false;
-    }
+// check if request with query strings
+if ( ! empty($_GET) && ! isset( $_GET['utm_source'], $_GET['utm_medium'], $_GET['utm_campaign'] ) ) {
+    return false;
 }
 
 // check cookie values

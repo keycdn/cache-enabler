@@ -630,7 +630,6 @@ final class Cache_Enabler {
                 'excl_ids'          => '',
                 'excl_regexp'       => '',
                 'excl_cookies'      => '',
-                'excl_querystrings' => '',
                 'minify_html'       => self::MINIFY_DISABLED,
             )
         );
@@ -1377,18 +1376,9 @@ final class Cache_Enabler {
             return true;
         }
 
-        // whitelisted query strings
-        if ( !empty($options['excl_querystrings']) ) {
-            $query_strings_regex = $options['excl_querystrings'];
-        } else {
-            $query_strings_regex = '/^utm_(source|medium|campaign|term|content)/';
-        }
-
-        // check request query strings
-        foreach ( (array)$_GET as $key => $value ) {
-            if ( preg_match($query_strings_regex, $key) ) {
-                return true;
-            }
+        // Request with query strings
+        if ( ! empty($_GET) && ! isset( $_GET['utm_source'], $_GET['utm_medium'], $_GET['utm_campaign'] ) && get_option('permalink_structure') ) {
+            return true;
         }
 
         // if logged in
@@ -1946,14 +1936,6 @@ final class Cache_Enabler {
             Cache_Enabler_Disk::delete_advcache_settings(array("excl_cookies"));
         }
 
-        // custom querystrings exceptions
-        if ( strlen($data["excl_querystrings"]) > 0 ) {
-            Cache_Enabler_Disk::record_advcache_settings(array(
-                "excl_querystrings" => $data["excl_querystrings"]));
-        } else {
-            Cache_Enabler_Disk::delete_advcache_settings(array("excl_querystrings"));
-        }
-
         return array(
             'expires'           => (int)$data['expires'],
             'new_post'          => (int)(!empty($data['new_post'])),
@@ -1964,7 +1946,6 @@ final class Cache_Enabler {
             'excl_ids'          => (string)sanitize_text_field(@$data['excl_ids']),
             'excl_regexp'       => (string)self::validate_regexps(@$data['excl_regexp']),
             'excl_cookies'      => (string)self::validate_regexps(@$data['excl_cookies']),
-            'excl_querystrings' => (string)self::validate_regexps(@$data['excl_querystrings']),
             'minify_html'       => (int)$data['minify_html']
         );
     }
@@ -2090,14 +2071,6 @@ final class Cache_Enabler {
                                     <p class="description"><?php _e("Regexp matching cookies that should cause the cache to be bypassed. <br>
                                         <nobr>e.g. <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code></nobr><br>
                                         default if unset: <nobr><code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code></nobr>", "cache-enabler"); ?></p>
-                                </label>
-
-                                <br />
-
-                                <label for="cache_excl_querystrings">
-                                    <input type="text" name="cache-enabler[excl_querystrings]" id="cache_excl_querystrings" value="<?php echo esc_attr($options['excl_querystrings']) ?>" />
-                                    <p class="description"><?php _e("Regexp matching query strings that should cause the cache to be bypassed. <br>
-                                        default if unset: <nobr><code>/^utm_(source|medium|campaign|term|content)/</code></nobr>", "cache-enabler"); ?></p>
                                 </label>
                             </fieldset>
                         </td>
