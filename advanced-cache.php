@@ -27,7 +27,7 @@ $settings_file = sprintf('%s-%s%s.json',
         'http://' .strtolower($_SERVER['HTTP_HOST']),
         PHP_URL_HOST
     ),
-    is_multisite() ? '-'. get_current_blog_id() : ''
+    is_multisite() ? '-'. abs(intval($blog_id)) : ''
 );
 $settings = _read_settings($settings_file);
 
