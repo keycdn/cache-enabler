@@ -374,8 +374,8 @@ final class Cache_Enabler {
         }
 
         // check if we got upgraded ourselves
-        if ( $options['action'] == 'update' && $options['type'] == 'plugin' ) {
-            foreach ( $options['plugins'] as $each_plugin ) {
+        if ( $options['action'] == 'update' && $options['type'] == 'plugin' && array_key_exists('plugins', $options) ) {
+            foreach ( (array)$options['plugins'] as $each_plugin ) {
                 if ( preg_match("/^cache-enabler\//", $each_plugin) ) {
                     // we got updated!
                     self::on_upgrade();
