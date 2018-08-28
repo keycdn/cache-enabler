@@ -143,6 +143,26 @@ final class Cache_Enabler {
                 'on_upgrade_hook'
             ), 10, 2);
 
+        // act on woocommerce actions
+        add_action(
+            'woocommerce_product_set_stock',
+            array(
+                __CLASS__,
+                'woocommerce_product_set_stock',
+            ),
+            10,
+            1
+        );
+        add_action(
+            'woocommerce_product_set_stock_status',
+            array(
+                __CLASS__,
+                'woocommerce_product_set_stock_status',
+            ),
+            10,
+            1
+        );
+
         // add admin clear link
         add_action(
             'admin_bar_menu',
@@ -1498,6 +1518,25 @@ final class Cache_Enabler {
 
         // clear cache post hook
         do_action('ce_action_cache_cleared');
+    }
+
+
+    /**
+     * Act on WooCommerce stock changes
+     *
+     * @since 1.3.0
+     */
+
+    public static function woocommerce_product_set_stock($product) {
+        self::woocommerce_product_set_stock_status($product->get_id());
+    }
+
+    public static function woocommerce_product_set_stock_status($product_id) {
+        if ( self::$options['new_post'] ) {
+            self::clear_total_cache();
+        } else {
+            self::clear_page_cache_by_post_id($product_id);
+        }
     }
 
 
