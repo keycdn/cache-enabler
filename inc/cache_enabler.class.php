@@ -1532,11 +1532,7 @@ final class Cache_Enabler {
     }
 
     public static function woocommerce_product_set_stock_status($product_id) {
-        if ( self::$options['new_post'] ) {
-            self::clear_total_cache();
-        } else {
-            self::clear_page_cache_by_post_id($product_id);
-        }
+        self::clear_total_cache();
     }
 
 
