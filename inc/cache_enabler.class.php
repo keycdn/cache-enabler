@@ -2054,23 +2054,30 @@ final class Cache_Enabler {
                             <fieldset>
                                 <label for="cache_excl_ids">
                                     <input type="text" name="cache-enabler[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
-                                    <p class="description"><?php _e("Post or Pages IDs separated by a <code>,</code> that should not be cached.", "cache-enabler"); ?></p>
+                                    <p class="description">
+                                        <?php echo sprintf(__("Post or Pages IDs separated by a %s that should not be cached.", "cache-enabler"), "<code>,</code>"); ?>
+                                    </p>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_excl_regexp">
                                     <input type="text" name="cache-enabler[excl_regexp]" id="cache_excl_regexp" value="<?php echo esc_attr($options['excl_regexp']) ?>" />
-                                    <p class="description"><?php _e("Regexp matching page paths that should not be cached. e.g. <code>/(^\/$|\/robot\/$|^\/2018\/.*\/test\/)/</code>", "cache-enabler"); ?></p>
+                                    <p class="description">
+                                        <?php _e("Regexp matching page paths that should not be cached.", "cache-enabler"); ?><br>
+                                        <?php _e("Example:", "cache-enabler"); ?> <code>/(^\/$|\/robot\/$|^\/2018\/.*\/test\/)/</code>
+                                    </p>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_excl_cookies">
                                     <input type="text" name="cache-enabler[excl_cookies]" id="cache_excl_cookies" value="<?php echo esc_attr($options['excl_cookies']) ?>" />
-                                    <p class="description"><?php _e("Regexp matching cookies that should cause the cache to be bypassed. <br>
-                                        <nobr>e.g. <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code></nobr><br>
-                                        default if unset: <nobr><code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code></nobr>", "cache-enabler"); ?></p>
+                                    <p class="description">
+                                        <?php _e("Regexp matching cookies that should cause the cache to be bypassed.", "cache-enabler"); ?><br>
+                                        <?php _e("Example:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code><br>
+                                        <?php _e("Default if unset:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code>
+                                    </p>
                                 </label>
                             </fieldset>
                         </td>
