@@ -159,6 +159,15 @@ final class Cache_Enabler {
                 'process_clear_request'
             )
         );
+        if ( !is_admin() ) {
+            add_action(
+                'admin_bar_menu',
+                array(
+                    __CLASS__,
+                    'register_textdomain'
+                )
+            );
+        }
 
         // admin
         if ( is_admin() ) {
