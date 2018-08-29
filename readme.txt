@@ -69,6 +69,9 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.3.0 =
+* Clear cache on woocommerce stock updates
+
 = 1.2.3 =
 * Fix expiry time
 * Allow to customize bypass cookies
