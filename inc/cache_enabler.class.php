@@ -1553,6 +1553,8 @@ final class Cache_Enabler {
             return '';
         }
 
+        $data = apply_filters('cache_enabler_before_minify', $data);
+
         // store as asset
         call_user_func(
             array(
