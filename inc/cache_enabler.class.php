@@ -1867,7 +1867,7 @@ final class Cache_Enabler {
                 "permalink_trailing_slash" => true
             ));
 
-            if ( ! preg_match("/\/$/", $_SERVER["REQUEST_URI"]) ) {
+            if ( ! preg_match("/\/(|\?.*)$/", $_SERVER["REQUEST_URI"]) ) {
                 return true;
             }
         } else {
