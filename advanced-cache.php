@@ -86,7 +86,7 @@ if ( !empty($settings["cache_timeout"]) ) {
 
 // check if we need drop the ball to cause a redirect
 if ( isset($settings["permalink_trailing_slash"]) ) {
-    if ( ! preg_match("/\/$/", $_SERVER["REQUEST_URI"]) ) {
+    if ( ! preg_match("/\/(|\?.*)$/", $_SERVER["REQUEST_URI"]) ) {
         return false;
     }
 }

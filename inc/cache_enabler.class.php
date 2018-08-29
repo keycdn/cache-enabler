@@ -1562,6 +1562,8 @@ final class Cache_Enabler {
             return '';
         }
 
+        $data = apply_filters('cache_enabler_before_store', $data);
+
         // store as asset
         call_user_func(
             array(
@@ -1876,7 +1878,7 @@ final class Cache_Enabler {
                 "permalink_trailing_slash" => true
             ));
 
-            if ( ! preg_match("/\/$/", $_SERVER["REQUEST_URI"]) ) {
+            if ( ! preg_match("/\/(|\?.*)$/", $_SERVER["REQUEST_URI"]) ) {
                 return true;
             }
         } else {
