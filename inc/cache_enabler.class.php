@@ -162,6 +162,33 @@ final class Cache_Enabler {
             10,
             1
         );
+        add_action(
+            'woocommerce_variation_set_stock',
+            array(
+                __CLASS__,
+                'woocommerce_product_set_stock',
+            ),
+            10,
+            1
+        );
+        add_action(
+            'woocommerce_variation_set_stock_status',
+            array(
+                __CLASS__,
+                'woocommerce_product_set_stock_status',
+            ),
+            10,
+            1
+        );
+		add_action(
+			'woocommerce_save_product_variation',
+			array(
+				__CLASS__,
+				'woocommerce_save_product_variation',
+			),
+			10,
+			2
+		);
 
         // add admin clear link
         add_action(
@@ -179,15 +206,6 @@ final class Cache_Enabler {
                 'process_clear_request'
             )
         );
-        if ( !is_admin() ) {
-            add_action(
-                'admin_bar_menu',
-                array(
-                    __CLASS__,
-                    'register_textdomain'
-                )
-            );
-        }
 
         // admin
         if ( is_admin() ) {
@@ -1541,7 +1559,20 @@ final class Cache_Enabler {
     }
 
     public static function woocommerce_product_set_stock_status($product_id) {
-        self::clear_total_cache();
+
+		self::clear_page_cache_by_post_id($product_id);
+    }
+
+    public static function woocommerce_save_product_variation($variation_id, $i) {
+
+        //Clear cache only on time
+        if ($i == 0) {
+			$product_id = wp_get_post_parent_id($variation_id);
+
+			if ($product_id) {
+				self::clear_page_cache_by_post_id($product_id);
+            }
+        }
     }
 
 
@@ -2100,30 +2131,23 @@ final class Cache_Enabler {
                             <fieldset>
                                 <label for="cache_excl_ids">
                                     <input type="text" name="cache-enabler[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
-                                    <p class="description">
-                                        <?php echo sprintf(__("Post or Pages IDs separated by a %s that should not be cached.", "cache-enabler"), "<code>,</code>"); ?>
-                                    </p>
+                                    <p class="description"><?php _e("Post or Pages IDs separated by a <code>,</code> that should not be cached.", "cache-enabler"); ?></p>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_excl_regexp">
                                     <input type="text" name="cache-enabler[excl_regexp]" id="cache_excl_regexp" value="<?php echo esc_attr($options['excl_regexp']) ?>" />
-                                    <p class="description">
-                                        <?php _e("Regexp matching page paths that should not be cached.", "cache-enabler"); ?><br>
-                                        <?php _e("Example:", "cache-enabler"); ?> <code>/(^\/$|\/robot\/$|^\/2018\/.*\/test\/)/</code>
-                                    </p>
+                                    <p class="description"><?php _e("Regexp matching page paths that should not be cached. e.g. <code>/(^\/$|\/robot\/$|^\/2018\/.*\/test\/)/</code>", "cache-enabler"); ?></p>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_excl_cookies">
                                     <input type="text" name="cache-enabler[excl_cookies]" id="cache_excl_cookies" value="<?php echo esc_attr($options['excl_cookies']) ?>" />
-                                    <p class="description">
-                                        <?php _e("Regexp matching cookies that should cause the cache to be bypassed.", "cache-enabler"); ?><br>
-                                        <?php _e("Example:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code><br>
-                                        <?php _e("Default if unset:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code>
-                                    </p>
+                                    <p class="description"><?php _e("Regexp matching cookies that should cause the cache to be bypassed. <br>
+                                        <nobr>e.g. <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code></nobr><br>
+                                        default if unset: <nobr><code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code></nobr>", "cache-enabler"); ?></p>
                                 </label>
                             </fieldset>
                         </td>
