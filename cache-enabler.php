@@ -6,7 +6,7 @@ Description: Simple and fast WordPress disk caching plugin.
 Author: KeyCDN
 Author URI: https://www.keycdn.com
 License: GPLv2 or later
-Version: 1.2.2
+Version: 1.3.2
 */
 
 /*
@@ -76,7 +76,7 @@ spl_autoload_register('cache_autoload');
 
 // autoload function
 function cache_autoload($class) {
-    if ( in_array($class, array('Cache_Enabler', 'Cache_Enabler_Disk')) ) {
+    if ( in_array($class, array('Cache_Enabler', 'Cache_Enabler_Disk', 'Cache_Enabler_Autoloader', 'Cache_Enabler_Cleaner')) ) {
         require_once(
             sprintf(
                 '%s/inc/%s.class.php',

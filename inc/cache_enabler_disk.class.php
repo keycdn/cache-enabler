@@ -6,22 +6,29 @@ defined('ABSPATH') OR exit;
 
 
 /**
-* Cache_Enabler_Disk
-*
-* @since 1.0.0
-*/
+ * Cache_Enabler_Disk
+ *
+ * v1.3.2 = remove clear home. _clear_dir is change to accept end directory separator path
+ * example:
+ *   - Remove complete directory c:\localhost\wp-content\cache\cache-enabler
+ *   - Remove only file and current directory if empty c:\localhost\wp-content\cache\cache-enabler\
+ *
+ *
+ * @since 1.0.0
+ * @change 1.3.2
+ */
 
 final class Cache_Enabler_Disk {
 
 
     /**
-    * cached filename settings
-    *
-    * @since  1.0.7
-    * @change 1.0.7
-    *
-    * @var    string
-    */
+     * cached filename settings
+     *
+     * @since  1.0.7
+     * @change 1.0.7
+     *
+     * @var    string
+     */
 
     const FILE_HTML = 'index.html';
     const FILE_GZIP = 'index.html.gz';
@@ -30,13 +37,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * permalink check
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @return  boolean  true if installed
-    */
+     * permalink check
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     *
+     * @return  boolean  true if installed
+     */
 
     public static function is_permalink() {
         return get_option('permalink_structure');
@@ -44,13 +51,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * store asset
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @param   string   $data    content of the asset
-    */
+     * store asset
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     *
+     * @param   string   $data    content of the asset
+     */
 
     public static function store_asset($data) {
 
@@ -68,13 +75,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * check asset
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @return  boolean  true if asset exists
-    */
+     * check asset
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     *
+     * @return  boolean  true if asset exists
+     */
 
     public static function check_asset() {
         return is_readable(
@@ -84,13 +91,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * check expiry
-    *
-    * @since   1.0.1
-    * @change  1.0.1
-    *
-    * @return  boolean  true if asset expired
-    */
+     * check expiry
+     *
+     * @since   1.0.1
+     * @change  1.0.1
+     *
+     * @return  boolean  true if asset expired
+     */
 
     public static function check_expiry() {
 
@@ -116,13 +123,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * delete asset
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @param   string   $url   url of cached asset
-    */
+     * delete asset
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     *
+     * @param   string   $url   url of cached asset
+     */
 
     public static function delete_asset($url) {
 
@@ -139,11 +146,11 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * clear cache
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    */
+     * clear cache
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     */
 
     public static function clear_cache() {
         self::_clear_dir(
@@ -153,34 +160,11 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * clear home cache
-    *
-    * @since   1.0.7
-    * @change  1.0.9
-    */
-
-    public static function clear_home() {
-        $path = sprintf(
-            '%s%s%s%s',
-            CE_CACHE_DIR,
-            DIRECTORY_SEPARATOR,
-            preg_replace('#^https?://#', '', get_option('siteurl')),
-            DIRECTORY_SEPARATOR
-        );
-
-        @unlink($path.self::FILE_HTML);
-        @unlink($path.self::FILE_GZIP);
-        @unlink($path.self::FILE_WEBP_HTML);
-        @unlink($path.self::FILE_WEBP_GZIP);
-    }
-
-
-    /**
-    * get asset
-    *
-    * @since   1.0.0
-    * @change  1.0.9
-    */
+     * get asset
+     *
+     * @since   1.0.0
+     * @change  1.0.9
+     */
 
     public static function get_asset() {
 
@@ -231,13 +215,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * create signature
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @return  string  signature
-    */
+     * create signature
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     *
+     * @return  string  signature
+     */
 
     private static function _cache_signatur() {
         return sprintf(
@@ -252,13 +236,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * create files
-    *
-    * @since   1.0.0
-    * @change  1.1.1
-    *
-    * @param   string  $data  html content
-    */
+     * create files
+     *
+     * @since   1.0.0
+     * @change  1.1.1
+     *
+     * @param   string  $data  html content
+     */
 
     private static function _create_files($data) {
 
@@ -301,14 +285,14 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * create file
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @param   string  $file  file path
-    * @param   string  $data  content of the html
-    */
+     * create file
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     *
+     * @param   string  $file  file path
+     * @param   string  $data  content of the html
+     */
 
     private static function _create_file($file, $data) {
 
@@ -332,15 +316,20 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * clear directory
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @param   string  $dir  directory
-    */
+     * clear directory
+     *
+     * Fix $dir not end with DIRECTORY_SEPARATOR clear only object not dir. this fix the home.
+     *
+     *
+     * @since   1.0.0
+     * @change  1.3.2
+     *
+     * @param   string  $dir  directory
+     */
 
     private static function _clear_dir($dir) {
+
+        $is_file_only = $dir[strlen($dir) - 1] == DIRECTORY_SEPARATOR;
 
         // remove slashes
         $dir = untrailingslashit($dir);
@@ -356,24 +345,34 @@ final class Cache_Enabler_Disk {
             array('..', '.')
         );
 
-        if ( empty($objects) ) {
-            return;
-        }
+        if ( !empty($objects) ) {
 
-        foreach ( $objects as $object ) {
-            // full path
-            $object = $dir. DIRECTORY_SEPARATOR .$object;
+            foreach ( $objects as $object ) {
+                // full path
+                $object = $dir. DIRECTORY_SEPARATOR .$object;
 
-            // check if directory
-            if ( is_dir($object) ) {
-                self::_clear_dir($object);
-            } else {
-                unlink($object);
+                // check if directory, if not end with DIRECTORY_SEPARATOR not directory (example cear cache home)
+                if ( is_dir($object)) {
+                    if (!$is_file_only) {
+                        self::_clear_dir($object);
+                    }
+                }
+                else {
+                    unlink($object);
+                }
             }
         }
 
+        // Refresh get dir data
+        $objects = array_diff(
+            scandir($dir),
+            array('..', '.')
+        );
+
         // delete
-        @rmdir($dir);
+        if ( !$is_file_only || !count($objects)) {
+            @rmdir($dir);
+        }
 
         // clears file status cache
         clearstatcache();
@@ -381,14 +380,14 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * get cache size
-    *
-    * @since   1.0.0
-    * @change  1.0.0
-    *
-    * @param   string  $dir   folder path
-    * @return  mixed   $size  size in bytes
-    */
+     * get cache size
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     *
+     * @param   string  $dir   folder path
+     * @return  mixed   $size  size in bytes
+     */
 
     public static function cache_size($dir = '.') {
 
@@ -426,18 +425,18 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * cache path
-    *
-    * @since   1.0.0
-    * @change  1.1.0
-    *
-    * @param   string  $path  uri or permlink
-    * @return  string  $diff  path to cached asset
-    */
+     * cache path
+     *
+     * @since   1.0.0
+     * @change  1.3.2
+     *
+     * @param   string  $path  uri or permlink
+     * @return  string  $diff  path to cached asset
+     */
 
     private static function _file_path($path = NULL) {
 
-        $path = sprintf(
+        $file_path = sprintf(
             '%s%s%s%s',
             CE_CACHE_DIR,
             DIRECTORY_SEPARATOR,
@@ -451,22 +450,30 @@ final class Cache_Enabler_Disk {
             )
         );
 
-        if ( is_file($path) > 0 ) {
+        if ( is_file($file_path) > 0 ) {
             wp_die('Path is not valid.');
         }
 
-        return trailingslashit($path);
+        if (!$path) {
+            $file_path .= DIRECTORY_SEPARATOR;
+        }
+
+        //Cleaning file path
+        $file_path = str_replace('/', DIRECTORY_SEPARATOR, $file_path);
+        $file_path = str_replace('\\\\', '\\', $file_path );
+
+        return $file_path;
     }
 
 
     /**
-    * get file path
-    *
-    * @since   1.0.0
-    * @change  1.0.7
-    *
-    * @return  string  path to the html file
-    */
+     * get file path
+     *
+     * @since   1.0.0
+     * @change  1.0.7
+     *
+     * @return  string  path to the html file
+     */
 
     private static function _file_html() {
         return self::_file_path(). self::FILE_HTML;
@@ -474,13 +481,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * get gzip file path
-    *
-    * @since   1.0.1
-    * @change  1.0.7
-    *
-    * @return  string  path to the gzipped html file
-    */
+     * get gzip file path
+     *
+     * @since   1.0.1
+     * @change  1.0.7
+     *
+     * @return  string  path to the gzipped html file
+     */
 
     private static function _file_gzip() {
         return self::_file_path(). self::FILE_GZIP;
@@ -488,13 +495,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * get webp file path
-    *
-    * @since   1.0.7
-    * @change  1.0.7
-    *
-    * @return  string  path to the webp html file
-    */
+     * get webp file path
+     *
+     * @since   1.0.7
+     * @change  1.0.7
+     *
+     * @return  string  path to the webp html file
+     */
 
     private static function _file_webp_html() {
         return self::_file_path(). self::FILE_WEBP_HTML;
@@ -502,13 +509,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * get gzip webp file path
-    *
-    * @since   1.0.1
-    * @change  1.0.7
-    *
-    * @return  string  path to the webp gzipped html file
-    */
+     * get gzip webp file path
+     *
+     * @since   1.0.1
+     * @change  1.0.7
+     *
+     * @return  string  path to the webp gzipped html file
+     */
 
     private static function _file_webp_gzip() {
         return self::_file_path(). self::FILE_WEBP_GZIP;
@@ -550,14 +557,14 @@ final class Cache_Enabler_Disk {
     }
 
 
-   /**
-    * record settings for advanced-cache.php
-    *
-    * @since   1.2.3
-    *
-    * @param   array    settings as array pairs
-    * @return  boolean  true if successful
-    */
+    /**
+     * record settings for advanced-cache.php
+     *
+     * @since   1.2.3
+     *
+     * @param   array    settings as array pairs
+     * @return  boolean  true if successful
+     */
 
     public static function record_advcache_settings($settings) {
         $settings_file = sprintf('%s-%s%s.json',
@@ -584,14 +591,42 @@ final class Cache_Enabler_Disk {
     }
 
 
-   /**
-    * delete settings for advanced-cache.php
-    *
-    * @since   1.2.3
-    *
-    * @param   array    settings as array or empty for delete all
-    * @return  boolean  true if successful
-    */
+    /**
+     * read settings param for advanced-cache.php
+     *
+     * @since   1.2.3
+     *
+     * @param   array    settings as array pairs
+     * @return  boolean  true if successful
+     */
+
+    public static function read_advcache_settings() {
+        $settings_file = sprintf('%s-%s%s.json',
+            WP_CONTENT_DIR. "/cache/cache-enabler-advcache",
+            parse_url(
+                'http://' .strtolower($_SERVER['HTTP_HOST']),
+                PHP_URL_HOST
+            ),
+            is_multisite() ? '-'. get_current_blog_id() : ''
+        );
+
+        // create folder if neccessary
+        if ( ! wp_mkdir_p(dirname($settings_file)) ) {
+            wp_die('Unable to create directory.');
+        }
+
+        return  self::_read_settings($settings_file);
+    }
+
+
+    /**
+     * delete settings for advanced-cache.php
+     *
+     * @since   1.2.3
+     *
+     * @param   array    settings as array or empty for delete all
+     * @return  boolean  true if successful
+     */
 
     public static function delete_advcache_settings($remsettings = array()) {
         $settings_file = sprintf('%s-%s%s.json',
@@ -627,13 +662,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * convert to webp
-    *
-    * @since   1.0.1
-    * @change  1.1.1
-    *
-    * @return  string  converted HTML file
-    */
+     * convert to webp
+     *
+     * @since   1.0.1
+     * @change  1.1.1
+     *
+     * @return  string  converted HTML file
+     */
 
     private static function _convert_webp($asset) {
 
@@ -651,13 +686,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * convert src to webp source
-    *
-    * @since   1.0.1
-    * @change  1.1.0
-    *
-    * @return  string  converted src webp source
-    */
+     * convert src to webp source
+     *
+     * @since   1.0.1
+     * @change  1.1.0
+     *
+     * @return  string  converted src webp source
+     */
 
     private static function _convert_webp_src($src) {
         $upload_dir = wp_upload_dir();
@@ -694,13 +729,13 @@ final class Cache_Enabler_Disk {
 
 
     /**
-    * convert srcset to webp source
-    *
-    * @since   1.0.8
-    * @change  1.1.0
-    *
-    * @return  string  converted srcset webp source
-    */
+     * convert srcset to webp source
+     *
+     * @since   1.0.8
+     * @change  1.1.0
+     *
+     * @return  string  converted srcset webp source
+     */
 
     private static function _convert_webp_srcset($srcset) {
 
