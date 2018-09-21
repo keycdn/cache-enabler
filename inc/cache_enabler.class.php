@@ -162,6 +162,24 @@ final class Cache_Enabler {
             10,
             1
         );
+        add_action(
+            'woocommerce_variation_set_stock',
+            array(
+                __CLASS__,
+                'woocommerce_product_set_stock',
+            ),
+            10,
+            1
+        );
+        add_action(
+            'woocommerce_variation_set_stock_status',
+            array(
+                __CLASS__,
+                'woocommerce_product_set_stock_status',
+            ),
+            10,
+            1
+        );
 
         // add admin clear link
         add_action(
