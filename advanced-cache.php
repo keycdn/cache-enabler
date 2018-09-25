@@ -107,7 +107,7 @@ if ( function_exists( 'apache_request_headers' ) ) {
 }
 
 // check modified since with cached file and return 304 if no difference
-if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) <= filemtime( $path_html ) ) ) {
+if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) >= filemtime( $path_html ) ) ) {
     header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
     exit;
 }
