@@ -61,13 +61,11 @@ final class Cache_Enabler {
      * constructor wrapper
      *
      * @since   1.0.0
-     * @change  1.3.2
+     * @change  1.0.0
      */
 
     public static function instance()
     {
-        new Cache_Enabler_Autoloader(plugin_dir_path( dirname(__FILE__) ) . 'compatibility/');
-
         new self();
     }
 
@@ -342,10 +340,13 @@ final class Cache_Enabler {
      * activation hook
      *
      * @since   1.0.0
-     * @change  1.1.1
+     * @change  1.3.2
      */
 
     public static function on_activation() {
+
+        // set default vars
+        self::_set_default_vars();
 
         // multisite and network
         if ( is_multisite() && ! empty($_GET['networkwide']) ) {
@@ -653,12 +654,12 @@ final class Cache_Enabler {
                 'compress'          => 0,
                 'webp'              => 0,
                 'clear_on_upgrade'  => 0,
-                'clear_home_on_clear_by_post_id'  => $clear_home_on_clear_by_post_id,
-                'clear_ids_on_clear_by_post_id'  => $clear_ids_on_clear_by_post_id,
                 'excl_ids'          => '',
                 'excl_regexp'       => '',
                 'excl_cookies'      => '',
                 'minify_html'       => self::MINIFY_DISABLED,
+                'clear_home_on_clear_by_post_id'  => $clear_home_on_clear_by_post_id,
+                'clear_ids_on_clear_by_post_id'  => $clear_ids_on_clear_by_post_id,
             )
         );
     }
@@ -1253,10 +1254,11 @@ final class Cache_Enabler {
             return;
         }
 
-        self::$cleaner->clean_by_post_id($post_ID);
-
-        //clear additional ids for the post type
+        //Additional ids for the post type
         self::cache_clear_post_type_ids_by_post_id($post_ID);
+
+        //Clean the post id and the cleaner queue
+        self::$cleaner->clean_by_post_id($post_ID);
 
         // clear cache by post id hook
         do_action('ce_action_cache_by_post_id_cleared', $post_ID);
@@ -1564,7 +1566,6 @@ final class Cache_Enabler {
      * @param   string  $data  content of a page
      * @return  string  $data  content of a page
      */
-
     public static function set_cache($data) {
 
         // check if empty
@@ -1727,7 +1728,7 @@ final class Cache_Enabler {
     public static function add_admin_resources($hook) {
 
         // hook check
-        if ( $hook !== 'index.php' AND $hook !== 'post.php' ) {
+        if ( $hook !== 'index.php' && $hook !== 'post.php' ) {
             return;
         }
 
@@ -2008,13 +2009,13 @@ final class Cache_Enabler {
             'new_comment'       => (int)(!empty($data['new_comment'])),
             'webp'              => (int)(!empty($data['webp'])),
             'clear_on_upgrade'  => (int)(!empty($data['clear_on_upgrade'])),
-            'clear_home_on_clear_by_post_id' => $clear_home_post_types,
-            'clear_ids_on_clear_by_post_id' => $clear_ids_post_types,
             'compress'          => (int)(!empty($data['compress'])),
             'excl_ids'          => (string)sanitize_text_field(@$data['excl_ids']),
             'excl_regexp'       => (string)self::validate_regexps(@$data['excl_regexp']),
             'excl_cookies'      => (string)self::validate_regexps(@$data['excl_cookies']),
-            'minify_html'       => (int)$data['minify_html']
+            'minify_html'       => (int)$data['minify_html'],
+            'clear_home_on_clear_by_post_id' => $clear_home_post_types,
+            'clear_ids_on_clear_by_post_id' => $clear_ids_post_types,
         );
     }
 
