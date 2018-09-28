@@ -1566,6 +1566,7 @@ final class Cache_Enabler {
      * @param   string  $data  content of a page
      * @return  string  $data  content of a page
      */
+
     public static function set_cache($data) {
 
         // check if empty
@@ -1728,7 +1729,7 @@ final class Cache_Enabler {
     public static function add_admin_resources($hook) {
 
         // hook check
-        if ( $hook !== 'index.php' && $hook !== 'post.php' ) {
+        if ( $hook !== 'index.php' AND $hook !== 'post.php' ) {
             return;
         }
 

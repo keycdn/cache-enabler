@@ -20,7 +20,7 @@ final class Cache_Enabler_Woocommerce {
     public function __construct() {
 
         add_action('woocommerce_product_set_stock', array($this, 'product_set_stock'), 10);
-        add_action('woocommerce_product_set_stock_status', array($this, 'set_stock_status'), 10);
+        add_action('woocommerce_product_set_stock_status', array($this, 'product_set_stock_status'), 10);
         add_action('woocommerce_variation_set_stock', array($this, 'product_set_stock'), 10);
         add_action('woocommerce_variation_set_stock_status', array($this, 'product_set_stock_status'), 10);
         add_action('woocommerce_save_product_variation', array($this, 'save_product_variation'), 10, 2);

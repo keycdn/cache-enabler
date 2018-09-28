@@ -76,7 +76,13 @@ spl_autoload_register('cache_autoload');
 
 // autoload function
 function cache_autoload($class) {
-    if ( in_array($class, array('Cache_Enabler', 'Cache_Enabler_Disk', 'Cache_Enabler_Autoloader', 'Cache_Enabler_Cleaner')) ) {
+    if ( in_array($class, array(
+        'Cache_Enabler',
+        'Cache_Enabler_Disk',
+        'Cache_Enabler_Cleaner',
+        'Cache_Enabler_Woocommerce',
+        'Cache_Enabler_Wpml'
+    )) ) {
         require_once(
             sprintf(
                 '%s/inc/%s.class.php',

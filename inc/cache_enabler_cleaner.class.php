@@ -65,6 +65,8 @@ final class Cache_Enabler_Cleaner {
 
     /**
      * Cache_Enabler_Cleaner constructor.
+     *
+     * @since 1.3.2
      */
     private function __construct() {
 
