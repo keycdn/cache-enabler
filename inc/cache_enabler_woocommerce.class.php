@@ -8,7 +8,7 @@ defined('ABSPATH') OR exit;
 /**
  * Cache_Enabler Woocommerce
  *
- * @since 1.3.3
+ * @since 1.3.2
  */
 
 final class Cache_Enabler_Woocommerce {
@@ -28,6 +28,11 @@ final class Cache_Enabler_Woocommerce {
     }
 
 
+    /**
+     * On Product stock change
+     *
+     * @param $product
+     */
     public function product_set_stock($product) {
 
         $this->product_set_stock_status($product->get_id());
@@ -38,7 +43,9 @@ final class Cache_Enabler_Woocommerce {
         Cache_Enabler::clear_page_cache_by_post_id($product_id);
     }
 
+
     /**
+     * On Save product variation
      *
      * @param $variation_id
      * @param $i
@@ -57,7 +64,9 @@ final class Cache_Enabler_Woocommerce {
         }
     }
 
+
     /**
+     * Add linked Ids for cross sell and upsell to cleaner queue
      *
      * @param $ids
      */

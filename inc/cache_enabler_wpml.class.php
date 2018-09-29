@@ -6,12 +6,13 @@ defined('ABSPATH') OR exit;
 
 
 /**
- * Cache_Enabler Woocommerce
+ * Cache_Enabler WPML
  *
- * @since 1.3.3
+ * @since 1.3.2
  */
 
 final class Cache_Enabler_Wpml {
+
 
     /**
      * Cache_Enabler_Wpml constructor.

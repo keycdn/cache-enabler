@@ -8,6 +8,7 @@ defined('ABSPATH') OR exit;
  * Cache_Enabler Cleaner
  *
  */
+
 final class Cache_Enabler_Cleaner {
 
     /**
@@ -43,23 +44,6 @@ final class Cache_Enabler_Cleaner {
         }
 
         return self::$_instance;
-    }
-
-
-    /**
-     * Cloning is forbidden.
-     *
-     */
-    public function __clone() {
-        _doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'cache-enabler' ), '1.3.3' );
-    }
-
-    /**
-     * Unserializing instances of this class is forbidden.
-     *
-     */
-    public function __wakeup() {
-        _doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'cache-enabler' ), '1.3.3' );
     }
 
 
@@ -129,7 +113,7 @@ final class Cache_Enabler_Cleaner {
      */
     public function add_post_id( $post_id ) {
 
-        if (! $post_id = absint($post_id)) {
+        if (! $post_id = (int)$post_id) {
             return false;
         }
 
@@ -186,7 +170,6 @@ final class Cache_Enabler_Cleaner {
      */
     public function clean() {
 
-
         $this->post_ids = apply_filters('ce_cache_cleaner_clean_ids', $this->post_ids);
         $this->post_ids = array_unique($this->post_ids);
 
@@ -199,7 +182,6 @@ final class Cache_Enabler_Cleaner {
             //resolve cache archive url
             $this->resolve_archive_url($post_id);
         }
-
 
         $this->urls = apply_filters('ce_cache_cleaner_clean_urls', $this->urls);
         $this->urls = array_unique($this->urls);

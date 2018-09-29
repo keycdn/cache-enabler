@@ -8,12 +8,6 @@ defined('ABSPATH') OR exit;
 /**
  * Cache_Enabler_Disk
  *
- * v1.3.2 = remove clear home. _clear_dir is change to accept end directory separator path
- * example:
- *   - Remove complete directory c:\localhost\wp-content\cache\cache-enabler
- *   - Remove only file and current directory if empty c:\localhost\wp-content\cache\cache-enabler\
- *
- *
  * @since 1.0.0
  * @change 1.3.2
  */
@@ -184,7 +178,7 @@ final class Cache_Enabler_Disk {
         }
 
         // check modified since with cached file and return 304 if no difference
-        if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) == filemtime( self::_file_html() ) ) ) {
+        if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) >= filemtime( self::_file_html() ) ) ) {
             header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
             exit;
         }
@@ -319,6 +313,10 @@ final class Cache_Enabler_Disk {
      * clear directory
      *
      * Fix $dir not end with DIRECTORY_SEPARATOR clear only object not dir. this fix the home.
+     * Accept end directory separator path
+     * example:
+     *   - Remove complete directory c:\localhost\wp-content\cache\cache-enabler
+     *   - Remove only file and current directory if empty c:\localhost\wp-content\cache\cache-enabler\
      *
      *
      * @since   1.0.0
@@ -588,34 +586,6 @@ final class Cache_Enabler_Disk {
         self::_write_settings($settings_file, $settings);
 
         return true;
-    }
-
-
-    /**
-     * read settings param for advanced-cache.php
-     *
-     * @since   1.2.3
-     *
-     * @param   array    settings as array pairs
-     * @return  boolean  true if successful
-     */
-
-    public static function read_advcache_settings() {
-        $settings_file = sprintf('%s-%s%s.json',
-            WP_CONTENT_DIR. "/cache/cache-enabler-advcache",
-            parse_url(
-                'http://' .strtolower($_SERVER['HTTP_HOST']),
-                PHP_URL_HOST
-            ),
-            is_multisite() ? '-'. get_current_blog_id() : ''
-        );
-
-        // create folder if neccessary
-        if ( ! wp_mkdir_p(dirname($settings_file)) ) {
-            wp_die('Unable to create directory.');
-        }
-
-        return  self::_read_settings($settings_file);
     }
 
 
