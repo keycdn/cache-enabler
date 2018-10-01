@@ -2011,7 +2011,7 @@ final class Cache_Enabler {
 
         foreach ((array)$data['clear_ids_on_clear_by_post_id'] as $clear_ids_post_type => $ids) {
             $clear_ids_post_types[$clear_ids_post_type] = (string)sanitize_text_field(@$ids);
-            $clear_home_post_types[$clear_ids_post_type] = (int)(!empty($data['clear_ids_on_clear_by_post_id'][$clear_ids_post_type]));
+            $clear_home_post_types[$clear_ids_post_type] = (int)(!empty($data['clear_home_on_clear_by_post_id'][$clear_ids_post_type]));
         }
 
 
