@@ -1685,8 +1685,8 @@ final class Cache_Enabler {
         // init variables
         $dropdown_options = '';
         $available_options = array(
-            esc_html__('Completely', 'cache-enabler'),
-            esc_html__('Page specific', 'cache-enabler')
+            esc_html__('Page specific', 'cache-enabler'),
+            esc_html__('Completely', 'cache-enabler')
         );
 
         // set dropdown options
