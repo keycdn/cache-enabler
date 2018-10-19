@@ -677,6 +677,7 @@ final class Cache_Enabler {
                 'excl_ids'          => '',
                 'excl_regexp'       => '',
                 'excl_cookies'      => '',
+                'incl_attributes'   => '',
                 'minify_html'       => self::MINIFY_DISABLED,
             )
         );
@@ -2000,6 +2001,14 @@ final class Cache_Enabler {
             Cache_Enabler_Disk::delete_advcache_settings(array("excl_cookies"));
         }
 
+        // custom GET attribute exceptions
+        if ( strlen($data["incl_attributes"]) > 0 ) {
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "incl_attributes" => $data["incl_attributes"]));
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array("incl_attributes"));
+        }
+
         return array(
             'expires'           => (int)$data['expires'],
             'new_post'          => (int)(!empty($data['new_post'])),
@@ -2010,6 +2019,7 @@ final class Cache_Enabler {
             'excl_ids'          => (string)sanitize_text_field(@$data['excl_ids']),
             'excl_regexp'       => (string)self::validate_regexps(@$data['excl_regexp']),
             'excl_cookies'      => (string)self::validate_regexps(@$data['excl_cookies']),
+            'incl_attributes'   => (string)self::validate_regexps(@$data['incl_attributes']),
             'minify_html'       => (int)$data['minify_html']
         );
     }
@@ -2141,6 +2151,24 @@ final class Cache_Enabler {
                                         <?php _e("Regexp matching cookies that should cause the cache to be bypassed.", "cache-enabler"); ?><br>
                                         <?php _e("Example:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code><br>
                                         <?php _e("Default if unset:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code>
+                                    </p>
+                                </label>
+                            </fieldset>
+                        </td>
+                    </tr>
+
+                    <tr valign="top">
+                        <th scope="row">
+                            <?php _e("Cache Inclusions", "cache-enabler") ?>
+                        </th>
+                        <td>
+                            <fieldset>
+                                <label for="cache_incl_attributes">
+                                    <input type="text" name="cache-enabler[incl_attributes]" id="cache_incl_attributes" value="<?php echo esc_attr($options['incl_attributes']) ?>" />
+                                    <p class="description">
+                                        <?php _e("Regexp matching campaign tracking GET attributes that should not cause the cache to be bypassed.", "cache-enabler"); ?><br>
+                                        <?php _e("Example:", "cache-enabler"); ?> <code>/^pk_(source|medium|campaign|kwd|content)$/</code><br>
+                                        <?php _e("Default if unset:", "cache-enabler"); ?> <code>/^utm_(source|medium|campaign|term|content)$/</code>
                                     </p>
                                 </label>
                             </fieldset>
