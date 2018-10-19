@@ -1735,7 +1735,7 @@ final class Cache_Enabler {
     public static function add_admin_resources($hook) {
 
         // hook check
-        if ( $hook !== 'index.php' AND $hook !== 'post.php' ) {
+        if ( $hook !== 'index.php' && $hook !== 'post.php' ) {
             return;
         }
 
@@ -1753,10 +1753,10 @@ final class Cache_Enabler {
                     $plugin_data['Version'],
                     true
                 );
-            break;
+                break;
 
             default:
-            break;
+                break;
         }
     }
 
