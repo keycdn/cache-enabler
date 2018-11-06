@@ -819,7 +819,7 @@ final class Cache_Enabler {
 
         if ( ! $size = get_transient('cache_size') ) {
 
-            $size = (int) self::$disk->cache_size(CE_CACHE_DIR);
+            $size = is_object( self::$disk ) ? (int) self::$disk->cache_size(CE_CACHE_DIR) : 0;
 
             // set transient
             set_transient(
