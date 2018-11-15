@@ -375,7 +375,7 @@ final class Cache_Enabler {
             self::_install_backend();
         }
 
-        if ( !defined( 'WP_CACHE' ) || !WP_CACHE ) {
+        if ( !defined( 'WP_CACHE' ) ) {
             // set WP_CACHE
             self::_set_wp_cache(true);
         }
