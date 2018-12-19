@@ -68,6 +68,11 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.3.2 =
+* Changed to page specific as new default
+* Added regex setting for analytics tags in get variables
+* Fixed 304 responses
+
 = 1.3.1 =
 * Fix for missing trailing slashes was incomplete
 * Add filter option before minification
