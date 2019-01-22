@@ -155,7 +155,8 @@ function _ce_file_path($path = NULL) {
     );
 
     if ( is_file($path) > 0 ) {
-        wp_die('Path is not valid.');
+        header( $_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found', true, 404 );
+        exit;
     }
 
     // add trailing slash
