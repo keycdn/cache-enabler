@@ -68,6 +68,9 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 2.0.0
+* Add some third party plugins functionality (woocommerce and wpml)
+
 = 1.3.2
 * Add cleaner for support third party plugins
 * Add support woocommerce and wpml.
