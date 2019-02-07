@@ -28,6 +28,12 @@ final class Cache_Enabler_Disk {
     const FILE_WEBP_HTML = 'index-webp.html';
     const FILE_WEBP_GZIP = 'index-webp.html.gz';
 
+    // Files for Cookie Notice
+    const FILE_HTML_CN = 'index-cn.html';
+    const FILE_GZIP_CN = 'index-cn.html.gz';
+    const FILE_WEBP_HTML_CN = 'index-webp-cn.html';
+    const FILE_WEBP_GZIP_CN = 'index-webp-cn.html.gz';
+
 
     /**
      * permalink check
@@ -172,6 +178,12 @@ final class Cache_Enabler_Disk {
         @unlink($path.self::FILE_GZIP);
         @unlink($path.self::FILE_WEBP_HTML);
         @unlink($path.self::FILE_WEBP_GZIP);
+
+        // Files for Cookie Notice
+        @unlink($path.self::FILE_HTML_CN);
+        @unlink($path.self::FILE_GZIP_CN);
+        @unlink($path.self::FILE_WEBP_HTML_CN);
+        @unlink($path.self::FILE_WEBP_GZIP_CN);
     }
 
 
@@ -198,6 +210,9 @@ final class Cache_Enabler_Disk {
             $http_accept = ( isset( $_SERVER[ 'HTTP_ACCEPT' ] ) ) ? $_SERVER[ 'HTTP_ACCEPT' ] : '';
             $http_accept_encoding = ( isset( $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] ) ) ? $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] : '';
         }
+
+        // Check for Cookie Notice Cookie proceed if not set
+        if(!isset($_COOKIE['cookie_notice_accepted'])) {
 
         // check modified since with cached file and return 304 if no difference
         if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) >= filemtime( self::_file_html() ) ) ) {
@@ -227,6 +242,41 @@ final class Cache_Enabler_Disk {
         // deliver cached file (default)
         readfile( self::_file_html() );
         exit;
+        }
+
+        // Cookie Notice Cookie is set. Proceed the same but with Cookie Notice Files
+        else {
+
+          // check modified since with cached file and return 304 if no difference
+          if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) >= filemtime( self::_file_html_cn() ) ) ) {
+              header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
+              exit;
+          }
+
+          // check webp and deliver gzip webp file if support
+          if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) ) {
+              if ( is_readable( self::_file_webp_gzip_cn() ) ) {
+                  header('Content-Encoding: gzip');
+                  readfile( self::_file_webp_gzip_cn() );
+                  exit;
+              } elseif ( is_readable( self::_file_webp_html_cn() ) ) {
+                  readfile( self::_file_webp_html_cn() );
+                  exit;
+              }
+          }
+
+          // check encoding and deliver gzip file if support
+          if ( $http_accept_encoding && ( strpos($http_accept_encoding, 'gzip') !== false ) && is_readable( self::_file_gzip_cn() )  ) {
+              header('Content-Encoding: gzip');
+              readfile( self::_file_gzip_cn() );
+              exit;
+          }
+
+          // deliver cached file (default)
+          readfile( self::_file_html_cn() );
+          exit;
+
+        }
     }
 
 
@@ -273,6 +323,9 @@ final class Cache_Enabler_Disk {
         // cache enabler options
         $options = Cache_Enabler::$options;
 
+        // Check for Cookie Notice Cookie proceed if not set
+        if(!isset($_COOKIE['cookie_notice_accepted'])) {
+
         // create files
         self::_create_file( self::_file_html(), $data.$cache_signature." (html) -->" );
 
@@ -296,7 +349,34 @@ final class Cache_Enabler_Disk {
                 self::_create_file( self::_file_webp_gzip(), gzencode($converted_data.$cache_signature." (webp gzip) -->", 9) );
             }
         }
+      } else {
 
+      // Cookie Notice Cookie is set. Repeat but with Cookie Notice Files
+
+      // create files
+      self::_create_file( self::_file_html_cn(), $data.$cache_signature." (html cn) -->" );
+
+      // create pre-compressed file
+      if ($options['compress']) {
+          self::_create_file( self::_file_gzip_cn(), gzencode($data.$cache_signature." (html gzip cn) -->", 9) );
+      }
+
+      // create webp supported files
+      if ($options['webp']) {
+          // magic regex rule
+          $regex_rule = '#(?<=(?:(ref|src|set)=[\"\']))(?:http[s]?[^\"\']+)(\.png|\.jp[e]?g)(?:[^\"\']+)?(?=[\"\')])#';
+
+          // call the webp converter callback
+          $converted_data = preg_replace_callback($regex_rule,'self::_convert_webp',$data);
+
+          self::_create_file( self::_file_webp_html_cn(), $converted_data.$cache_signature." (webp cn) -->" );
+
+          // create pre-compressed file
+          if ($options['compress']) {
+              self::_create_file( self::_file_webp_gzip_cn(), gzencode($converted_data.$cache_signature." (webp gzip cn) -->", 9) );
+          }
+      }
+      } // END Repeat / Check for Cookie Notice Cookie
     }
 
 
@@ -465,11 +545,16 @@ final class Cache_Enabler_Disk {
      * @since   1.0.0
      * @change  1.0.7
      *
-     * @return  string  path to the html file
+     * @return  string  path to the html files
      */
 
     private static function _file_html() {
         return self::_file_path(). self::FILE_HTML;
+    }
+
+    // Cookie Notice File
+    private static function _file_html_cn() {
+        return self::_file_path(). self::FILE_HTML_CN;
     }
 
 
@@ -479,11 +564,16 @@ final class Cache_Enabler_Disk {
      * @since   1.0.1
      * @change  1.0.7
      *
-     * @return  string  path to the gzipped html file
+     * @return  string  path to the gzipped html files
      */
 
     private static function _file_gzip() {
         return self::_file_path(). self::FILE_GZIP;
+    }
+
+    // Cookie Notice File
+    private static function _file_gzip_cn() {
+        return self::_file_path(). self::FILE_GZIP_CN;
     }
 
 
@@ -493,11 +583,16 @@ final class Cache_Enabler_Disk {
      * @since   1.0.7
      * @change  1.0.7
      *
-     * @return  string  path to the webp html file
+     * @return  string  path to the webp html files
      */
 
     private static function _file_webp_html() {
         return self::_file_path(). self::FILE_WEBP_HTML;
+    }
+
+    // Cookie Notice File
+    private static function _file_webp_html_cn() {
+        return self::_file_path(). self::FILE_WEBP_HTML_CN;
     }
 
 
@@ -507,11 +602,16 @@ final class Cache_Enabler_Disk {
      * @since   1.0.1
      * @change  1.0.7
      *
-     * @return  string  path to the webp gzipped html file
+     * @return  string  path to the webp gzipped html files
      */
 
     private static function _file_webp_gzip() {
         return self::_file_path(). self::FILE_WEBP_GZIP;
+    }
+
+    // Cookie Notice File
+    private static function _file_webp_gzip_cn() {
+        return self::_file_path(). self::FILE_WEBP_GZIP_CN;
     }
 
 
