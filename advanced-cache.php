@@ -14,10 +14,28 @@ $path_gzip = $path . 'index.html.gz';
 $path_webp_html = $path . 'index-webp.html';
 $path_webp_gzip = $path . 'index-webp.html.gz';
 
+// path to cached Cookie Notice variants
+$path_html_cn = $path . 'index-cn.html';
+$path_gzip_cn = $path . 'index-cn.html.gz';
+$path_webp_html_cn = $path . 'index-webp-cn.html';
+$path_webp_gzip_cn = $path . 'index-webp-cn.html.gz';
 
-// if we don't have a cache copy, we do not need to proceed
-if ( ! is_readable( $path_html ) ) {
+
+// check for Cookie Notice Cookie. Proceed if not set
+if(!isset($_COOKIE['cookie_notice_accepted'])) {
+
+  // if we don't have a cache copy, we do not need to proceed
+  if ( ! is_readable( $path_html ) ) {
     return false;
+  }
+
+// Proceed if Cookie Notice Cookie is set
+} else {
+
+  // if we don't have a cache copy, we do not need to proceed
+  if ( ! is_readable( $path_html_cn ) ) {
+      return false;
+  }
 }
 
 // check if there are settings passed out to us
@@ -115,6 +133,10 @@ if ( function_exists( 'apache_request_headers' ) ) {
     $http_accept_encoding = ( isset( $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] ) ) ? $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] : '';
 }
 
+
+// Check for Cookie Notice Cookie proceed if not set
+if(!isset($_COOKIE['cookie_notice_accepted'])) {
+
 // check modified since with cached file and return 304 if no difference
 if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) >= filemtime( $path_html ) ) ) {
     header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
@@ -146,6 +168,42 @@ if ( $http_accept_encoding && ( strpos($http_accept_encoding, 'gzip') !== false 
 readfile( $path_html );
 exit;
 
+} else {
+
+// Cookie Notice Cookie is set. Repeat but with Cookie Notice Files
+
+// check modified since with cached file and return 304 if no difference
+if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) >= filemtime( $path_html_cn ) ) ) {
+    header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
+    exit;
+}
+
+header( 'Last-Modified: ' . gmdate("D, d M Y H:i:s",filemtime( $path_html_cn )).' GMT' );
+
+// check webp and deliver gzip webp file if support
+if ( $http_accept && ( strpos($http_accept, 'webp') !== false ) ) {
+    if ( is_readable( $path_webp_gzip_cn ) ) {
+        header('Content-Encoding: gzip');
+        readfile( $path_webp_gzip_cn );
+        exit;
+    } elseif ( is_readable( $path_webp_html_cn ) ) {
+        readfile( $path_webp_html_cn );
+        exit;
+    }
+}
+
+// check encoding and deliver gzip file if support
+if ( $http_accept_encoding && ( strpos($http_accept_encoding, 'gzip') !== false ) && is_readable( $path_gzip_cn )  ) {
+    header('Content-Encoding: gzip');
+    readfile( $path_gzip_cn );
+    exit;
+}
+
+// deliver cached file (default cn)
+readfile( $path_html_cn );
+exit;
+
+} // END Repeat / Check for Cookie Notice Cookie
 
 // generate cache path
 function _ce_file_path($path = NULL) {
