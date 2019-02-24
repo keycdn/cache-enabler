@@ -463,13 +463,13 @@ final class Cache_Enabler_Disk {
      * get file path
      *
      * @since   1.0.0
-     * @change  1.0.7
+     * @change  1.3.4
      *
      * @return  string  path to the html file
      */
 
     private static function _file_html() {
-        return self::_file_path(). self::FILE_HTML;
+        return self::_file_path(). self::FILE_HTML. "-". $_SERVER['SERVER_PORT'];
     }
 
 
@@ -477,13 +477,13 @@ final class Cache_Enabler_Disk {
      * get gzip file path
      *
      * @since   1.0.1
-     * @change  1.0.7
+     * @change  1.3.4
      *
      * @return  string  path to the gzipped html file
      */
 
     private static function _file_gzip() {
-        return self::_file_path(). self::FILE_GZIP;
+        return self::_file_path(). self::FILE_GZIP. "-". $_SERVER['SERVER_PORT'];
     }
 
 
@@ -491,13 +491,13 @@ final class Cache_Enabler_Disk {
      * get webp file path
      *
      * @since   1.0.7
-     * @change  1.0.7
+     * @change  1.3.4
      *
      * @return  string  path to the webp html file
      */
 
     private static function _file_webp_html() {
-        return self::_file_path(). self::FILE_WEBP_HTML;
+        return self::_file_path(). self::FILE_WEBP_HTML. "-". $_SERVER['SERVER_PORT'];
     }
 
 
@@ -505,13 +505,13 @@ final class Cache_Enabler_Disk {
      * get gzip webp file path
      *
      * @since   1.0.1
-     * @change  1.0.7
+     * @change  1.3.4
      *
      * @return  string  path to the webp gzipped html file
      */
 
     private static function _file_webp_gzip() {
-        return self::_file_path(). self::FILE_WEBP_GZIP;
+        return self::_file_path(). self::FILE_WEBP_GZIP. "-". $_SERVER['SERVER_PORT'];
     }
 
 
