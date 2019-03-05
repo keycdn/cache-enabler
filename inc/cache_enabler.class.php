@@ -269,6 +269,13 @@ final class Cache_Enabler {
                 )
             );
             add_filter(
+                'user_can_clear_cache',
+                array(
+                    __CLASS__,
+                    'user_can_clear_cache'
+                )
+            );
+            add_filter(
                 'plugin_row_meta',
                 array(
                     __CLASS__,
@@ -663,6 +670,7 @@ final class Cache_Enabler {
                 'compress'          => 0,
                 'webp'              => 0,
                 'clear_on_upgrade'  => 0,
+                'clear_for_editor'  => 0,
                 'excl_ids'          => '',
                 'excl_regexp'       => '',
                 'excl_cookies'      => '',
@@ -1656,6 +1664,15 @@ final class Cache_Enabler {
         );
     }
 
+    public static function user_can_clear_cache( $can_clear ) {
+
+        if ( self::$options['clear_for_editor'] && current_user_can('publish_pages') ) {
+
+            return true;
+        }
+
+        return $can_clear;
+    }
 
     /**
      * add clear option dropdown on post publish widget
@@ -2021,6 +2038,7 @@ final class Cache_Enabler {
             'new_comment'       => (int)(!empty($data['new_comment'])),
             'webp'              => (int)(!empty($data['webp'])),
             'clear_on_upgrade'  => (int)(!empty($data['clear_on_upgrade'])),
+            'clear_for_editor'  => (int)(!empty($data['clear_for_editor'])),
             'compress'          => (int)(!empty($data['compress'])),
             'excl_ids'          => (string)sanitize_text_field(@$data['excl_ids']),
             'excl_regexp'       => (string)self::validate_regexps(@$data['excl_regexp']),
@@ -2056,170 +2074,180 @@ final class Cache_Enabler {
         ?>
 
         <div class="wrap" id="cache-settings">
-            <h2>
-                <?php _e("Cache Enabler Settings", "cache-enabler") ?>
-            </h2>
+        <h2>
+            <?php _e("Cache Enabler Settings", "cache-enabler") ?>
+        </h2>
 
-            <div class="notice notice-info" style="margin-bottom: 35px;">
-                <p><?php printf( __('Combine <b><a href="%s">%s</a></b> with Cache Enabler for even better WordPress performance and achieve the next level of caching with a CDN.', 'cache-enabler'), 'https://www.keycdn.com?utm_source=wp-admin&utm_medium=plugins&utm_campaign=cache-enabler', 'KeyCDN'); ?></p>
-            </div>
+        <div class="notice notice-info" style="margin-bottom: 35px;">
+            <p><?php printf( __('Combine <b><a href="%s">%s</a></b> with Cache Enabler for even better WordPress performance and achieve the next level of caching with a CDN.', 'cache-enabler'), 'https://www.keycdn.com?utm_source=wp-admin&utm_medium=plugins&utm_campaign=cache-enabler', 'KeyCDN'); ?></p>
+        </div>
 
-            <p><?php $size=self::get_cache_size(); printf( __("Current cache size: <b>%s</b>", "cache-enabler"), ( empty($size) ? esc_html__("Empty", "cache-enabler") : size_format($size) ) ); ?></p>
+        <p><?php $size=self::get_cache_size(); printf( __("Current cache size: <b>%s</b>", "cache-enabler"), ( empty($size) ? esc_html__("Empty", "cache-enabler") : size_format($size) ) ); ?></p>
 
-            <form method="post" action="options.php">
-                <?php settings_fields('cache-enabler') ?>
+        <form method="post" action="options.php">
+            <?php settings_fields('cache-enabler') ?>
 
-                <?php $options = self::_get_options() ?>
+            <?php $options = self::_get_options() ?>
 
-                <table class="form-table">
-                    <tr valign="top">
-                        <th scope="row">
-                            <?php _e("Cache Expiry", "cache-enabler") ?>
-                        </th>
-                        <td>
-                            <fieldset>
-                                <label for="cache_expires">
-                                    <input type="text" name="cache-enabler[expires]" id="cache_expires" value="<?php echo esc_attr($options['expires']) ?>" />
-                                    <p class="description"><?php _e("Cache expiry in hours. An expiry time of 0 means that the cache never expires.", "cache-enabler"); ?></p>
-                                </label>
-                            </fieldset>
-                        </td>
-                    </tr>
-                    <tr valign="top">
-                        <th scope="row">
-                            <?php _e("Cache Behavior", "cache-enabler") ?>
-                        </th>
-                        <td>
-                            <fieldset>
-                                <label for="cache_new_post">
-                                    <input type="checkbox" name="cache-enabler[new_post]" id="cache_new_post" value="1" <?php checked('1', $options['new_post']); ?> />
-                                    <?php _e("Clear the complete cache if a new post has been published (instead of only the home page cache).", "cache-enabler") ?>
-                                </label>
-
-                                <br />
-
-                                <label for="cache_new_comment">
-                                    <input type="checkbox" name="cache-enabler[new_comment]" id="cache_new_comment" value="1" <?php checked('1', $options['new_comment']); ?> />
-                                    <?php _e("Clear the complete cache if a new comment has been posted (instead of only the page specific cache).", "cache-enabler") ?>
-                                </label>
-
-                                <br />
-
-                                <label for="cache_compress">
-                                    <input type="checkbox" name="cache-enabler[compress]" id="cache_compress" value="1" <?php checked('1', $options['compress']); ?> />
-                                    <?php _e("Pre-compression of cached pages. Needs to be disabled if the decoding fails in the web browser.", "cache-enabler") ?>
-                                </label>
-
-                                <br />
-
-                                <label for="cache_webp">
-                                    <input type="checkbox" name="cache-enabler[webp]" id="cache_webp" value="1" <?php checked('1', $options['webp']); ?> />
-                                    <?php _e("Create an additional cached version for WebP image support. Convert your images to WebP with <a href=\"https://optimus.io/en/\" target=\"_blank\">Optimus</a>.", "cache-enabler") ?>
-                                </label>
-
-                                <br />
-
-                                <label for="cache_clear_on_upgrade">
-                                    <input type="checkbox" name="cache-enabler[clear_on_upgrade]" id="cache_clear_on_upgrade" value="1" <?php checked('1', $options['clear_on_upgrade']); ?> />
-                                    <?php _e("Clear the complete cache if any plugin has been upgraded.", "cache-enabler") ?>
-                                </label>
-                            </fieldset>
-                        </td>
-                    </tr>
-
-                    <tr valign="top">
-                        <th scope="row">
-                            <?php _e("Cache clear post types", "cache-enabler") ?>
-                        </th>
-                        <td>
-                            <fieldset>
-                                <?php foreach (get_post_types(array('public' => true)) as $post_type) : ?>
-
-                                    <label for="clear_home_on_clear_by_post_id_<?php echo esc_attr($post_type) ?>">
-                                        <input type="checkbox" name="cache-enabler[clear_home_on_clear_by_post_id][<?php echo esc_attr($post_type) ?>]" id="clear_home_on_clear_by_post_id_<?php echo esc_attr($post_type) ?>" value="1" <?php checked('1', $options['clear_home_on_clear_by_post_id'][$post_type]); ?> />
-                                        <?php printf(__("Clear the home page cache on post edit %s.", "cache-enabler"), ('<strong>' . esc_html($post_type) . '</strong>') ); ?>
-                                    </label>
-
-                                    <br />
-
-                                    <label for="clear_ids_on_clear_by_post_id_<?php echo esc_attr($post_type) ?>">
-                                        <input type="text" name="cache-enabler[clear_ids_on_clear_by_post_id][<?php echo esc_attr($post_type) ?>]" id="clear_ids_on_clear_by_post_id_<?php echo esc_attr($post_type) ?>" value="<?php echo esc_attr($options['clear_ids_on_clear_by_post_id'][$post_type]) ?>" />
-                                        <p class="description">
-                                            <?php printf( __("Additional IDs on edit %s. Separated by a <code>,</code> that should be clear cache.", "cache-enabler"), ('<strong>' . esc_html($post_type) . '</strong>') ) ?>
-                                        </p>
-                                    </label>
-
-                                    <br />
-                                <?php endforeach; ?>
-                            </fieldset>
-                        </td>
-                    </tr>
-
-                    <tr valign="top">
-                        <th scope="row">
-                            <?php _e("Cache Exclusions", "cache-enabler") ?>
-                        </th>
-                        <td>
-                            <fieldset>
-                                <label for="cache_excl_ids">
-                                    <input type="text" name="cache-enabler[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
-                                    <p class="description">
-                                        <?php echo sprintf(__("Post or Pages IDs separated by a %s that should not be cached.", "cache-enabler"), "<code>,</code>"); ?>
-                                    </p>
-                                </label>
-
-                                <br />
-
-                                <label for="cache_excl_regexp">
-                                    <input type="text" name="cache-enabler[excl_regexp]" id="cache_excl_regexp" value="<?php echo esc_attr($options['excl_regexp']) ?>" />
-                                    <p class="description">
-                                        <?php _e("Regexp matching page paths that should not be cached.", "cache-enabler"); ?><br>
-                                        <?php _e("Example:", "cache-enabler"); ?> <code>/(^\/$|\/robot\/$|^\/2018\/.*\/test\/)/</code>
-                                    </p>
-                                </label>
-
-                                <br />
-
-                                <label for="cache_excl_cookies">
-                                    <input type="text" name="cache-enabler[excl_cookies]" id="cache_excl_cookies" value="<?php echo esc_attr($options['excl_cookies']) ?>" />
-                                    <p class="description">
-                                        <?php _e("Regexp matching cookies that should cause the cache to be bypassed.", "cache-enabler"); ?><br>
-                                        <?php _e("Example:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code><br>
-                                        <?php _e("Default if unset:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code>
-                                    </p>
-                                </label>
-                            </fieldset>
-                        </td>
-                    </tr>
-
-                    <tr valign="top">
-                        <th scope="row">
-                            <?php _e("Cache Minification", "cache-enabler") ?>
-                        </th>
-                        <td>
-                            <label for="cache_minify_html">
-                                <select name="cache-enabler[minify_html]" id="cache_minify_html">
-                                    <?php foreach( self::_minify_select() as $k => $v ) { ?>
-                                        <option value="<?php echo esc_attr($k) ?>" <?php selected($options['minify_html'], $k); ?>>
-                                            <?php echo esc_html($v) ?>
-                                        </option>
-                                    <?php } ?>
-                                </select>
+            <table class="form-table">
+                <tr valign="top">
+                    <th scope="row">
+                        <?php _e("Cache Expiry", "cache-enabler") ?>
+                    </th>
+                    <td>
+                        <fieldset>
+                            <label for="cache_expires">
+                                <input type="text" name="cache-enabler[expires]" id="cache_expires" value="<?php echo esc_attr($options['expires']) ?>" />
+                                <p class="description"><?php _e("Cache expiry in hours. An expiry time of 0 means that the cache never expires.", "cache-enabler"); ?></p>
                             </label>
-                        </td>
-                    </tr>
+                        </fieldset>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row">
+                        <?php _e("Cache Behavior", "cache-enabler") ?>
+                    </th>
+                    <td>
+                        <fieldset>
+                            <label for="cache_new_post">
+                                <input type="checkbox" name="cache-enabler[new_post]" id="cache_new_post" value="1" <?php checked('1', $options['new_post']); ?> />
+                                <?php _e("Clear the complete cache if a new post has been published (instead of only the home page cache).", "cache-enabler") ?>
+                            </label>
 
-                    <tr valign="top">
-                        <th scope="row">
-                            <?php submit_button() ?>
-                        </th>
-                        <td>
-                            <p class="description"><?php _e("Saving these settings will clear the complete cache.", "cache-enabler") ?></p>
-                        </td>
-                    </tr>
-                </table>
-            </form>
-            <p class="description"><?php _e("It is recommended to enable HTTP/2 on your origin server and use a CDN that supports HTTP/2. Avoid domain sharding and concatenation of your assets to benefit from parallelism of HTTP/2.", "cache-enabler") ?></p>
+                            <br />
+
+                            <label for="cache_new_comment">
+                                <input type="checkbox" name="cache-enabler[new_comment]" id="cache_new_comment" value="1" <?php checked('1', $options['new_comment']); ?> />
+                                <?php _e("Clear the complete cache if a new comment has been posted (instead of only the page specific cache).", "cache-enabler") ?>
+                            </label>
+
+                            <br />
+
+                            <label for="cache_compress">
+                                <input type="checkbox" name="cache-enabler[compress]" id="cache_compress" value="1" <?php checked('1', $options['compress']); ?> />
+                                <?php _e("Pre-compression of cached pages. Needs to be disabled if the decoding fails in the web browser.", "cache-enabler") ?>
+                            </label>
+
+                            <br />
+
+                            <label for="cache_webp">
+                                <input type="checkbox" name="cache-enabler[webp]" id="cache_webp" value="1" <?php checked('1', $options['webp']); ?> />
+                                <?php _e("Create an additional cached version for WebP image support. Convert your images to WebP with <a href=\"https://optimus.io/en/\" target=\"_blank\">Optimus</a>.", "cache-enabler") ?>
+                            </label>
+
+                            <br />
+
+                            <label for="cache_clear_on_upgrade">
+                                <input type="checkbox" name="cache-enabler[clear_on_upgrade]" id="cache_clear_on_upgrade" value="1" <?php checked('1', $options['clear_on_upgrade']); ?> />
+                                <?php _e("Clear the complete cache if any plugin has been upgraded.", "cache-enabler") ?>
+                            </label>
+
+                            <br />
+
+                            <label for="cache_clear_for_editor">
+                                <input type="checkbox" name="cache-enabler[clear_for_editor]" id="cache_clear_for_editor" value="1" <?php checked('1', $options['clear_for_editor']); ?> />
+                                <?php _e("Clear cache available for editor or greather role.", "cache-enabler") ?>
+                            </label>
+                        </fieldset>
+                    </td>
+                </tr>
+
+                <tr valign="top">
+                    <th scope="row">
+                        <?php _e("Cache clear post types", "cache-enabler") ?>
+                    </th>
+                    <td>
+                        <fieldset>
+                            <?php foreach (get_post_types(array('public' => true)) as $post_type) : ?>
+                                <?php
+                                $_clear_home = isset($options['clear_home_on_clear_by_post_id'][$post_type]) ? $options['clear_home_on_clear_by_post_id'][$post_type] : 0;
+                                $_clear_ids = isset($options['clear_ids_on_clear_by_post_id'][$post_type]) ? $options['clear_ids_on_clear_by_post_id'][$post_type] : '';
+                                ?>
+                                <label for="clear_home_on_clear_by_post_id_<?php echo esc_attr($post_type) ?>">
+                                    <input type="checkbox" name="cache-enabler[clear_home_on_clear_by_post_id][<?php echo esc_attr($post_type) ?>]" id="clear_home_on_clear_by_post_id_<?php echo esc_attr($post_type) ?>" value="1" <?php checked('1', $_clear_home); ?> />
+                                    <?php printf(__("Clear the home page cache on post edit %s.", "cache-enabler"), ('<strong>' . esc_html($post_type) . '</strong>') ); ?>
+                                </label>
+
+                                <br />
+
+                                <label for="clear_ids_on_clear_by_post_id_<?php echo esc_attr($post_type) ?>">
+                                    <input type="text" name="cache-enabler[clear_ids_on_clear_by_post_id][<?php echo esc_attr($post_type) ?>]" id="clear_ids_on_clear_by_post_id_<?php echo esc_attr($post_type) ?>" value="<?php echo esc_attr($_clear_ids) ?>" />
+                                    <p class="description">
+                                        <?php printf( __("Additional IDs on edit %s. Separated by a <code>,</code> that should be clear cache.", "cache-enabler"), ('<strong>' . esc_html($post_type) . '</strong>') ) ?>
+                                    </p>
+                                </label>
+
+                                <br />
+                            <?php endforeach; ?>
+                        </fieldset>
+                    </td>
+                </tr>
+
+                <tr valign="top">
+                    <th scope="row">
+                        <?php _e("Cache Exclusions", "cache-enabler") ?>
+                    </th>
+                    <td>
+                        <fieldset>
+                            <label for="cache_excl_ids">
+                                <input type="text" name="cache-enabler[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
+                                <p class="description">
+                                    <?php echo sprintf(__("Post or Pages IDs separated by a %s that should not be cached.", "cache-enabler"), "<code>,</code>"); ?>
+                                </p>
+                            </label>
+
+                            <br />
+
+                            <label for="cache_excl_regexp">
+                                <input type="text" name="cache-enabler[excl_regexp]" id="cache_excl_regexp" value="<?php echo esc_attr($options['excl_regexp']) ?>" />
+                                <p class="description">
+                                    <?php _e("Regexp matching page paths that should not be cached.", "cache-enabler"); ?><br>
+                                    <?php _e("Example:", "cache-enabler"); ?> <code>/(^\/$|\/robot\/$|^\/2018\/.*\/test\/)/</code>
+                                </p>
+                            </label>
+
+                            <br />
+
+                            <label for="cache_excl_cookies">
+                                <input type="text" name="cache-enabler[excl_cookies]" id="cache_excl_cookies" value="<?php echo esc_attr($options['excl_cookies']) ?>" />
+                                <p class="description">
+                                    <?php _e("Regexp matching cookies that should cause the cache to be bypassed.", "cache-enabler"); ?><br>
+                                    <?php _e("Example:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author|(woocommerce_items_in_cart|wp_woocommerce_session)_?)/</code><br>
+                                    <?php _e("Default if unset:", "cache-enabler"); ?> <code>/^(wp-postpass|wordpress_logged_in|comment_author)_/</code>
+                                </p>
+                            </label>
+                        </fieldset>
+                    </td>
+                </tr>
+
+                <tr valign="top">
+                    <th scope="row">
+                        <?php _e("Cache Minification", "cache-enabler") ?>
+                    </th>
+                    <td>
+                        <label for="cache_minify_html">
+                            <select name="cache-enabler[minify_html]" id="cache_minify_html">
+                                <?php foreach( self::_minify_select() as $k => $v ) { ?>
+                                    <option value="<?php echo esc_attr($k) ?>" <?php selected($options['minify_html'], $k); ?>>
+                                        <?php echo esc_html($v) ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </label>
+                    </td>
+                </tr>
+
+                <tr valign="top">
+                    <th scope="row">
+                        <?php submit_button() ?>
+                    </th>
+                    <td>
+                        <p class="description"><?php _e("Saving these settings will clear the complete cache.", "cache-enabler") ?></p>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        <p class="description"><?php _e("It is recommended to enable HTTP/2 on your origin server and use a CDN that supports HTTP/2. Avoid domain sharding and concatenation of your assets to benefit from parallelism of HTTP/2.", "cache-enabler") ?></p>
         </div><?php
     }
 }
