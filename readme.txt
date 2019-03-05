@@ -1,8 +1,8 @@
-=== Cache Enabler - WordPress Cache ===
-Contributors: keycdn
+=== Cache Enabler 2 - WordPress Cache ===
+Contributors: redcastor
 Tags: cache, caching, wordpress cache, wp cache, performance, gzip, webp, http2
 Requires at least: 4.6
-Tested up to: 4.9
+Tested up to: 5.1
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -32,6 +32,7 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 * WebP Support (when combined with [Optimus](https://optimus.io/en/ "Optimus"))
 * Supports responsive images via srcset since WP 4.4
 * Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/)
+* Support WPML and Woocommerce
 
 > Cache Enabler is the first WP plugin to allow you to serve WebP images without JavaScript and also fully supports srcset since WP 4.4. WebP is a new image format that provides lossless and lossy compression for images on the web. WebP lossless images are [26% smaller](https://developers.google.com/speed/webp/docs/webp_lossless_alpha_study#results "webp lossless alpha study") in size compared to PNGs.
 
@@ -59,7 +60,7 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 
 = Maintainer =
-* [KeyCDN](https://www.keycdn.com "KeyCDN")
+* [ViaMonkey](https://www.viamonkey.com "ViaMonkey")
 
 
 = Credits =

@@ -1,15 +1,16 @@
 <?php
 /*
-Plugin Name: Cache Enabler
+Plugin Name: Cache Enabler 2
 Text Domain: cache-enabler
 Description: Simple and fast WordPress disk caching plugin.
-Author: KeyCDN
-Author URI: https://www.keycdn.com
+Author: ViaMonkey
+Author URI: https://www.viamonkey.com
 License: GPLv2 or later
-Version: 2.0.0
+Version: 2.0.1
 */
 
 /*
+Copyright (C)  2019 ViaMonkey
 Copyright (C)  2017 KeyCDN
 Copyright (C)  2015 Sergej Müller
 
