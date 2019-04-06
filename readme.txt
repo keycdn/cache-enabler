@@ -69,6 +69,9 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 2.0.2
+* Add bypass if WP_CACHE defined and false
+
 = 2.0.1
 * Add user can editor clear cache options
 
