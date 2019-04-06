@@ -1432,6 +1432,11 @@ final class Cache_Enabler {
         if ( apply_filters('bypass_cache', false) ) {
             return true;
         }
+        
+        // WP_CACHE check false true
+        if ( defined('WP_CACHE') && !WP_CACHE ) {
+            return true;
+        }
 
         // conditional tags
         if ( self::_is_index() OR is_search() OR is_404() OR is_feed() OR is_trackback() OR is_robots() OR is_preview() OR post_password_required() ) {
