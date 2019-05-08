@@ -68,6 +68,9 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.3.4 =
+* Reverted change to page specific as new default
+
 = 1.3.3 =
 * Replaced wp_die in advanced cache
 
