@@ -31,6 +31,20 @@ $settings_file = sprintf('%s-%s%s.json',
 );
 $settings = _read_settings($settings_file);
 
+//User agent excluded
+if ( !empty($settings['excl_user_agent']) ) {
+
+    $excl_user_agent = $settings['excl_user_agent'];
+    $server_user_agent = $_SERVER['HTTP_USER_AGENT'];
+
+    foreach (explode('\n', $excl_user_agent) as $line) {
+
+        if (strrpos($server_user_agent, $line)) {
+            return false;
+        }
+    }
+}
+
 // if post path excluded
 if ( !empty($settings['excl_regexp']) ) {
     $url_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

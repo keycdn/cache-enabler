@@ -672,6 +672,7 @@ final class Cache_Enabler {
                 'clear_on_upgrade'  => 0,
                 'clear_for_editor'  => 0,
                 'excl_ids'          => '',
+                'excl_user_agent'   => '',
                 'excl_regexp'       => '',
                 'excl_cookies'      => '',
                 'minify_html'       => self::MINIFY_DISABLED,
@@ -1432,7 +1433,7 @@ final class Cache_Enabler {
         if ( apply_filters('bypass_cache', false) ) {
             return true;
         }
-        
+
         // WP_CACHE check false true
         if ( defined('WP_CACHE') && !WP_CACHE ) {
             return true;
@@ -1475,6 +1476,19 @@ final class Cache_Enabler {
         if ( $options['excl_ids'] && is_singular() ) {
             if ( in_array( $GLOBALS['wp_query']->get_queried_object_id(), (array)explode(',', $options['excl_ids']) ) ) {
                 return true;
+            }
+        }
+
+        //HTTP_USER_AGENT
+        if ( !empty($options['excl_user_agent']) ) {
+            $excl_user_agent = $options['excl_user_agent'];
+            $server_user_agent = $_SERVER['HTTP_USER_AGENT'];
+
+            foreach (explode('\n', $excl_user_agent) as $line) {
+
+                if (strrpos($server_user_agent, $line)) {
+                    return true;
+                }
             }
         }
 
@@ -2011,6 +2025,14 @@ final class Cache_Enabler {
             Cache_Enabler_Disk::delete_advcache_settings(array("expires"));
         }
 
+        // bypass user agent
+        if ( strlen($data["excl_user_agent"]) > 0 ) {
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "excl_user_agent" => $data["excl_user_agent"]));
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array("excl_user_agent"));
+        }
+
         // path bypass regexp
         if ( strlen($data["excl_regexp"]) > 0 ) {
             Cache_Enabler_Disk::record_advcache_settings(array(
@@ -2046,6 +2068,7 @@ final class Cache_Enabler {
             'clear_for_editor'  => (int)(!empty($data['clear_for_editor'])),
             'compress'          => (int)(!empty($data['compress'])),
             'excl_ids'          => (string)sanitize_text_field(@$data['excl_ids']),
+            'excl_user_agent'   => (string)self::validate_regexps(@$data['excl_user_agent']),
             'excl_regexp'       => (string)self::validate_regexps(@$data['excl_regexp']),
             'excl_cookies'      => (string)self::validate_regexps(@$data['excl_cookies']),
             'minify_html'       => (int)$data['minify_html'],
@@ -2198,6 +2221,15 @@ final class Cache_Enabler {
                                 <input type="text" name="cache-enabler[excl_ids]" id="cache_excl_ids" value="<?php echo esc_attr($options['excl_ids']) ?>" />
                                 <p class="description">
                                     <?php echo sprintf(__("Post or Pages IDs separated by a %s that should not be cached.", "cache-enabler"), "<code>,</code>"); ?>
+                                </p>
+                            </label>
+
+                            <br />
+
+                            <label for="cache_excl_user_agent">
+                                <textarea name="cache-enabler[excl_regexp]" id="cache_excl_regexp"><?php echo esc_attr($options['excl_regexp']) ?></textarea>
+                                <p class="description">
+                                    <?php _e("User Agent matching that should not be cached. One condition per line", "cache-enabler"); ?><br>
                                 </p>
                             </label>
 
