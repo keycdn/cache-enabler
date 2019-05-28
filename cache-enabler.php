@@ -6,7 +6,7 @@ Description: Simple and fast WordPress disk caching plugin.
 Author: ViaMonkey
 Author URI: https://www.viamonkey.com
 License: GPLv2 or later
-Version: 2.0.2
+Version: 2.0.3
 */
 
 /*
