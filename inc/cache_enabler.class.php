@@ -672,7 +672,7 @@ final class Cache_Enabler {
                 'clear_on_upgrade'  => 0,
                 'clear_for_editor'  => 0,
                 'excl_ids'          => '',
-                'excl_user_agent'   => '',
+                'excl_user_agent'   => 'MSIE',
                 'excl_regexp'       => '',
                 'excl_cookies'      => '',
                 'minify_html'       => self::MINIFY_DISABLED,
@@ -1484,9 +1484,9 @@ final class Cache_Enabler {
             $excl_user_agent = $options['excl_user_agent'];
             $server_user_agent = $_SERVER['HTTP_USER_AGENT'];
 
-            foreach (explode('\n', $excl_user_agent) as $line) {
+            foreach (explode("\r\n", $excl_user_agent) as $line) {
 
-                if (strrpos($server_user_agent, $line)) {
+                if (strrpos($server_user_agent, trim($line))) {
                     return true;
                 }
             }
@@ -2068,7 +2068,7 @@ final class Cache_Enabler {
             'clear_for_editor'  => (int)(!empty($data['clear_for_editor'])),
             'compress'          => (int)(!empty($data['compress'])),
             'excl_ids'          => (string)sanitize_text_field(@$data['excl_ids']),
-            'excl_user_agent'   => (string)self::validate_regexps(@$data['excl_user_agent']),
+            'excl_user_agent'   => (string)sanitize_textarea_field(@$data['excl_user_agent']),
             'excl_regexp'       => (string)self::validate_regexps(@$data['excl_regexp']),
             'excl_cookies'      => (string)self::validate_regexps(@$data['excl_cookies']),
             'minify_html'       => (int)$data['minify_html'],
@@ -2227,7 +2227,7 @@ final class Cache_Enabler {
                             <br />
 
                             <label for="cache_excl_user_agent">
-                                <textarea name="cache-enabler[excl_regexp]" id="cache_excl_regexp"><?php echo esc_attr($options['excl_regexp']) ?></textarea>
+                                <textarea cols="10" rows="4" name="cache-enabler[excl_user_agent]" id="cache_excl_user_agent"><?php echo esc_attr($options['excl_user_agent']) ?></textarea>
                                 <p class="description">
                                     <?php _e("User Agent matching that should not be cached. One condition per line", "cache-enabler"); ?><br>
                                 </p>

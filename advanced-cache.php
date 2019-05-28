@@ -37,9 +37,9 @@ if ( !empty($settings['excl_user_agent']) ) {
     $excl_user_agent = $settings['excl_user_agent'];
     $server_user_agent = $_SERVER['HTTP_USER_AGENT'];
 
-    foreach (explode('\n', $excl_user_agent) as $line) {
+    foreach (explode("\r\n", $excl_user_agent) as $line) {
 
-        if (strrpos($server_user_agent, $line)) {
+        if (strrpos($server_user_agent, trim($line))) {
             return false;
         }
     }
