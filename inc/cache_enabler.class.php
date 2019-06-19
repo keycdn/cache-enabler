@@ -626,8 +626,21 @@ final class Cache_Enabler {
             self::$disk = new Cache_Enabler_Disk;
         }
 
-        // cleaner cache
+        // Cleaner cache
         self::$cleaner = Cache_Enabler_Cleaner::getInstance();
+
+        // Compatibility plugins
+        if (Cache_Enabler_Dependencies::is_active('woocommerce/woocommerce.php')) {
+            new Cache_Enabler_Woocommerce();
+        }
+
+        if (Cache_Enabler_Dependencies::is_active('sitepress-multilingual-cms/sitepress.php')) {
+            new Cache_Enabler_Wpml();
+        }
+
+        if (Cache_Enabler_Dependencies::is_active('wp-rest-cache/wp-rest-cache.php')) {
+            new Cache_Enabler_WpRestCache();
+        }
     }
 
 
@@ -1183,8 +1196,11 @@ final class Cache_Enabler {
             return;
         }
 
+        //To integer
+        $clear_post_cache = (int)$_POST['_clear_post_cache_on_update'];
+
         // purge cache if clean post on update
-        if ( ! isset($_POST['_clear_post_cache_on_update']) ) {
+        if ( $clear_post_cache ) {
 
             // clear complete cache if option enabled
             if ( self::$options['new_post'] ) {
@@ -1205,9 +1221,6 @@ final class Cache_Enabler {
             return;
         }
 
-        // save as integer
-        $clear_post_cache = (int)$_POST['_clear_post_cache_on_update'];
-
         // save user metadata
         update_user_meta(
             get_current_user_id(),
@@ -1216,7 +1229,7 @@ final class Cache_Enabler {
         );
 
         // purge complete cache or specific post
-        if ( $clear_post_cache ) {
+        if ( !$clear_post_cache ) {
             self::clear_page_cache_by_post_id( $post_ID );
         } else {
             self::clear_total_cache();
@@ -1696,14 +1709,13 @@ final class Cache_Enabler {
     /**
      * add clear option dropdown on post publish widget
      *
-     * @since   1.0.0
-     * @change  1.0.0
+     * @param $post
      */
 
-    public static function add_clear_dropdown() {
+    public static function add_clear_dropdown( $post ) {
 
         // on published post page only
-        if ( empty($GLOBALS['pagenow']) OR $GLOBALS['pagenow'] !== 'post.php' OR empty($GLOBALS['post']) OR ! is_object($GLOBALS['post']) OR $GLOBALS['post']->post_status !== 'publish' ) {
+        if ( empty($GLOBALS['pagenow']) || $GLOBALS['pagenow'] !== 'post.php' || empty($post) || ! is_object($post) || $post->post_status !== 'publish' ) {
             return;
         }
 
@@ -1713,7 +1725,7 @@ final class Cache_Enabler {
         }
 
         // validate nonce
-        wp_nonce_field(CE_BASE, '_cache__status_nonce_' .$GLOBALS['post']->ID);
+        wp_nonce_field(CE_BASE, '_cache__status_nonce_' . $post->ID);
 
         // get current action
         $current_action = (int)get_user_meta(
@@ -1725,8 +1737,8 @@ final class Cache_Enabler {
         // init variables
         $dropdown_options = '';
         $available_options = array(
+            esc_html__('Specific', 'cache-enabler'),
             esc_html__('Completely', 'cache-enabler'),
-            esc_html__('Page specific', 'cache-enabler')
         );
 
         // set dropdown options

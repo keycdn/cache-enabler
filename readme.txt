@@ -69,6 +69,10 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 2.1.0
+* Improved compatibility plugins with check active plugin.
+* Add support flush cache rest api for wp-rest-cache on action ce_action_cache_by_post_id_cleared.
+
 = 2.0.3
 * Add bypass cache based on user agent
 

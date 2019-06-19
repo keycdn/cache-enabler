@@ -6,7 +6,7 @@ Description: Simple and fast WordPress disk caching plugin.
 Author: ViaMonkey
 Author URI: https://www.viamonkey.com
 License: GPLv2 or later
-Version: 2.0.3
+Version: 2.1.0
 */
 
 /*
@@ -80,7 +80,9 @@ function cache_autoload($class) {
     if ( in_array($class, array(
         'Cache_Enabler',
         'Cache_Enabler_Disk',
+        'Cache_Enabler_Dependencies',
         'Cache_Enabler_Cleaner',
+        'Cache_Enabler_WpRestCache',
         'Cache_Enabler_Woocommerce',
         'Cache_Enabler_Wpml'
     )) ) {

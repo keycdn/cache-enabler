@@ -52,15 +52,14 @@ final class Cache_Enabler_Woocommerce {
      */
     public function save_product_variation($variation_id, $i) {
 
-        //Clear cache only on time
-        if ($i == 0) {
+        //Clear cache only on time by remove this action
+        $product_id = wp_get_post_parent_id($variation_id);
 
-            $product_id = wp_get_post_parent_id($variation_id);
+        if ($product_id) {
 
-            if ($product_id) {
+            Cache_Enabler::clear_page_cache_by_post_id($product_id);
 
-                Cache_Enabler::clear_page_cache_by_post_id($product_id);
-            }
+            remove_action('woocommerce_save_product_variation', array($this, 'save_product_variation'), 10);
         }
     }
 

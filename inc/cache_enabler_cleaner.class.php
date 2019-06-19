@@ -56,9 +56,6 @@ final class Cache_Enabler_Cleaner {
 
         $this->post_ids = array();
         $this->urls = array();
-
-        new Cache_Enabler_Woocommerce();
-        new Cache_Enabler_Wpml();
     }
 
     /**
