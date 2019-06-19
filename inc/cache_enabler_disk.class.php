@@ -352,7 +352,7 @@ final class Cache_Enabler_Disk {
 
         // get dir data
         $objects = array_diff(
-            scandir($dir),
+            @scandir($dir),
             array('..', '.')
         );
 
@@ -368,7 +368,7 @@ final class Cache_Enabler_Disk {
             if ( is_dir($object) ) {
                 self::_clear_dir($object);
             } else {
-                unlink($object);
+                @unlink($object);
             }
         }
 
