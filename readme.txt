@@ -69,6 +69,9 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 2.1.1
+* Add support woocommerce clean cache on product ordering "woocommerce_after_product_ordering"
+
 = 2.1.0
 * Improved compatibility plugins with check active plugin.
 * Add support flush cache rest api for wp-rest-cache on action ce_action_cache_by_post_id_cleared.

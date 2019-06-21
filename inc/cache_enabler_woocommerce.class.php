@@ -24,6 +24,8 @@ final class Cache_Enabler_Woocommerce {
         add_action('woocommerce_variation_set_stock', array($this, 'product_set_stock'), 10);
         add_action('woocommerce_variation_set_stock_status', array($this, 'product_set_stock_status'), 10);
         add_action('woocommerce_save_product_variation', array($this, 'save_product_variation'), 10, 2);
+        add_action('woocommerce_after_product_ordering', array($this, 'save_product_ordering'), 10, 2);
+
         add_filter('ce_cache_cleaner_clean_ids', array($this, 'clear_cache_by_ids'), 10, 2);
     }
 
@@ -61,6 +63,18 @@ final class Cache_Enabler_Woocommerce {
 
             remove_action('woocommerce_save_product_variation', array($this, 'save_product_variation'), 10);
         }
+    }
+
+
+    /**
+     * After Ajax order product
+     *
+     * @param $sorting_id
+     * @param $menu_orders
+     */
+    public function save_product_ordering($sorting_id, $menu_orders) {
+
+        Cache_Enabler::clear_page_cache_by_post_id($sorting_id);
     }
 
 
