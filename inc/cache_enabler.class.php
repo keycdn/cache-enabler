@@ -678,6 +678,7 @@ final class Cache_Enabler {
             get_option('cache-enabler'),
             array(
                 'expires'           => 0,
+                'revalidate'        => 0,
                 'new_post'          => 0,
                 'new_comment'       => 0,
                 'compress'          => 0,
@@ -2037,6 +2038,14 @@ final class Cache_Enabler {
             Cache_Enabler_Disk::delete_advcache_settings(array("expires"));
         }
 
+        // record revalidate cache for advanced-cache.php
+        if ( $data['revalidate'] > 0 ){
+            Cache_Enabler_Disk::record_advcache_settings(array(
+                "revalidate" => $data['revalidate']));
+        } else {
+            Cache_Enabler_Disk::delete_advcache_settings(array("revalidate"));
+        }
+
         // bypass user agent
         if ( strlen($data["excl_user_agent"]) > 0 ) {
             Cache_Enabler_Disk::record_advcache_settings(array(
@@ -2073,6 +2082,7 @@ final class Cache_Enabler {
 
         return array(
             'expires'           => (int)$data['expires'],
+            'revalidate'        => (int)(!empty($data['revalidate'])),
             'new_post'          => (int)(!empty($data['new_post'])),
             'new_comment'       => (int)(!empty($data['new_comment'])),
             'webp'              => (int)(!empty($data['webp'])),
@@ -2139,6 +2149,13 @@ final class Cache_Enabler {
                             <label for="cache_expires">
                                 <input type="text" name="cache-enabler[expires]" id="cache_expires" value="<?php echo esc_attr($options['expires']) ?>" />
                                 <p class="description"><?php _e("Cache expiry in hours. An expiry time of 0 means that the cache never expires.", "cache-enabler"); ?></p>
+                            </label>
+
+                            <br />
+
+                            <label for="cache_revalidate">
+                                <input type="checkbox" name="cache-enabler[revalidate]" id="cache_revalidate" value="1" <?php checked('1', $options['revalidate']); ?> />
+                                <?php _e("Cache control must revalidate for user logged", "cache-enabler") ?>
                             </label>
                         </fieldset>
                     </td>
