@@ -283,12 +283,17 @@ final class Cache_Enabler_Disk {
 
         // create webp supported files
         if ($options['webp']) {
-            // magic regex rule
-            $regex_rule = '#(?<=(?:(ref|src|set)=[\"\']))(?:http[s]?[^\"\']+)(\.png|\.jp[e]?g)(?:[^\"\']+)?(?=[\"\')])#';
-
-            // call the webp converter callback
-            $converted_data = preg_replace_callback($regex_rule,'self::_convert_webp',$data);
-
+            // magic regex rules
+            $regex_rules = array(
+				'#(?<=(?:(ref|src|set)=[\"\']))(?:http[s]?[^\"\']+)(\.png|\.jp[e]?g)(?:[^\"\']+)?(?=[\"\')])#',
+                '#(?<=(?:(url)))\((?![\'\"]?(?:data):)[\'\"]?([^\'\"\)]*)[\'\"]?\)#'
+			);
+            
+			$converted_data = $data;
+            foreach($regex_rules as $regex_rule) {				
+                $converted_data = preg_replace_callback($regex_rule,'self::_convert_webp',$converted_data);
+            }
+            
             self::_create_file( self::_file_webp_html(), $converted_data.$cache_signature." (webp) -->" );
 
             // create pre-compressed file
@@ -643,6 +648,8 @@ final class Cache_Enabler_Disk {
             return self::_convert_webp_src($asset[0]);
         } elseif ($asset[1] == 'set') {
             return self::_convert_webp_srcset($asset[0]);
+        } elseif ($asset[1] == 'url') {
+            return '('.self::_convert_webp_src(trim($asset[2])).')';
         }
 
         return $asset[0];
