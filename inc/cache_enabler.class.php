@@ -2155,7 +2155,7 @@ final class Cache_Enabler {
 
                             <label for="cache_control">
                                 <input type="text" name="cache-enabler[cache_control]" id="cache_control" value="<?php echo esc_attr($options['cache_control']) ?>" />
-                                <?php _e("Cache control", "cache-enabler") ?>
+                                <p class="description"><?php _e("Cache control", "cache-enabler") ?></p>
                             </label>
                         </fieldset>
                     </td>
