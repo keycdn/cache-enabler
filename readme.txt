@@ -69,6 +69,9 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 2.2.0
+* Add cache control field to settings.
+
 = 2.1.1
 * Add support woocommerce clean cache on product ordering "woocommerce_after_product_ordering"
 

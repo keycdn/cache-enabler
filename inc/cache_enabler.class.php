@@ -678,7 +678,7 @@ final class Cache_Enabler {
             get_option('cache-enabler'),
             array(
                 'expires'           => 0,
-                'revalidate'        => 0,
+                'cache_control'     => 'private, must-revalidate',
                 'new_post'          => 0,
                 'new_comment'       => 0,
                 'compress'          => 0,
@@ -2038,12 +2038,12 @@ final class Cache_Enabler {
             Cache_Enabler_Disk::delete_advcache_settings(array("expires"));
         }
 
-        // record revalidate cache for advanced-cache.php
-        if ( $data['revalidate'] > 0 ){
+        // record cache control for advanced-cache.php
+        if ( strlen($data['cache_control']) > 0 ){
             Cache_Enabler_Disk::record_advcache_settings(array(
-                "revalidate" => $data['revalidate']));
+                "cache_control" => $data['cache_control']));
         } else {
-            Cache_Enabler_Disk::delete_advcache_settings(array("revalidate"));
+            Cache_Enabler_Disk::delete_advcache_settings(array("cache_control"));
         }
 
         // bypass user agent
@@ -2082,7 +2082,7 @@ final class Cache_Enabler {
 
         return array(
             'expires'           => (int)$data['expires'],
-            'revalidate'        => (int)(!empty($data['revalidate'])),
+            'cache_control'     => (string)sanitize_text_field(@$data['cache_control']),
             'new_post'          => (int)(!empty($data['new_post'])),
             'new_comment'       => (int)(!empty($data['new_comment'])),
             'webp'              => (int)(!empty($data['webp'])),
@@ -2153,9 +2153,9 @@ final class Cache_Enabler {
 
                             <br />
 
-                            <label for="cache_revalidate">
-                                <input type="checkbox" name="cache-enabler[revalidate]" id="cache_revalidate" value="1" <?php checked('1', $options['revalidate']); ?> />
-                                <?php _e("Cache control must revalidate for user logged", "cache-enabler") ?>
+                            <label for="cache_control">
+                                <input type="text" name="cache-enabler[cache_control]" id="cache_control" value="<?php echo esc_attr($options['cache_control']) ?>" />
+                                <?php _e("Cache control", "cache-enabler") ?>
                             </label>
                         </fieldset>
                     </td>

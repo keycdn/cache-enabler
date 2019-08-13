@@ -31,6 +31,11 @@ $settings_file = sprintf('%s-%s%s.json',
 );
 $settings = _read_settings($settings_file);
 
+//Set Cache Control
+if (!empty($settings['cache_control'])) {
+    header("Cache-Control: {$settings['cache_control']}" );
+}
+
 //User agent excluded
 if ( !empty($settings['excl_user_agent']) ) {
 
@@ -107,10 +112,6 @@ if ( isset($settings["permalink_trailing_slash"]) ) {
 
 // set cache handler header
 header('x-cache-handler: wp');
-
-if (!empty($settings["revalidate"])) {
-    header( 'Cache-Control: ' . (isset($settings["expires"]) ? ('max-age=' . 3600*$settings["expires"]) : '') . ', private, must-revalidate' );
-}
 
 // get if-modified request headers
 if ( function_exists( 'apache_request_headers' ) ) {
