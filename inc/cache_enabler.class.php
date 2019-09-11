@@ -1197,20 +1197,15 @@ final class Cache_Enabler {
             return;
         }
 
-        //To integer
-        $clear_post_cache = (int)$_POST['_clear_post_cache_on_update'];
-
-        // purge cache if clean post on update
-        if ( $clear_post_cache ) {
-
-            // clear complete cache if option enabled
-            if ( self::$options['new_post'] ) {
-                return self::clear_total_cache();
-            } else {
-                return self::clear_home_page_cache();
-            }
-
-        }
+		// purge cache if clean post on update
+		if ( ! isset($_POST['_clear_post_cache_on_update']) ) {
+			// clear complete cache if option enabled
+			if ( self::$options['new_post'] ) {
+				return self::clear_total_cache();
+			} else {
+				return self::clear_home_page_cache();
+			}
+		}
 
         // validate nonce
         if ( ! isset($_POST['_cache__status_nonce_' .$post_ID]) OR ! wp_verify_nonce($_POST['_cache__status_nonce_' .$post_ID], CE_BASE) ) {
@@ -1222,19 +1217,22 @@ final class Cache_Enabler {
             return;
         }
 
-        // save user metadata
-        update_user_meta(
-            get_current_user_id(),
-            '_clear_post_cache_on_update',
-            $clear_post_cache
-        );
+		// save as integer
+		$clear_post_cache = (int)$_POST['_clear_post_cache_on_update'];
 
-        // purge complete cache or specific post
-        if ( !$clear_post_cache ) {
-            self::clear_page_cache_by_post_id( $post_ID );
-        } else {
-            self::clear_total_cache();
-        }
+		// save user metadata
+		update_user_meta(
+			get_current_user_id(),
+			'_clear_post_cache_on_update',
+			$clear_post_cache
+		);
+
+		// purge complete cache or specific post
+		if ( $clear_post_cache ) {
+			self::clear_page_cache_by_post_id( $post_ID );
+		} else {
+			self::clear_total_cache();
+		}
     }
 
 
