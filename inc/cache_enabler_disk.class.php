@@ -25,8 +25,10 @@ final class Cache_Enabler_Disk {
 
     const FILE_HTML = 'index.html';
     const FILE_GZIP = 'index.html.gz';
+    const FILE_BR = 'index.html.br';
     const FILE_WEBP_HTML = 'index-webp.html';
     const FILE_WEBP_GZIP = 'index-webp.html.gz';
+    const FILE_WEBP_BR = 'index-webp.html.br';
 
 
     /**
@@ -170,8 +172,10 @@ final class Cache_Enabler_Disk {
 
         @unlink($path.self::FILE_HTML);
         @unlink($path.self::FILE_GZIP);
+        @unlink($path.self::FILE_BR);
         @unlink($path.self::FILE_WEBP_HTML);
         @unlink($path.self::FILE_WEBP_GZIP);
+        @unlink($path.self::FILE_WEBP_BR);
     }
 
 
