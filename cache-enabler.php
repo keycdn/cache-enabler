@@ -86,3 +86,10 @@ function cache_autoload($class) {
         );
     }
 }
+
+// Load the WP-CLI command.
+if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
+	require_once CE_DIR . '/inc/cache_enabler_cli.class.php';
+
+	WP_CLI::add_command('cache-enabler', 'Cache_Enabler_CLI');
+}
