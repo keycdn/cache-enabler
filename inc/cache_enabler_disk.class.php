@@ -285,11 +285,10 @@ final class Cache_Enabler_Disk {
         if ($options['webp']) {
             // magic regex rules
             $regex_rules = array(
-				'#(?<=(?:(ref|src|set)=[\"\']))(?:http[s]?[^\"\']+)(\.png|\.jp[e]?g)(?:[^\"\']+)?(?=[\"\')])#',
-                '#(?<=(?:(url)))\((?![\'\"]?(?:data):)[\'\"]?([^\'\"\)]*)[\'\"]?\)#'
-			);
-            
-			$converted_data = $data;
+		    '#(?<=(?:(ref|src|set)=[\"\']))(?:http[s]?[^\"\']+)(\.png|\.jp[e]?g)(?:[^\"\']+)?(?=[\"\')])#',
+		    '#(?<=(?:(url)))\((?![\'\"]?(?:data):)[\'\"]?([^\'\"\)]*)[\'\"]?\)#'
+	    );
+            $converted_data = $data;
             foreach($regex_rules as $regex_rule) {				
                 $converted_data = preg_replace_callback($regex_rule,'self::_convert_webp',$converted_data);
             }
