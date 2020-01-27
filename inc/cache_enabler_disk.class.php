@@ -349,12 +349,15 @@ final class Cache_Enabler_Disk {
         if ( ! is_dir($dir) ) {
             return;
         }
-
+        
         // get dir data
-        $objects = array_diff(
-            scandir($dir),
-            array('..', '.')
-        );
+		$data_dir = @scandir($dir);
+		if(gettype($data_dir) === 'array') {
+			$objects = array_diff(
+				$data_dir,
+				array('..', '.')
+			);
+		}
 
         if ( empty($objects) ) {
             return;
@@ -368,7 +371,7 @@ final class Cache_Enabler_Disk {
             if ( is_dir($object) ) {
                 self::_clear_dir($object);
             } else {
-                unlink($object);
+                @unlink($object);
             }
         }
 
