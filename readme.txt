@@ -22,7 +22,8 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 = Features =
 * Efficient and fast disk cache engine
 * Automated and/or manual clearing of the cache
-* Manually purge the cache of specific pages
+* Manually clear the cache of specific pages
+* WP CLI cache clearing
 * Display of the actual cache size in your dashboard
 * Minification of HTML and inline JavaScript
 * WordPress multisite support
@@ -42,6 +43,18 @@ This plugin requires minimal setup time and allows you to easily take advantage 
 The Wordpress Cache Enabler has the ability to create 2 cached files. One is plain HTML and the other version is gzipped (gzip level 9). These static files are then used to deliver content faster to your users without any database lookups or gzipping as the files are already pre-compressed.
 
 When combined with Optimus, the Wordpress Cache Enabler allows you to easily deliver WebP images. The plugin will check your upload directory for any JPG or PNG images that have an equivalent WebP file. If there is, the URI of these image will be cached in a WebP static file by Cache Enabler. It is not required for all images to be converted to WebP when the "Create an additional cached version for WebP image support" option is enabled. This will not break any images that are not in WebP format. The plugin will deliver images that do have a WebP equivalent and will fall back to the JPG or PNG format for images that don't.
+
+
+= WP CLI =
+
+* Clear all page caches
+  `wp cache-enabler clear`
+
+* Clear the cache for object IDs 1, 2, and 3
+  `wp cache-enabler clear --ids=1,2,3`
+
+* Clear the cache for a particular URL
+  `wp cache-enabler clear --urls=https://example.com/about-us`
 
 
 = Website =
@@ -67,6 +80,9 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 
 == Changelog ==
+
+= 1.3.5 =
+* WP CLI cache clearing (Thanks to Steve Grunwell)
 
 = 1.3.4 =
 * Reverted change to page specific as new default

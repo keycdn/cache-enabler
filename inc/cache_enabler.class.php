@@ -851,7 +851,7 @@ final class Cache_Enabler {
             return;
         }
 
-        // add admin purge link
+        // add admin clear link
         $wp_admin_bar->add_menu(
             array(
                 'id'      => 'clear-cache',
@@ -863,7 +863,7 @@ final class Cache_Enabler {
         );
 
         if ( ! is_admin() ) {
-            // add admin purge link
+            // add admin clear link
             $wp_admin_bar->add_menu(
                 array(
                     'id'      => 'clear-url-cache',
@@ -1184,7 +1184,7 @@ final class Cache_Enabler {
             return;
         }
 
-        // purge cache if clean post on update
+        // clear cache if clean post on update
         if ( ! isset($_POST['_clear_post_cache_on_update']) ) {
 
             // clear complete cache if option enabled
@@ -1216,7 +1216,7 @@ final class Cache_Enabler {
             $clear_post_cache
         );
 
-        // purge complete cache or specific post
+        // clear complete cache or specific post
         if ( $clear_post_cache ) {
             self::clear_page_cache_by_post_id( $post_ID );
         } else {
