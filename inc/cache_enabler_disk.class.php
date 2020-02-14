@@ -287,7 +287,7 @@ final class Cache_Enabler_Disk {
             $regex_rule = '#(?<=(?:(ref|src|set)=[\"\']))(?:[^\"\']+)(\.png|\.jp[e]?g)(?:[^\"\']+)?(?=[\"\')])#';
 
             // call the webp converter callback
-            $converted_data = preg_replace_callback($regex_rule,'self::_convert_webp',$data);
+            $converted_data = apply_filters('cache_enabler_disk_webp_converted_data', preg_replace_callback($regex_rule,'self::_convert_webp',$data));
 
             self::_create_file( self::_file_webp_html(), $converted_data.$cache_signature." (webp) -->" );
 
@@ -349,7 +349,7 @@ final class Cache_Enabler_Disk {
         if ( ! is_dir($dir) ) {
             return;
         }
-        
+
         // get dir data
 		$data_dir = @scandir($dir);
 		if(gettype($data_dir) === 'array') {
