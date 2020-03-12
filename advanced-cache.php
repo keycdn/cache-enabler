@@ -88,10 +88,6 @@ if ( !empty($settings["cache_timeout"]) ) {
 
     // check if timeout has been reached
     if ( $settings["cache_timeout"] <= $now ) {
-        @unlink($path_html);
-        @unlink($path_gzip);
-        @unlink($path_webp_html);
-        @unlink($path_webp_gzip);
         return false;
     }
 }
