@@ -85,6 +85,7 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 * WP CLI cache clearing (Thanks to Steve Grunwell)
 * Added cache_enabler_disk_webp_converted_data filter
 * Improved WebP URL conversion
+* Fixed advanced cache issue
 
 = 1.3.4 =
 * Reverted change to page specific as new default

@@ -16,7 +16,7 @@ $path_webp_gzip = $path . 'index-webp.html.gz';
 
 
 // if we don't have a cache copy, we do not need to proceed
-if ( ! is_readable( $path_html ) ) {
+if ( !is_readable( $path_html ) ) {
     return false;
 }
 
@@ -42,16 +42,16 @@ if ( !empty($settings['excl_regexp']) ) {
 
 // check GET variables
 if ( !empty($_GET) ) {
-	// set regex of analytics campaign tags that shall not prevent caching
-	if ( !empty($settings['incl_attributes']) ) {
-		$attributes_regex = $settings['incl_attributes'];
-	} else {
-		$attributes_regex = '/^utm_(source|medium|campaign|term|content)$/';
-	}
-	// prevent cache use if there is any GET variable not covered by the campaign tag regex
-	if ( sizeof( preg_grep( $attributes_regex, array_keys( $_GET ), PREG_GREP_INVERT ) ) > 0 ) {
-		return false;
-	}
+    // set regex of analytics campaign tags that shall not prevent caching
+    if ( !empty($settings['incl_attributes']) ) {
+        $attributes_regex = $settings['incl_attributes'];
+    } else {
+        $attributes_regex = '/^utm_(source|medium|campaign|term|content)$/';
+    }
+    // prevent cache use if there is any GET variable not covered by the campaign tag regex
+    if ( sizeof( preg_grep( $attributes_regex, array_keys( $_GET ), PREG_GREP_INVERT ) ) > 0 ) {
+        return false;
+    }
 }
 
 // check cookie values
@@ -88,7 +88,10 @@ if ( !empty($settings["cache_timeout"]) ) {
 
     // check if timeout has been reached
     if ( $settings["cache_timeout"] <= $now ) {
-        unlink($timeout_file);
+        @unlink($path_html);
+        @unlink($path_gzip);
+        @unlink($path_webp_html);
+        @unlink($path_webp_gzip);
         return false;
     }
 }

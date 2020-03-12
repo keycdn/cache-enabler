@@ -351,13 +351,13 @@ final class Cache_Enabler_Disk {
         }
 
         // get dir data
-		$data_dir = @scandir($dir);
-		if(gettype($data_dir) === 'array') {
-			$objects = array_diff(
-				$data_dir,
-				array('..', '.')
-			);
-		}
+        $data_dir = @scandir($dir);
+        if(gettype($data_dir) === 'array') {
+            $objects = array_diff(
+                $data_dir,
+                array('..', '.')
+            );
+        }
 
         if ( empty($objects) ) {
             return;
