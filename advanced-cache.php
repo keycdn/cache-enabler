@@ -46,7 +46,7 @@ if ( !empty($_GET) ) {
     if ( !empty($settings['incl_attributes']) ) {
         $attributes_regex = $settings['incl_attributes'];
     } else {
-        $attributes_regex = '/^utm_(source|medium|campaign|term|content)$/';
+        $attributes_regex = '/^fbclid|utm_(source|medium|campaign|term|content)$/';
     }
     // prevent cache use if there is any GET variable not covered by the campaign tag regex
     if ( sizeof( preg_grep( $attributes_regex, array_keys( $_GET ), PREG_GREP_INVERT ) ) > 0 ) {

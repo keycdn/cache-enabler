@@ -2168,7 +2168,7 @@ final class Cache_Enabler {
                                     <p class="description">
                                         <?php _e("Regexp matching campaign tracking GET attributes that should not cause the cache to be bypassed.", "cache-enabler"); ?><br>
                                         <?php _e("Example:", "cache-enabler"); ?> <code>/^pk_(source|medium|campaign|kwd|content)$/</code><br>
-                                        <?php _e("Default if unset:", "cache-enabler"); ?> <code>/^utm_(source|medium|campaign|term|content)$/</code>
+                                        <?php _e("Default if unset:", "cache-enabler"); ?> <code>/^fbclid|utm_(source|medium|campaign|term|content)$/</code>
                                     </p>
                                 </label>
                             </fieldset>
