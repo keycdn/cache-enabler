@@ -1,11 +1,12 @@
-jQuery(document).ready(
-    function($) {
+jQuery( document ).ready(
+    function( $ ) {
 
-        $('.edit-cache-action', '#misc-publishing-actions').click(
-            function(e) {
-                $(this)
-                    .next(':hidden')
-                    .slideDown('fast')
+        $( '.edit-cache-action', '#misc-publishing-actions' ).click(
+            function( e ) {
+
+                $( this )
+                    .next( ':hidden' )
+                    .slideDown( 'fast' )
                     .end()
                     .hide();
 
@@ -13,28 +14,30 @@ jQuery(document).ready(
             }
         );
 
-        $('.save-cache-action', '#misc-publishing-actions').click(
-            function(e) {
-                $(this)
+        $( '.save-cache-action', '#misc-publishing-actions' ).click(
+            function( e ) {
+
+                $( this )
                     .parent()
-                    .slideUp('fast')
-                    .prev(':hidden')
+                    .slideUp( 'fast' )
+                    .prev( ':hidden' )
                     .show();
 
-                $('#output-cache-action').text(
-                    $('#cache_action').children('option:selected').text()
+                $( '#output-cache-action' ).text(
+                    $( '#cache_action' ).children( 'option:selected' ).text()
                 );
 
                 e.preventDefault();
             }
         );
 
-        $('.cancel-cache-action', '#misc-publishing-actions').click(
-            function(e) {
-                $(this)
+        $( '.cancel-cache-action', '#misc-publishing-actions' ).click(
+            function( e ) {
+
+                $( this )
                     .parent()
-                    .slideUp('fast')
-                    .prev(':hidden')
+                    .slideUp( 'fast' )
+                    .prev( ':hidden' )
                     .show();
 
                 e.preventDefault();
