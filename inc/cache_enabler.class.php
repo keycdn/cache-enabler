@@ -651,7 +651,7 @@ final class Cache_Enabler {
      * get options
      *
      * @since   1.0.0
-     * @change  1.3.6
+     * @change  1.4.0
      *
      * @return  array  options array
      */
@@ -670,14 +670,14 @@ final class Cache_Enabler {
 
         // rename
         $options = get_option( 'cache-enabler' );
-        // excl_regexp to excl_paths (1.3.6)
-        if ( $options['excl_regexp'] ) {
+        // excl_regexp to excl_paths (1.4.0)
+        if ( array_key_exists( 'excl_regexp', $options ) ) {
             $options['excl_paths'] = $options['excl_regexp'];
             unset( $options['excl_regexp'] );
             update_option( 'cache-enabler', $options );
         }
-        // incl_attributes to incl_parameters (1.3.6)
-        if ( $options['incl_attributes'] ) {
+        // incl_attributes to incl_parameters (1.4.0)
+        if ( array_key_exists( 'incl_attributes', $options ) ) {
             $options['incl_parameters'] = $options['incl_attributes'];
             unset( $options['incl_attributes'] );
             update_option( 'cache-enabler', $options );
@@ -706,7 +706,7 @@ final class Cache_Enabler {
      * warning if no custom permlinks
      *
      * @since   1.0.0
-     * @change  1.3.6
+     * @change  1.4.0
      *
      * @return  array  options array
      */
@@ -772,7 +772,7 @@ final class Cache_Enabler {
      * Cache Enabler meta links
      *
      * @since   1.0.0
-     * @change  1.3.6
+     * @change  1.4.0
      *
      * @param   array   $input  existing links
      * @param   string  $page   page
@@ -1068,9 +1068,7 @@ final class Cache_Enabler {
             if ( self::$options['new_comment'] ) {
                 self::clear_total_cache();
             } else {
-                self::clear_page_cache_by_post_id(
-                    get_comment( $id )->comment_post_ID
-                );
+                self::clear_page_cache_by_post_id( get_comment( $id )->comment_post_ID );
             }
         }
     }
@@ -1370,7 +1368,7 @@ final class Cache_Enabler {
      * check if logged in
      *
      * @since   1.0.0
-     * @change  1.3.6
+     * @change  1.4.0
      *
      * @return  boolean  true if logged in
      */
@@ -1416,7 +1414,7 @@ final class Cache_Enabler {
      * check to bypass the cache
      *
      * @since   1.0.0
-     * @change  1.3.6
+     * @change  1.4.0
      *
      * @return  boolean  true if exception
      *
@@ -1603,7 +1601,7 @@ final class Cache_Enabler {
      * act on WooCommerce stock changes
      *
      * @since   1.3.0
-     * @change  1.3.0
+     * @change  1.4.0
      */
 
     public static function woocommerce_product_set_stock( $product ) {
@@ -1756,7 +1754,7 @@ final class Cache_Enabler {
         echo sprintf(
             '<div class="misc-pub-section" style="border-top:1px solid #eee">
                 <label for="cache_action">
-                    %1$s: <span id="output-cache-action">%2$s</span>
+                    %1$s: <strong id="output-cache-action">%2$s</strong>
                 </label>
                 <a href="#" class="edit-cache-action hide-if-no-js">%3$s</a>
 
@@ -1860,7 +1858,7 @@ final class Cache_Enabler {
      * check plugin requirements
      *
      * @since   1.1.0
-     * @change  1.3.6
+     * @change  1.4.0
      */
 
     public static function requirements_check() {
@@ -2096,7 +2094,7 @@ final class Cache_Enabler {
      * settings page
      *
      * @since   1.0.0
-     * @change  1.3.6
+     * @change  1.4.0
      */
 
     public static function settings_page() {
@@ -2257,7 +2255,7 @@ final class Cache_Enabler {
                     </tr>
                 </table>
 
-                <?php submit_button( esc_html__( 'Save Changes', 'cache-enabler' ) ); ?>
+                <?php submit_button( esc_html__( 'Save Changes' ) ); ?>
             </form>
             <p class="description"><?php esc_html_e( 'Saving these settings will completely clear the cache.', 'cache-enabler' ); ?></p>
             <p><?php esc_html_e( 'It is recommended to enable HTTP/2 on your origin server and use a CDN that supports HTTP/2. Avoid domain sharding and concatenation of your assets to benefit from parallelism of HTTP/2.', 'cache-enabler' ); ?></p>
