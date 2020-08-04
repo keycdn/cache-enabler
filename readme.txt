@@ -30,7 +30,7 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 * Custom Post Type support
 * Expiry Directive
 * Support of *304 Not Modified* if the page has not modified since last cached
-* WebP Support (when combined with [Optimus](https://optimus.io/en/ "Optimus"))
+* WebP Support (when combined with [Optimus](https://optimus.io "Optimus"))
 * Supports responsive images via srcset since WP 4.4
 * Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/)
 
@@ -38,14 +38,14 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 
 
 = How does the caching work? =
-This plugin requires minimal setup time and allows you to easily take advantage of the benefits that come from using Wordpress caching.
+This plugin requires minimal setup time and allows you to easily take advantage of the benefits that come from using WordPress caching.
 
-The Wordpress Cache Enabler has the ability to create 2 cached files. One is plain HTML and the other version is gzipped (gzip level 9). These static files are then used to deliver content faster to your users without any database lookups or gzipping as the files are already pre-compressed.
+The WordPress Cache Enabler has the ability to create 2 cached files. One is plain HTML and the other version is gzipped (gzip level 9). These static files are then used to deliver content faster to your users without any database lookups or gzipping as the files are already pre-compressed.
 
-When combined with Optimus, the Wordpress Cache Enabler allows you to easily deliver WebP images. The plugin will check your upload directory for any JPG or PNG images that have an equivalent WebP file. If there is, the URI of these image will be cached in a WebP static file by Cache Enabler. It is not required for all images to be converted to WebP when the "Create an additional cached version for WebP image support" option is enabled. This will not break any images that are not in WebP format. The plugin will deliver images that do have a WebP equivalent and will fall back to the JPG or PNG format for images that don't.
+When combined with Optimus, the WordPress Cache Enabler allows you to easily deliver WebP images. The plugin will check your upload directory for any JPG or PNG images that have an equivalent WebP file. If there is, the URI of these image will be cached in a WebP static file by Cache Enabler. It is not required for all images to be converted to WebP when the "Create an additional cached version for WebP image support" option is enabled. This will not break any images that are not in WebP format. The plugin will deliver images that do have a WebP equivalent and will fall back to the JPG or PNG format for images that don't.
 
 
-= WP CLI =
+= WP-CLI =
 
 * Clear all page caches
   `wp cache-enabler clear`
@@ -58,7 +58,7 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 
 
 = Website =
-* [WordPress Cache Enabler - Documentation](https://www.keycdn.com/support/wordpress-cache-enabler-plugin/ "WordPress Cache Enabler - Documentation")
+* [WordPress Cache Enabler - Documentation](https://www.keycdn.com/support/wordpress-cache-enabler-plugin "WordPress Cache Enabler - Documentation")
 
 
 = System Requirements =
@@ -82,7 +82,7 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 == Changelog ==
 
 = 1.3.5 =
-* WP CLI cache clearing (Thanks to Steve Grunwell)
+* WP-CLI cache clearing (Thanks to Steve Grunwell)
 * Added cache_enabler_disk_webp_converted_data filter
 * Improved WebP URL conversion
 * Fixed advanced cache issue
@@ -103,7 +103,7 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 * Add filter option before minification
 
 = 1.3.0 =
-* Clear cache on woocommerce stock updates
+* Clear cache on WooCommerce stock updates
 
 = 1.2.3 =
 * Fix expiry time
@@ -112,7 +112,7 @@ When combined with Optimus, the Wordpress Cache Enabler allows you to easily del
 * Pages can now be excluded from cache by a path matching regex
 * Plugin upgrades can now trigger cache clear
 * Scheduled posts and drafts are now properly handled
-* A missing trailing slash will now redirect like wordpress does by default
+* A missing trailing slash will now redirect like WordPress does by default
 
 = 1.2.2 =
 * Fixed settings form issue

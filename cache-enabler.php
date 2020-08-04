@@ -10,7 +10,7 @@ Version: 1.3.5
 */
 
 /*
-Copyright (C)  2017 KeyCDN
+Copyright (C)  2020 KeyCDN
 Copyright (C)  2015 Sergej Müller
 
 This program is free software; you can redistribute it and/or modify
@@ -30,66 +30,66 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 
 // exit
-defined('ABSPATH') OR exit;
+defined( 'ABSPATH' ) OR exit;
 
 
 // constants
-define('CE_FILE', __FILE__);
-define('CE_DIR', dirname(__FILE__));
-define('CE_BASE', plugin_basename(__FILE__));
-define('CE_CACHE_DIR', WP_CONTENT_DIR. '/cache/cache-enabler');
-define('CE_MIN_WP', '4.1');
+define( 'CE_FILE', __FILE__ );
+define( 'CE_DIR', dirname( __FILE__ ) );
+define( 'CE_BASE', plugin_basename( __FILE__ ) );
+define( 'CE_CACHE_DIR', WP_CONTENT_DIR . '/cache/cache-enabler' );
+define( 'CE_MIN_WP', '4.1' );
 
 // hooks
 add_action(
     'plugins_loaded',
     array(
         'Cache_Enabler',
-        'instance'
+        'instance',
     )
 );
 register_activation_hook(
     __FILE__,
     array(
         'Cache_Enabler',
-        'on_activation'
+        'on_activation',
     )
 );
 register_deactivation_hook(
     __FILE__,
     array(
         'Cache_Enabler',
-        'on_deactivation'
+        'on_deactivation',
     )
 );
 register_uninstall_hook(
     __FILE__,
     array(
         'Cache_Enabler',
-        'on_uninstall'
+        'on_uninstall',
     )
 );
 
 
 // autoload register
-spl_autoload_register('cache_autoload');
+spl_autoload_register( 'cache_autoload' );
 
 // autoload function
-function cache_autoload($class) {
-    if ( in_array($class, array('Cache_Enabler', 'Cache_Enabler_Disk')) ) {
+function cache_autoload( $class ) {
+    if ( in_array( $class, array( 'Cache_Enabler', 'Cache_Enabler_Disk' ) ) ) {
         require_once(
             sprintf(
                 '%s/inc/%s.class.php',
                 CE_DIR,
-                strtolower($class)
+                strtolower( $class )
             )
         );
     }
 }
 
-// Load the WP-CLI command.
-if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
-	require_once CE_DIR . '/inc/cache_enabler_cli.class.php';
+// load the WP-CLI command
+if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
+    require_once CE_DIR . '/inc/cache_enabler_cli.class.php';
 
-	WP_CLI::add_command('cache-enabler', 'Cache_Enabler_CLI');
+    WP_CLI::add_command( 'cache-enabler', 'Cache_Enabler_CLI' );
 }

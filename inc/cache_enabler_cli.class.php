@@ -1,8 +1,18 @@
 <?php
+
+
+// exit
+defined( 'ABSPATH' ) OR exit;
+
+
 /**
- * Interact with Cache Enabler.
+ * Interact with Cache Enabler
+ *
+ * @since  1.3.5
  */
+
 class Cache_Enabler_CLI {
+
 
     /**
      * Clear the page cache.
@@ -28,7 +38,9 @@ class Cache_Enabler_CLI {
      *
      * @alias clear
      */
+
     public function clear( $args, $assoc_args ) {
+
         $assoc_args = wp_parse_args(
             $assoc_args,
             array(
@@ -37,14 +49,14 @@ class Cache_Enabler_CLI {
             )
         );
 
-        // clear everything if we aren't given IDs and/or URLs.
+        // clear everything if we are not given IDs and/or URLs
         if ( empty( $assoc_args['ids'] ) && empty( $assoc_args['urls'] ) ) {
             Cache_Enabler::clear_total_cache();
 
             return WP_CLI::success( esc_html__( 'The page cache has been cleared.', 'cache-enabler' ) );
         }
 
-        // clear specific IDs and/or URLs.
+        // clear specific IDs and/or URLs
         array_map( 'Cache_Enabler::clear_page_cache_by_post_id', explode( ',', $assoc_args['ids'] ) );
         array_map( 'Cache_Enabler::clear_page_cache_by_url', explode( ',', $assoc_args['urls'] ) );
 
