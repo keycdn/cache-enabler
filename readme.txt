@@ -2,7 +2,7 @@
 Contributors: keycdn
 Tags: cache, caching, wordpress cache, wp cache, performance, gzip, webp, http2
 Requires at least: 4.6
-Tested up to: 5.4
+Tested up to: 5.4.2
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -80,6 +80,14 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 
 == Changelog ==
+
+= 1.3.7 =
+* Update for cache behavior with WooCommerce.
+* Fix function definition for on_upgrade_hook.
+
+= 1.3.6 =
+* Refactor code base and restyle settings.
+* Minor Fix to ignore fbclid parameter to URLs.
 
 = 1.3.5 =
 * WP-CLI cache clearing (Thanks to Steve Grunwell)
