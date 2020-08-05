@@ -141,7 +141,9 @@ final class Cache_Enabler {
             array(
                 __CLASS__,
                 'on_upgrade_hook',
-            )
+            ),
+            10,
+            2
         );
 
         // act on WooCommerce actions
@@ -409,7 +411,7 @@ final class Cache_Enabler {
      * @change  1.2.3
      */
 
-    public static function on_upgrade_hook( $options ) {
+    public static function on_upgrade_hook( $obj, $options ) {
 
         // clear cache if a plugin has been updated
         if ( self::$options['clear_on_upgrade'] ) {
