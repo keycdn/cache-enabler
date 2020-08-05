@@ -686,17 +686,18 @@ final class Cache_Enabler {
         return wp_parse_args(
             get_option( 'cache-enabler' ),
             array(
-                'expires'          => 0,
-                'clear_on_upgrade' => 0,
-                'new_post'         => 0,
-                'new_comment'      => 0,
-                'compress'         => 0,
-                'webp'             => 0,
-                'excl_ids'         => '',
-                'excl_paths'       => '',
-                'excl_cookies'     => '',
-                'incl_parameters'  => '',
-                'minify_html'      => self::MINIFY_DISABLED,
+                'expires'              => 0,
+                'clear_on_upgrade'     => 0,
+                'new_post'             => 0,
+                'new_comment'          => 0,
+                'update_product_stock' => 0,
+                'compress'             => 0,
+                'webp'                 => 0,
+                'excl_ids'             => '',
+                'excl_paths'           => '',
+                'excl_cookies'         => '',
+                'incl_parameters'      => '',
+                'minify_html'          => self::MINIFY_DISABLED,
             )
         );
     }
@@ -1089,9 +1090,7 @@ final class Cache_Enabler {
         if ( self::$options['new_comment'] ) {
             self::clear_total_cache();
         } else {
-            self::clear_page_cache_by_post_id(
-                get_comment( $id )->comment_post_ID
-            );
+            self::clear_page_cache_by_post_id( get_comment( $id )->comment_post_ID );
         }
     }
 
@@ -1140,9 +1139,7 @@ final class Cache_Enabler {
             if ( self::$options['new_comment'] ) {
                 self::clear_total_cache();
             } else {
-                self::clear_page_cache_by_post_id(
-                    $comment->comment_post_ID
-                );
+                self::clear_page_cache_by_post_id( $comment->comment_post_ID );
             }
         }
     }
@@ -1202,7 +1199,7 @@ final class Cache_Enabler {
      * delete post type cache on post updates
      *
      * @since   1.0.0
-     * @change  1.0.7
+     * @change  1.4.0
      *
      * @param   integer  $post_id  post ID
      */
@@ -1219,8 +1216,8 @@ final class Cache_Enabler {
             return;
         }
 
-        // clear cache if clean post on update
-        if ( ! isset( $_POST['_clear_post_cache_on_update'] ) ) {
+        // clear cache on post publish
+        if ( ! isset( $_POST['_clear_post_cache_on_update'] ) &&  $post->post_date_gmt === $post->post_modified_gmt ) {
 
             // clear complete cache if option enabled
             if ( self::$options['new_post'] ) {
@@ -1241,7 +1238,7 @@ final class Cache_Enabler {
             return;
         }
 
-        // save as integer
+        // clear cache publishing action
         $clear_post_cache = (int) $_POST['_clear_post_cache_on_update'];
 
         // save user metadata
@@ -1251,11 +1248,11 @@ final class Cache_Enabler {
             $clear_post_cache
         );
 
-        // clear complete cache or specific post
+        // clear cache on post publishing action
         if ( $clear_post_cache ) {
-            self::clear_page_cache_by_post_id( $post_id );
-        } else {
             self::clear_total_cache();
+        } else {
+            self::clear_page_cache_by_post_id( $post_id );
         }
     }
 
@@ -1271,15 +1268,13 @@ final class Cache_Enabler {
 
     public static function clear_page_cache_by_post_id( $post_id ) {
 
-        // is int
+        // validate integer
         if ( ! $post_id = (int) $post_id ) {
             return;
         }
 
         // clear cache by URL
-        self::clear_page_cache_by_url(
-            get_permalink( $post_id )
-        );
+        self::clear_page_cache_by_url( get_permalink( $post_id ) );
     }
 
 
@@ -1317,7 +1312,6 @@ final class Cache_Enabler {
      *
      * @since   1.0.7
      * @change  1.2.3
-     *
      */
 
     public static function clear_home_page_cache() {
@@ -1389,7 +1383,6 @@ final class Cache_Enabler {
      * @change  1.2.3
      *
      * @return  void
-     *
      */
 
     public static function check_future_posts() {
@@ -1611,7 +1604,12 @@ final class Cache_Enabler {
 
     public static function woocommerce_product_set_stock_status( $product_id ) {
 
-        self::clear_total_cache();
+        // clear complete cache if option enabled
+        if ( self::$options['update_product_stock'] ) {
+            self::clear_total_cache();
+        } else {
+            self::clear_page_cache_by_post_id( $product_id );
+        }
     }
 
 
@@ -1708,7 +1706,7 @@ final class Cache_Enabler {
      * add clear option dropdown on post publish widget
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.4.0
      */
 
     public static function add_clear_dropdown() {
@@ -1726,7 +1724,7 @@ final class Cache_Enabler {
         // validate nonce
         wp_nonce_field( CE_BASE, '_cache__status_nonce_' . $GLOBALS['post']->ID );
 
-        // get current action
+        // get current publishing action
         $current_action = (int) get_user_meta(
             get_current_user_id(),
             '_clear_post_cache_on_update',
@@ -1736,8 +1734,8 @@ final class Cache_Enabler {
         // init variables
         $dropdown_options = '';
         $available_options = array(
-            esc_html__( 'Completely', 'cache-enabler' ),
             esc_html__( 'Page specific', 'cache-enabler' ),
+            esc_html__( 'Completely', 'cache-enabler' ),
         );
 
         // set dropdown options
@@ -1746,7 +1744,7 @@ final class Cache_Enabler {
                 '<option value="%1$d" %3$s>%2$s</option>',
                 $key,
                 $value,
-                selected($key, $current_action, false)
+                selected( $key, $current_action, false )
             );
         }
 
@@ -2075,17 +2073,18 @@ final class Cache_Enabler {
         }
 
         return array(
-            'expires'          => (int) $data['expires'],
-            'clear_on_upgrade' => (int) ( ! empty( $data['clear_on_upgrade'] ) ),
-            'new_post'         => (int) ( ! empty( $data['new_post'] ) ),
-            'new_comment'      => (int) ( ! empty( $data['new_comment'] ) ),
-            'webp'             => (int) ( ! empty( $data['webp'] ) ),
-            'compress'         => (int) ( ! empty( $data['compress'] ) ),
-            'excl_ids'         => (string) sanitize_text_field( @$data['excl_ids'] ),
-            'excl_paths'       => (string) self::validate_regex( @$data['excl_paths'] ),
-            'excl_cookies'     => (string) self::validate_regex( @$data['excl_cookies'] ),
-            'incl_parameters'  => (string) self::validate_regex( @$data['incl_parameters'] ),
-            'minify_html'      => (int) $data['minify_html'],
+            'expires'              => (int) $data['expires'],
+            'clear_on_upgrade'     => (int) ( ! empty( $data['clear_on_upgrade'] ) ),
+            'new_post'             => (int) ( ! empty( $data['new_post'] ) ),
+            'new_comment'          => (int) ( ! empty( $data['new_comment'] ) ),
+            'update_product_stock' => (int) ( ! empty( $data['update_product_stock'] ) ),
+            'webp'                 => (int) ( ! empty( $data['webp'] ) ),
+            'compress'             => (int) ( ! empty( $data['compress'] ) ),
+            'excl_ids'             => (string) sanitize_text_field( @$data['excl_ids'] ),
+            'excl_paths'           => (string) self::validate_regex( @$data['excl_paths'] ),
+            'excl_cookies'         => (string) self::validate_regex( @$data['excl_cookies'] ),
+            'incl_parameters'      => (string) self::validate_regex( @$data['incl_parameters'] ),
+            'minify_html'          => (int) $data['minify_html'],
         );
     }
 
@@ -2161,7 +2160,7 @@ final class Cache_Enabler {
 
                                 <label for="cache_new_post">
                                     <input name="cache-enabler[new_post]" type="checkbox" id="cache_new_post" value="1" <?php checked( '1', $options['new_post'] ); ?> />
-                                    <?php esc_html_e( 'Clear the complete cache if a new post has been published (instead of only the home page cache).', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Clear the complete cache if any new post type has been published (instead of only the home page cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
@@ -2172,6 +2171,16 @@ final class Cache_Enabler {
                                 </label>
 
                                 <br />
+
+                                <?php if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ): ?>
+                                <label for="cache_update_product_stock">
+                                    <input name="cache-enabler[update_product_stock]" type="checkbox" id="cache_update_product_stock" value="1" <?php checked( '1', $options['update_product_stock'] ); ?> />
+                                    <?php esc_html_e( 'Clear the complete cache if a product stock has been updated (instead of only the page specific cache).', 'cache-enabler' ); ?>
+                                    <span style="display: inline-block; color: #155724; background-color: #d4edda; font-size: 75%; font-weight: 700; line-height: 1; white-space: nowrap; border-radius: .25rem; padding: .25em .4em; margin-left: .5rem;">New</span>
+                                </label>
+
+                                <br />
+                                <?php endif; ?>
 
                                 <label for="cache_compress">
                                     <input name="cache-enabler[compress]" type="checkbox" id="cache_compress" value="1" <?php checked( '1', $options['compress'] ); ?> />
