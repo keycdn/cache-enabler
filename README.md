@@ -68,7 +68,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Fix for missing trailing slashes was incomplete
 * Add filter option before minification
 
-**1.3.0*
+**1.3.0**
 * Clear cache on WooCommerce stock updates
 
 **1.2.3**
@@ -80,17 +80,17 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Scheduled posts and drafts are now properly handled
 * A missing trailing slash will now redirect like WordPress does by default
 
-**1.2.2*
+**1.2.2**
 * Fixed settings form issue
 
 **1.2.1**
 * Minor fixes
 
-*1.2.0**
+**1.2.0**
 * Added advanced cache feature
 * Clear cache if reply to a comment in WP admin
 
-**1.1.0*
+**1.1.0**
 * Added the possibility to clear the cache of a specific URL
 * Supports now Windows filesystems
 * Added X-Cache-Handler to indicate if loaded through PHP
@@ -107,12 +107,12 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Added support for srcset in WP 4.4
 * Improved encoding (utf8)
 
-**1.0.7*
+**1.0.7**
 * Added cache behavior option for new posts
 * Improved metainformation of the signature
 * Optimized cache handling for nginx
 
-**1.0.6*
+**1.0.6**
 * Fixed query string related caching issue
 
 **1.0.5**
