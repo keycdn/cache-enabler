@@ -31,7 +31,7 @@ The WordPress Cache Enabler has the ability to create 2 cached files. One is pla
 When combined with Optimus, the WordPress Cache Enabler allows you to easily deliver WebP images. The plugin will check your upload directory for any JPG or PNG images that have an equivalent WebP file. If there is, the URI of these image will be cached in a WebP static file by Cache Enabler. It is not required for all images to be converted to WebP when the "Create an additional cached version for WebP image support" option is enabled. This will not break any images that are not in WebP format. The plugin will deliver images that do have a WebP equivalent and will fall back to the JPG or PNG format for images that don't.
 
 
-##-CLI
+## WP-CLI
 
 * Clear all page caches
   `wp cache-enabler clear`
