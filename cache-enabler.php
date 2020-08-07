@@ -38,7 +38,7 @@ define( 'CE_FILE', __FILE__ );
 define( 'CE_DIR', dirname( __FILE__ ) );
 define( 'CE_BASE', plugin_basename( __FILE__ ) );
 define( 'CE_CACHE_DIR', WP_CONTENT_DIR . '/cache/cache-enabler' );
-define( 'CE_MIN_WP', '4.1' );
+define( 'CE_MIN_WP', '4.6' );
 
 // hooks
 add_action(

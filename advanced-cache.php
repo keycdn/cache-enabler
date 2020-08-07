@@ -31,6 +31,19 @@ $settings_file = sprintf(
 );
 $settings = _read_settings( $settings_file );
 
+// check trailing slash
+if ( isset( $settings['permalink_trailing_slash'] ) && $settings['permalink_trailing_slash'] ) {
+    // if trailing slash is missing, check if we have to bypass the cache to allow a redirect
+    if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+        return false;
+    }
+} elseif ( isset( $settings['permalink_trailing_slash'] ) && ! $settings['permalink_trailing_slash'] ) {
+    // if trailing slash is appended, check if we have to bypass the cache to allow a redirect
+    if ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+        return false;
+    }
+}
+
 // if an expiry time is set, check the file against it
 if ( isset( $settings['expires'] ) && $settings['expires'] > 0 ) {
     $now = time();
@@ -38,6 +51,16 @@ if ( isset( $settings['expires'] ) && $settings['expires'] > 0 ) {
 
     // check if cached file has expired
     if ( ( filemtime( $path_html ) + $expires_seconds ) <= $now ) {
+        return false;
+    }
+}
+
+// if a cache timeout is set, check if we have to bypass the cache
+if ( ! empty( $settings['cache_timeout'] ) ) {
+    $now = time();
+
+    // check if timeout has been reached
+    if ( $settings['cache_timeout'] <= $now ) {
         return false;
     }
 }
@@ -68,23 +91,6 @@ if ( ! empty( $_GET ) ) {
     }
     // bypass the cache if no included URL query parameters are found
     if ( sizeof( preg_grep( $parameters_regex, array_keys( $_GET ), PREG_GREP_INVERT ) ) > 0 ) {
-        return false;
-    }
-}
-
-// if a cache timeout is set, check if we have to bypass the cache
-if ( ! empty( $settings['cache_timeout'] ) ) {
-    $now = time();
-
-    // check if timeout has been reached
-    if ( $settings['cache_timeout'] <= $now ) {
-        return false;
-    }
-}
-
-// if missing trailing slash, check if we have to bypass the cache to allow a redirect
-if ( isset( $settings['permalink_trailing_slash'] ) ) {
-    if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
         return false;
     }
 }
@@ -138,7 +144,7 @@ exit;
 
 
 // generate cache path
-function _ce_file_path( $path = NULL ) {
+function _ce_file_path( $path = null ) {
 
     $path = sprintf(
         '%s%s%s%s',

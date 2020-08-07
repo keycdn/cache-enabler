@@ -91,7 +91,7 @@ final class Cache_Enabler_Disk {
 
     public static function check_expiry() {
 
-        // Cache Enabler options
+        // get Cache Enabler options
         $options = Cache_Enabler::$options;
 
         // check if an expiry time is set
@@ -257,16 +257,16 @@ final class Cache_Enabler_Disk {
 
     private static function _create_files( $data ) {
 
-        // create folder
-        if ( ! wp_mkdir_p( self::_file_path() ) ) {
-            wp_die( 'Unable to create directory.' );
-        }
+        // get Cache Enabler options
+        $options = Cache_Enabler::$options;
 
         // get base signature
         $cache_signature = self::_cache_signature();
 
-        // Cache Enabler options
-        $options = Cache_Enabler::$options;
+        // create folder
+        if ( ! wp_mkdir_p( self::_file_path() ) ) {
+            wp_die( 'Unable to create directory.' );
+        }
 
         // create files
         self::_create_file( self::_file_html(), $data . $cache_signature . ' (html) -->' );
@@ -339,12 +339,12 @@ final class Cache_Enabler_Disk {
         // remove slashes
         $dir = untrailingslashit( $dir );
 
-        // check if dir
+        // check if directory
         if ( ! is_dir( $dir ) ) {
             return;
         }
 
-        // get dir data
+        // get directory data
         $data_dir = @scandir( $dir );
         if( gettype( $data_dir ) === 'array' ) {
             $objects = array_diff(
@@ -353,6 +353,7 @@ final class Cache_Enabler_Disk {
             );
         }
 
+        // check if empty
         if ( empty( $objects ) ) {
             return;
         }
@@ -389,12 +390,12 @@ final class Cache_Enabler_Disk {
 
     public static function cache_size( $dir = '.' ) {
 
-        // check if not dir
+        // check if not directory
         if ( ! is_dir( $dir ) ) {
             return;
         }
 
-        // get dir data
+        // get directory data
         $objects = array_diff(
             scandir( $dir ),
             array( '..', '.' )
@@ -410,7 +411,7 @@ final class Cache_Enabler_Disk {
             // full path
             $object = $dir . DIRECTORY_SEPARATOR . $object;
 
-            // check if dir
+            // check if directory
             if ( is_dir( $object ) ) {
                 $size += self::cache_size( $object );
             } else {
@@ -432,7 +433,7 @@ final class Cache_Enabler_Disk {
      * @return  string  $diff  path to cached file
      */
 
-    private static function _file_path( $path = NULL ) {
+    private static function _file_path( $path = null ) {
 
         $path = sprintf(
             '%s%s%s%s',
@@ -546,8 +547,6 @@ final class Cache_Enabler_Disk {
      *
      * @since   1.2.3
      * @change  1.2.3
-     *
-     * @return void
      */
 
     private static function _write_settings( $settings_file, $settings ) {
@@ -597,13 +596,13 @@ final class Cache_Enabler_Disk {
      * delete settings for advanced-cache.php
      *
      * @since   1.2.3
-     * @change  1.2.3
+     * @change  1.4.0
      *
-     * @param   array    settings as array or empty for delete all
+     * @param   array    settings keys as array or empty for delete all
      * @return  boolean  true if successful
      */
 
-    public static function delete_advcache_settings( $remsettings = array() ) {
+    public static function delete_advcache_settings( $settings_keys = array() ) {
 
         $settings_file = sprintf(
             '%s-%s%s.json',
@@ -615,18 +614,18 @@ final class Cache_Enabler_Disk {
             is_multisite() ? '-' . get_current_blog_id() : ''
         );
 
-        if ( ! file_exists( $settings_file ) || empty( $remsettings ) ) {
+        if ( ! file_exists( $settings_file ) ) {
             return true;
         }
 
         $settings = self::_read_settings( $settings_file );
-        foreach ( $remsettings as $key ) {
+        foreach ( $settings_keys as $key ) {
             if ( array_key_exists( $key, $settings ) ) {
                 unset( $settings[ $key ] );
             }
         }
 
-        if ( empty( $settings ) ) {
+        if ( empty( $settings ) || empty( $settings_keys ) ) {
             unlink( $settings_file );
             return true;
         }
@@ -658,7 +657,6 @@ final class Cache_Enabler_Disk {
         }
 
         return $asset[0];
-
     }
 
 
