@@ -559,7 +559,7 @@ final class Cache_Enabler_Disk {
      * record settings for advanced-cache.php
      *
      * @since   1.2.3
-     * @change  1.2.3
+     * @change  1.4.0
      *
      * @param   array    settings as array pairs
      * @return  boolean  true if successful
@@ -571,7 +571,7 @@ final class Cache_Enabler_Disk {
             '%s-%s%s.json',
             WP_CONTENT_DIR . '/cache/cache-enabler-advcache',
             parse_url(
-                'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
+                get_site_url(),
                 PHP_URL_HOST
             ),
             is_multisite() ? '-' . get_current_blog_id() : ''
@@ -608,7 +608,7 @@ final class Cache_Enabler_Disk {
             '%s-%s%s.json',
             WP_CONTENT_DIR . '/cache/cache-enabler-advcache',
             parse_url(
-                'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
+                get_site_url(),
                 PHP_URL_HOST
             ),
             is_multisite() ? '-' . get_current_blog_id() : ''
