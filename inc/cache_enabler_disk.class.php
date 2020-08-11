@@ -2,7 +2,7 @@
 
 
 // exit
-defined( 'ABSPATH' ) OR exit;
+defined( 'ABSPATH' ) || exit;;
 
 
 /**

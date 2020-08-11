@@ -2,7 +2,7 @@
 
 
 // exit
-defined( 'ABSPATH' ) OR exit;
+defined( 'ABSPATH' ) || exit;;
 
 
 /**
@@ -71,299 +71,62 @@ final class Cache_Enabler {
         // set default vars
         self::_set_default_vars();
 
-        // register publish hook
-        add_action(
-            'init',
-            array(
-                __CLASS__,
-                'register_publish_hooks',
-            ),
-            99
-        );
+        // init hooks
+        add_action( 'init', array( __CLASS__, 'process_clear_request' ) );
+        add_action( 'init', array( __CLASS__, 'register_textdomain' ) );
+        add_action( 'init', array( __CLASS__, 'register_publish_hooks' ), 99 );
 
         // clear cache hooks
-        add_action(
-            'ce_clear_post_cache',
-            array(
-                __CLASS__,
-                'clear_page_cache_by_post_id',
-            )
-        );
-        add_action(
-            'ce_clear_cache',
-            array(
-                __CLASS__,
-                'clear_total_cache',
-            )
-        );
-        add_action(
-            '_core_updated_successfully',
-            array(
-                __CLASS__,
-                'clear_total_cache',
-            )
-        );
-        add_action(
-            'upgrader_process_complete',
-            array(
-                __CLASS__,
-                'on_upgrade_hook',
-            ),
-            10,
-            2
-        );
-        add_action(
-            'switch_theme',
-            array(
-                __CLASS__,
-                'clear_total_cache',
-            )
-        );
-        add_action(
-            'activated_plugin',
-            array(
-                __CLASS__,
-                'on_plugin_activation_deactivation',
-            ),
-            10,
-            2
-        );
-        add_action(
-            'deactivated_plugin',
-            array(
-                __CLASS__,
-                'on_plugin_activation_deactivation',
-            ),
-            10,
-            2
-        );
-        add_action(
-            'wp_trash_post',
-            function( $post_id ) {
-                if ( get_post_status( $post_id ) === 'publish' ) {
-                    self::clear_total_cache();
-                }
-                self::check_future_posts();
-            }
-        );
-        add_action(
-            'save_post',
-            array(
-                __CLASS__,
-                'check_future_posts',
-            )
-        );
-        add_action(
-            'autoptimize_action_cachepurged',
-            array(
-                __CLASS__,
-                'clear_total_cache',
-            )
-        );
-        add_action(
-            'permalink_structure_changed',
-            array(
-                __CLASS__,
-                'create_advcache_settings',
-            )
-        );
+        add_action( 'ce_clear_post_cache', array( __CLASS__, 'clear_page_cache_by_post_id' ) );
+        add_action( 'ce_clear_cache', array( __CLASS__, 'clear_total_cache' ) );
+        add_action( '_core_updated_successfully', array( __CLASS__, 'clear_total_cache' ) );
+        add_action( 'upgrader_process_complete', array( __CLASS__, 'on_upgrade' ), 10, 2 );
+        add_action( 'switch_theme', array( __CLASS__, 'clear_total_cache' ) );
+        add_action( 'activated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
+        add_action( 'deactivated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
+        add_action( 'wp_trash_post', array( __CLASS__, 'on_trash_post' ) );
+        // third party
+        add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_total_cache' ) );
+        add_action( 'woocommerce_product_set_stock', array( __CLASS__, 'on_woocommerce_stock_update' ) );
+        add_action( 'woocommerce_product_set_stock_status', array( __CLASS__, 'on_woocommerce_stock_update' ) );
+        add_action( 'woocommerce_variation_set_stock', array( __CLASS__, 'on_woocommerce_stock_update' ) );
+        add_action( 'woocommerce_variation_set_stock_status', array( __CLASS__, 'on_woocommerce_stock_update' ) );
 
-        // act on WooCommerce actions
-        add_action(
-            'woocommerce_product_set_stock',
-            array(
-                __CLASS__,
-                'woocommerce_product_set_stock',
-            )
-        );
-        add_action(
-            'woocommerce_product_set_stock_status',
-            array(
-                __CLASS__,
-                'woocommerce_product_set_stock_status',
-            )
-        );
-        add_action(
-            'woocommerce_variation_set_stock',
-            array(
-                __CLASS__,
-                'woocommerce_product_set_stock',
-            )
-        );
-        add_action(
-            'woocommerce_variation_set_stock_status',
-            array(
-                __CLASS__,
-                'woocommerce_product_set_stock_status',
-            )
-        );
+        // advanced cache hooks
+        add_action( 'permalink_structure_changed', array( __CLASS__, 'create_advcache_settings' ) );
+        add_action( 'save_post', array( __CLASS__, 'check_future_posts' ) );
 
-        // add admin clear link
-        add_action(
-            'admin_bar_menu',
-            array(
-                __CLASS__,
-                'add_admin_links',
-            ),
-            90
-        );
-        add_action(
-            'init',
-            array(
-                __CLASS__,
-                'process_clear_request',
-            )
-        );
-        if ( ! is_admin() ) {
-            add_action(
-                'admin_bar_menu',
-                array(
-                    __CLASS__,
-                    'register_textdomain',
-                )
-            );
-        }
+        // admin bar hooks
+        add_action( 'admin_bar_menu', array( __CLASS__, 'add_admin_links' ), 90 );
 
-        // admin
+        // admin hooks
         if ( is_admin() ) {
-            add_action(
-                'wpmu_new_blog',
-                array(
-                    __CLASS__,
-                    'install_later',
-                )
-            );
-            add_action(
-                'delete_blog',
-                array(
-                    __CLASS__,
-                    'uninstall_later',
-                )
-            );
-
-            add_action(
-                'admin_init',
-                array(
-                    __CLASS__,
-                    'register_textdomain',
-                )
-            );
-            add_action(
-                'admin_init',
-                array(
-                    __CLASS__,
-                    'register_settings',
-                )
-            );
-
-            add_action(
-                'admin_menu',
-                array(
-                    __CLASS__,
-                    'add_settings_page',
-                )
-            );
-            add_action(
-                'admin_enqueue_scripts',
-                array(
-                    __CLASS__,
-                    'add_admin_resources',
-                )
-            );
-
-            add_action(
-                'transition_comment_status',
-                array(
-                    __CLASS__,
-                    'change_comment',
-                ),
-                10,
-                3
-            );
-            add_action(
-                'comment_post',
-                array(
-                    __CLASS__,
-                    'comment_post',
-                ),
-                99,
-                2
-            );
-            add_action(
-                'edit_comment',
-                array(
-                    __CLASS__,
-                    'edit_comment',
-                )
-            );
-
-            add_filter(
-                'dashboard_glance_items',
-                array(
-                    __CLASS__,
-                    'add_dashboard_count',
-                )
-            );
-            add_action(
-                'post_submitbox_misc_actions',
-                array(
-                    __CLASS__,
-                    'add_clear_dropdown',
-                )
-            );
-            add_filter(
-                'plugin_row_meta',
-                array(
-                    __CLASS__,
-                    'row_meta',
-                ),
-                10,
-                2
-            );
-            add_filter(
-                'plugin_action_links_' . CE_BASE,
-                array(
-                    __CLASS__,
-                    'action_links',
-                )
-            );
-
+            // multisite
+            add_action( 'wpmu_new_blog', array( __CLASS__, 'install_later' ) );
+            add_action( 'delete_blog', array( __CLASS__, 'uninstall_later' ) );
+            // settings
+            add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+            add_action( 'admin_menu', array( __CLASS__, 'add_settings_page' ) );
+            add_action( 'admin_enqueue_scripts', array( __CLASS__, 'add_admin_resources' ) );
+            add_filter( 'plugin_row_meta', array( __CLASS__, 'row_meta' ), 10, 2 );
+            // comments
+            add_action( 'transition_comment_status', array( __CLASS__, 'change_comment' ), 10, 3 );
+            add_action( 'comment_post', array( __CLASS__, 'comment_post' ), 99, 2 );
+            add_action( 'edit_comment', array( __CLASS__, 'edit_comment' ) );
+            // dashboard
+            add_filter( 'dashboard_glance_items', array( __CLASS__, 'add_dashboard_count' ) );
+            add_action( 'post_submitbox_misc_actions', array( __CLASS__, 'add_clear_dropdown' ) );
+            add_filter( 'plugin_action_links_' . CE_BASE, array( __CLASS__, 'action_links' ) );
             // warnings and notices
-            add_action(
-                'admin_notices',
-                array(
-                    __CLASS__,
-                    'warning_is_permalink',
-                )
-            );
-            add_action(
-                'admin_notices',
-                array(
-                    __CLASS__,
-                    'requirements_check',
-                )
-            );
+            add_action( 'admin_notices', array( __CLASS__, 'warning_is_permalink' ) );
+            add_action( 'admin_notices', array( __CLASS__, 'requirements_check' ) );
 
-        // caching
+        // caching hooks
         } else {
-            add_action(
-                'pre_comment_approved',
-                array(
-                    __CLASS__,
-                    'new_comment',
-                ),
-                99,
-                2
-            );
-
-            add_action(
-                'template_redirect',
-                array(
-                    __CLASS__,
-                    'handle_cache',
-                ),
-                0
-            );
+            // comments
+            add_action( 'pre_comment_approved', array( __CLASS__, 'new_comment' ), 99, 2 );
+            // output buffer
+            add_action( 'template_redirect', array( __CLASS__, 'handle_cache' ), 0 );
         }
     }
 
@@ -469,7 +232,7 @@ final class Cache_Enabler {
 
 
     /**
-     * plugin activation and deactivation actions
+     * plugin activation and deactivation hooks
      *
      * @since   1.4.0
      * @change  1.4.0
@@ -485,16 +248,16 @@ final class Cache_Enabler {
 
 
     /**
-     * upgrade hook actions
+     * upgrade hook
      *
      * @since   1.2.3
      * @change  1.4.0
      *
-     * @param   object  $obj   WP_Upgrader instance
-     * @param   array   $data  update data
+     * @param   WP_Upgrader  $obj   upgrade instance
+     * @param   array        $data  update data
      */
 
-    public static function on_upgrade_hook( $obj, $data ) {
+    public static function on_upgrade( $obj, $data ) {
 
         // if option enabled clear complete cache on any plugin update
         if ( self::$options['clear_on_upgrade'] ) {
@@ -508,9 +271,11 @@ final class Cache_Enabler {
                 if ( $each_plugin === CE_BASE ) {
                     // update requirements
                     if ( is_multisite() && is_plugin_active_for_network( CE_BASE ) ) {
-                        self::on_ce_update( $network_wide = true );
+                        $network_wide = true;
+                        self::on_ce_update( $network_wide );
                     } else {
-                        self::on_ce_update( $network_wide = false );
+                        $network_wide = false;
+                        self::on_ce_update( $network_wide );
                     }
                 }
             }
@@ -599,16 +364,11 @@ final class Cache_Enabler {
 
     private static function _install_backend() {
 
-        // get Cache Enabler options
-        $options = self::_get_options();
-
         // add Cache Enabler options if not added already
-        if ( ! $options ) {
-            add_option(
-                'cache-enabler',
-                array()
-            );
-        }
+        add_option(
+            'cache-enabler',
+            array()
+        );
 
         // create advanced cache settings file
         self::create_advcache_settings();
@@ -695,7 +455,7 @@ final class Cache_Enabler {
      * @since   1.1.1
      * @change  1.1.1
      *
-     * @param   boolean  $wp_cache_value  add or delete WP_CACHE constant in wp-config.php
+     * @param   boolean  $wp_cache_value  true to set WP_CACHE constant in wp-config.php, false to unset
      */
 
     private static function _set_wp_cache( $wp_cache_value = true ) {
@@ -776,12 +536,12 @@ final class Cache_Enabler {
 
 
     /**
-     * get options
+     * get Cache Enabler options
      *
      * @since   1.0.0
      * @change  1.4.0
      *
-     * @return  array  Cache Enabler options array
+     * @return  array  Cache Enabler options
      */
 
     private static function _get_options() {
@@ -995,9 +755,9 @@ final class Cache_Enabler {
      * @since   1.0.0
      * @change  1.1.0
      *
-     * @hook    mixed  user_can_clear_cache
-     *
      * @param   object  menu properties
+     *
+     * @hook    mixed   user_can_clear_cache
      */
 
     public static function add_admin_links( $wp_admin_bar ) {
@@ -1245,7 +1005,7 @@ final class Cache_Enabler {
 
 
     /**
-     * clear cache if comment changes
+     * clear cache if comment status changes
      *
      * @since   1.0.0
      * @change  1.0.0
@@ -1375,6 +1135,27 @@ final class Cache_Enabler {
         } else {
             self::clear_page_cache_by_post_id( $post_id );
         }
+    }
+
+
+    /**
+     * trash post hook
+     *
+     * @since   1.4.0
+     * @change  1.4.0
+     *
+     * @param   integer  $post_id  post ID
+     */
+
+    public static function on_trash_post( $post_id ) {
+
+        // if any published post type is sent to the trash clear complete cache
+        if ( get_post_status( $post_id ) === 'publish' ) {
+            self::clear_total_cache();
+        }
+
+        // check if cache timeout needs to be recorded
+        self::check_future_posts();
     }
 
 
@@ -1529,9 +1310,9 @@ final class Cache_Enabler {
      * @since   1.0.0
      * @change  1.4.0
      *
-     * @return  boolean  true if exception
+     * @return  boolean  true if exception, false otherwise
      *
-     * @hook    boolean  bypass cache
+     * @hook    boolean  bypass_cache
      */
 
     private static function _bypass_cache() {
@@ -1708,18 +1489,22 @@ final class Cache_Enabler {
 
 
     /**
-     * act on WooCommerce stock changes
+     * WooCommerce stock hooks
      *
      * @since   1.3.0
      * @change  1.4.0
+     *
+     * @param   integer|WC_Product  $product  product ID or product instance
      */
 
-    public static function woocommerce_product_set_stock( $product ) {
+    public static function on_woocommerce_stock_update( $product ) {
 
-        self::woocommerce_product_set_stock_status( $product->get_id() );
-    }
-
-    public static function woocommerce_product_set_stock_status( $product_id ) {
+        // get product ID
+        if ( is_int( $product ) ) {
+            $product_id = $product;
+        } else {
+            $product_id = $product->get_id();
+        }
 
         // if option enabled clear complete cache on product stock update
         if ( self::$options['update_product_stock'] ) {
@@ -1738,6 +1523,8 @@ final class Cache_Enabler {
      *
      * @param   string  $data  content of a page
      * @return  string  $data  content of a page
+     *
+     * @hook    string  cache_enabler_before_store
      */
 
     public static function set_cache( $data ) {
@@ -1766,7 +1553,7 @@ final class Cache_Enabler {
      * handle cache
      *
      * @since   1.0.0
-     * @change  1.0.1
+     * @change  1.4.0
      */
 
     public static function handle_cache() {
@@ -2042,6 +1829,7 @@ final class Cache_Enabler {
 
     public static function register_textdomain() {
 
+        // load translated strings
         load_plugin_textdomain(
             'cache-enabler',
             false,
@@ -2076,7 +1864,7 @@ final class Cache_Enabler {
      * @since   1.2.3
      * @change  1.4.0
      *
-     * @return  boolean  true if cache should be bypassed to allow a redirect
+     * @return  boolean  true if cache should be bypassed to allow a redirect, false otherwise
      */
 
     public static function handle_trailing_slash() {
@@ -2268,7 +2056,7 @@ final class Cache_Enabler {
                                 <label for="cache_clear_on_upgrade">
                                     <input name="cache-enabler[clear_on_upgrade]" type="checkbox" id="cache_clear_on_upgrade" value="1" <?php checked( '1', $options['clear_on_upgrade'] ); ?> />
                                     <?php esc_html_e( 'Clear the complete cache if a plugin has been activated, updated, or deactivated.', 'cache-enabler' ); ?>
-                                    <span style="display: inline-block; color: #155724; background-color: #d4edda; font-size: 75%; font-weight: 700; white-space: nowrap; border-radius: .25rem; padding: .25em .4em; margin-left: .5rem; position: absolute;">Updated</span>
+                                    <span style="display: inline-block; color: #155724; background-color: #d4edda; font-size: 75%; font-weight: 700; white-space: nowrap; border-radius: .25rem; padding: .25em .4em; margin-left: .5rem;"><?php esc_html_e( 'Updated', 'cache-enabler' ); ?></span>
                                 </label>
 
                                 <br />
@@ -2291,7 +2079,7 @@ final class Cache_Enabler {
                                 <label for="cache_update_product_stock">
                                     <input name="cache-enabler[update_product_stock]" type="checkbox" id="cache_update_product_stock" value="1" <?php checked( '1', $options['update_product_stock'] ); ?> />
                                     <?php esc_html_e( 'Clear the complete cache if a product stock has been updated (instead of only the page specific cache).', 'cache-enabler' ); ?>
-                                    <span style="display: inline-block; color: #155724; background-color: #d4edda; font-size: 75%; font-weight: 700; white-space: nowrap; border-radius: .25rem; padding: .25em .4em; margin-left: .5rem; position: absolute;">New</span>
+                                    <span style="display: inline-block; color: #155724; background-color: #d4edda; font-size: 75%; font-weight: 700; white-space: nowrap; border-radius: .25rem; padding: .25em .4em; margin-left: .5rem;"><?php esc_html_e( 'New', 'cache-enabler' ); ?></span>
                                 </label>
 
                                 <br />

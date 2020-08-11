@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 
 // exit
-defined( 'ABSPATH' ) OR exit;
+defined( 'ABSPATH' ) || exit;;
 
 
 // constants
