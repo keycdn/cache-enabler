@@ -518,12 +518,52 @@ final class Cache_Enabler_Disk {
 
 
     /**
+     * get settings file
+     *
+     * @since   1.4.0
+     * @change  1.4.0
+     *
+     * @return  string  settings file path
+     */
+
+    private static function _get_settings() {
+
+        // network with subdirectory configuration
+        if ( is_multisite() && ! is_subdomain_install() ) {
+            // get blog path
+            $path = trim( get_blog_details( get_current_blog_id() )->path, '/' );
+            // check if subsite
+            if ( ! empty( $path ) ) {
+                $path = '-' . $path;
+            }
+        // single site, network subdirectory main site, or any network subdomain site
+        } else {
+            $path = '';
+        }
+
+        // get settings file
+        $settings_file = sprintf(
+            '%s-%s%s.json',
+            WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache',
+            parse_url(
+                get_site_url(),
+                PHP_URL_HOST
+            ),
+            $path
+        );
+
+        return $settings_file;
+    }
+
+
+    /**
      * read settings file
      *
      * @since   1.2.3
      * @change  1.2.3
      *
-     * @return  array  settings or emtpy
+     * @param   string  $settings_file  settings file path
+     * @return  array                   settings or empty
      */
 
     private static function _read_settings( $settings_file ) {
@@ -547,6 +587,9 @@ final class Cache_Enabler_Disk {
      *
      * @since   1.2.3
      * @change  1.2.3
+     *
+     * @param   string  $settings_file  settings file path
+     * @param   array   $settings       settings
      */
 
     private static function _write_settings( $settings_file, $settings ) {
@@ -567,15 +610,8 @@ final class Cache_Enabler_Disk {
 
     public static function record_advcache_settings( $settings ) {
 
-        $settings_file = sprintf(
-            '%s-%s%s.json',
-            WP_CONTENT_DIR . '/cache/cache-enabler-advcache',
-            parse_url(
-                get_site_url(),
-                PHP_URL_HOST
-            ),
-            is_multisite() ? '-' . get_current_blog_id() : ''
-        );
+        // get settings file
+        $settings_file = self::_get_settings();
 
         // create folder if neccessary
         if ( ! wp_mkdir_p( dirname( $settings_file ) ) ) {
@@ -604,16 +640,10 @@ final class Cache_Enabler_Disk {
 
     public static function delete_advcache_settings( $settings_keys = array() ) {
 
-        $settings_file = sprintf(
-            '%s-%s%s.json',
-            WP_CONTENT_DIR . '/cache/cache-enabler-advcache',
-            parse_url(
-                get_site_url(),
-                PHP_URL_HOST
-            ),
-            is_multisite() ? '-' . get_current_blog_id() : ''
-        );
+        // get settings file
+        $settings_file = self::_get_settings();
 
+        // check if settings file exists
         if ( ! file_exists( $settings_file ) ) {
             return true;
         }

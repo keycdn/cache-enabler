@@ -22,12 +22,12 @@ if ( ! is_readable( $path_html ) ) {
 // check if there are settings
 $settings_file = sprintf(
     '%s-%s%s.json',
-    WP_CONTENT_DIR . '/cache/cache-enabler-advcache',
+    WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache',
     parse_url(
         'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
         PHP_URL_HOST
     ),
-    is_multisite() ? '-' . abs( intval( $blog_id ) ) : ''
+    ( is_multisite() && ! SUBDOMAIN_INSTALL ) ? _get_blog_path() : ''
 );
 $settings = _read_settings( $settings_file );
 
@@ -171,12 +171,26 @@ function _ce_file_path( $path = null ) {
     return $path;
 }
 
+// get blog path
+function _get_blog_path() {
+    $path = $_SERVER['REQUEST_URI'];
+
+    $path = explode( '/', $path, 3 );
+
+    return '-' . $path[1];
+}
+
 // read settings file
 function _read_settings( $settings_file ) {
 
     // check if settings file exists
     if ( ! file_exists( $settings_file ) ) {
-        return array();
+        // check if settings file exists for main site in network with subdirectory configuration
+        if ( is_multisite() && ! SUBDOMAIN_INSTALL && file_exists( str_replace( _get_blog_path(), '', $settings_file ) ) ) {
+            $settings_file = str_replace( _get_blog_path(), '', $settings_file );
+        } else {
+            return array();
+        }
     }
 
     // check if any errors occur when reading the settings file
