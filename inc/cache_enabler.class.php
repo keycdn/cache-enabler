@@ -120,7 +120,6 @@ final class Cache_Enabler {
             // warnings and notices
             add_action( 'admin_notices', array( __CLASS__, 'warning_is_permalink' ) );
             add_action( 'admin_notices', array( __CLASS__, 'requirements_check' ) );
-
         // caching hooks
         } else {
             // comments
@@ -296,6 +295,8 @@ final class Cache_Enabler {
 
         // delete advanced cache settings file(s) and clear complete cache
         self::on_ce_activation_deactivation( 'deactivated', $network_wide );
+        // decom old advanced cache settings file(s) (1.4.0)
+        array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) );
 
         // create advanced cache settings file(s)
         self::on_ce_activation_deactivation( 'activated', $network_wide );
@@ -384,7 +385,7 @@ final class Cache_Enabler {
 
     public static function on_uninstall() {
 
-        // network activated
+        // network
         if ( is_multisite() ) {
             // blog IDs
             $ids = self::_get_blog_ids();
@@ -467,7 +468,7 @@ final class Cache_Enabler {
             $wp_config = file( $wp_config_file );
 
             if ( $wp_cache_value ) {
-                $wp_cache_ce_line = "define('WP_CACHE', true); // Added by Cache Enabler". "\r\n";
+                $wp_cache_ce_line = "define('WP_CACHE', true); // Added by Cache Enabler" . "\r\n";
             } else {
                 $wp_cache_ce_line = '';
             }
@@ -1874,7 +1875,7 @@ final class Cache_Enabler {
         if ( $permalink_structure && preg_match( '/\/$/', $permalink_structure ) ) {
             // record permalink structure has trailing slash for advanced cache
             Cache_Enabler_Disk::record_advcache_settings( array(
-                    'permalink_trailing_slash' => true,
+                'permalink_trailing_slash' => true,
             ) );
             // if trailing slash is missing, check if we have to bypass the cache to allow a redirect
             if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
@@ -1883,7 +1884,7 @@ final class Cache_Enabler {
         } else {
             // record permalink structure does not have trailing slash for advanced cache
             Cache_Enabler_Disk::record_advcache_settings( array(
-                    'permalink_trailing_slash' => false,
+                'permalink_trailing_slash' => false,
             ) );
             // if trailing slash is appended, check if we have to bypass the cache to allow a redirect
             if ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
@@ -2172,7 +2173,6 @@ final class Cache_Enabler {
                 <input name="cache-enabler[clear_cache]" type="submit" class="button-primary" value="<?php esc_html_e( 'Save Changes and Clear Cache', 'cache-enabler' ); ?>" />
                 </p>
             </form>
-            <p><?php esc_html_e( 'It is recommended to enable HTTP/2 on your origin server and use a CDN that supports HTTP/2. Avoid domain sharding and concatenation of your assets to benefit from parallelism of HTTP/2.', 'cache-enabler' ); ?></p>
         </div>
 
         <?php
