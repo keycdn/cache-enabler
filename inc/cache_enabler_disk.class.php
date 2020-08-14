@@ -18,11 +18,12 @@ final class Cache_Enabler_Disk {
      * cached filename settings
      *
      * @since   1.0.7
-     * @change  1.0.7
+     * @change  1.4.0
      *
      * @var     string
      */
 
+    const FILE_GLOB      = '*index*';
     const FILE_HTML      = 'index.html';
     const FILE_GZIP      = 'index.html.gz';
     const FILE_WEBP_HTML = 'index-webp.html';
@@ -149,7 +150,7 @@ final class Cache_Enabler_Disk {
      * clear home cache
      *
      * @since   1.0.7
-     * @change  1.0.9
+     * @change  1.4.0
      */
 
     public static function clear_home() {
@@ -162,10 +163,7 @@ final class Cache_Enabler_Disk {
             DIRECTORY_SEPARATOR
         );
 
-        @unlink( $path . self::FILE_HTML );
-        @unlink( $path . self::FILE_GZIP );
-        @unlink( $path . self::FILE_WEBP_HTML );
-        @unlink( $path . self::FILE_WEBP_GZIP );
+        array_map( 'unlink', glob( $path . self::FILE_GLOB ) );
     }
 
 
@@ -250,7 +248,7 @@ final class Cache_Enabler_Disk {
      * create files
      *
      * @since   1.0.0
-     * @change  1.1.1
+     * @change  1.4.0
      *
      * @param   string  $data  HTML content
      */
@@ -269,11 +267,11 @@ final class Cache_Enabler_Disk {
         }
 
         // create files
-        self::_create_file( self::_file_html(), $data . $cache_signature . ' (html) -->' );
+        self::_create_file( self::_file_html(), $data . $cache_signature . ' (' . self::_file_scheme() . ' html) -->' );
 
         // create pre-compressed file
         if ( $options['compress'] ) {
-            self::_create_file( self::_file_gzip(), gzencode( $data . $cache_signature . ' (html gzip) -->', 9) );
+            self::_create_file( self::_file_gzip(), gzencode( $data . $cache_signature . ' (' . self::_file_scheme() . ' gzip) -->', 9) );
         }
 
         // create webp supported files
@@ -284,11 +282,11 @@ final class Cache_Enabler_Disk {
             // call the webp converter callback
             $converted_data = apply_filters( 'cache_enabler_disk_webp_converted_data', preg_replace_callback( $regex_rule, 'self::_convert_webp', $data ) );
 
-            self::_create_file( self::_file_webp_html(), $converted_data . $cache_signature . ' (webp) -->' );
+            self::_create_file( self::_file_webp_html(), $converted_data . $cache_signature . ' (' . self::_file_scheme() . ' webp html) -->' );
 
             // create pre-compressed file
             if ( $options['compress'] ) {
-                self::_create_file( self::_file_webp_gzip(), gzencode( $converted_data . $cache_signature . ' (webp gzip) -->', 9) );
+                self::_create_file( self::_file_webp_gzip(), gzencode( $converted_data . $cache_signature . ' (' . self::_file_scheme() . ' webp gzip) -->', 9) );
             }
         }
     }
@@ -458,17 +456,43 @@ final class Cache_Enabler_Disk {
 
 
     /**
+     * get file scheme
+     *
+     * @since   1.4.0
+     * @change  1.4.0
+     *
+     * @return  string  https, http, or port
+     */
+
+    private static function _file_scheme() {
+
+        // https
+        if ( $_SERVER['SERVER_PORT'] === '443' ) {
+            return 'https';
+        }
+
+        // http
+        if ( $_SERVER['SERVER_PORT'] === '80' ) {
+            return 'http';
+        }
+
+        // port
+        return $_SERVER['SERVER_PORT'];
+    }
+
+
+    /**
      * get file path
      *
      * @since   1.0.0
-     * @change  1.0.7
+     * @change  1.4.0
      *
      * @return  string  path to the HTML file
      */
 
     private static function _file_html() {
 
-        return self::_file_path() . self::FILE_HTML;
+        return self::_file_path() . self::_file_scheme() . '-' . self::FILE_HTML;
     }
 
 
@@ -476,14 +500,14 @@ final class Cache_Enabler_Disk {
      * get gzip file path
      *
      * @since   1.0.1
-     * @change  1.0.7
+     * @change  1.4.0
      *
      * @return  string  path to the gzipped HTML file
      */
 
     private static function _file_gzip() {
 
-        return self::_file_path() . self::FILE_GZIP;
+        return self::_file_path() . self::_file_scheme() . '-' . self::FILE_GZIP;
     }
 
 
@@ -491,14 +515,14 @@ final class Cache_Enabler_Disk {
      * get webp file path
      *
      * @since   1.0.7
-     * @change  1.0.7
+     * @change  1.4.0
      *
      * @return  string  path to the webp HTML file
      */
 
     private static function _file_webp_html() {
 
-        return self::_file_path() . self::FILE_WEBP_HTML;
+        return self::_file_path() . self::_file_scheme() . '-' . self::FILE_WEBP_HTML;
     }
 
 
@@ -506,14 +530,14 @@ final class Cache_Enabler_Disk {
      * get gzip webp file path
      *
      * @since   1.0.1
-     * @change  1.0.7
+     * @change  1.4.0
      *
      * @return  string  path to the webp gzipped HTML file
      */
 
     private static function _file_webp_gzip() {
 
-        return self::_file_path() . self::FILE_WEBP_GZIP;
+        return self::_file_path() . self::_file_scheme() . '-' . self::FILE_WEBP_GZIP;
     }
 
 
