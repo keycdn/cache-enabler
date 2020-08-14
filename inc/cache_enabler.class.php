@@ -1262,24 +1262,6 @@ final class Cache_Enabler {
 
 
     /**
-     * check if logged in
-     *
-     * @since   1.0.0
-     * @change  1.4.0
-     *
-     * @return  boolean  true if logged in
-     */
-
-    private static function _is_logged_in() {
-
-        // check if logged in
-        if ( is_user_logged_in() ) {
-            return true;
-        }
-    }
-
-
-    /**
      * check if there are posts to be published in the future
      *
      * @since   1.2.3
@@ -1335,11 +1317,6 @@ final class Cache_Enabler {
 
         // check DONOTCACHEPAGE
         if ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE ) {
-            return true;
-        }
-
-        // check if logged in
-        if ( self::_is_logged_in() ) {
             return true;
         }
 
