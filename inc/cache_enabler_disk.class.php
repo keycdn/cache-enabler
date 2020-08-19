@@ -467,18 +467,7 @@ final class Cache_Enabler_Disk {
 
     private static function _file_scheme() {
 
-        // https
-        if ( $_SERVER['SERVER_PORT'] === '443' ) {
-            return 'https';
-        }
-
-        // http
-        if ( $_SERVER['SERVER_PORT'] === '80' ) {
-            return 'http';
-        }
-
-        // port
-        return $_SERVER['SERVER_PORT'];
+        return ( ( isset( $_SERVER['HTTPS'] ) && ! empty( $_SERVER['HTTPS'] ) ) || $_SERVER['SERVER_PORT'] === '443' ) ? 'https' : 'http';
     }
 
 
@@ -569,7 +558,7 @@ final class Cache_Enabler_Disk {
         // get settings file
         $settings_file = sprintf(
             '%s-%s%s.json',
-            CE_SETTINGS_PATH,
+            WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache',
             Cache_Enabler::get_blog_domain(),
             $path
         );
