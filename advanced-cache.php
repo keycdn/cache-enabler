@@ -14,11 +14,14 @@ if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GE
 // base path
 $path = _ce_file_path();
 
+// scheme
+$scheme = ( ( isset( $_SERVER['HTTPS'] ) && ! empty( $_SERVER['HTTPS'] ) ) || $_SERVER['SERVER_PORT'] === '443' ) ? 'https' : 'http';
+
 // path to cached variants
-$path_html      = $path . 'index.html';
-$path_gzip      = $path . 'index.html.gz';
-$path_webp_html = $path . 'index-webp.html';
-$path_webp_gzip = $path . 'index-webp.html.gz';
+$path_html      = $path . $scheme . '-index.html';
+$path_gzip      = $path . $scheme . '-index.html.gz';
+$path_webp_html = $path . $scheme . '-index-webp.html';
+$path_webp_gzip = $path . $scheme . '-index-webp.html.gz';
 
 // check if cached file exists
 if ( ! is_readable( $path_html ) ) {
@@ -28,7 +31,7 @@ if ( ! is_readable( $path_html ) ) {
 // check if there are settings
 $settings_file = sprintf(
     '%s-%s%s.json',
-    CE_SETTINGS_PATH,
+    WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache',
     parse_url(
         'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
         PHP_URL_HOST
@@ -157,7 +160,7 @@ function _ce_file_path( $path = null ) {
         WP_CONTENT_DIR . '/cache/cache-enabler',
         DIRECTORY_SEPARATOR,
         parse_url(
-            'http://' .strtolower( $_SERVER['HTTP_HOST'] ),
+            'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
             PHP_URL_HOST
         ),
         parse_url(

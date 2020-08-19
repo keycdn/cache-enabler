@@ -35,7 +35,6 @@ define( 'CE_FILE', __FILE__ );
 define( 'CE_DIR', dirname( __FILE__ ) );
 define( 'CE_BASE', plugin_basename( __FILE__ ) );
 define( 'CE_CACHE_DIR', WP_CONTENT_DIR . '/cache/cache-enabler' );
-define( 'CE_SETTINGS_PATH', WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache' );
 define( 'CE_MIN_WP', '5.1' );
 
 // hooks

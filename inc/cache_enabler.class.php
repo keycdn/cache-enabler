@@ -909,7 +909,7 @@ final class Cache_Enabler {
             } else {
                 if ( $_GET['_action'] === 'clearurl' ) {
                     // clear specific site URL cache
-                    self::clear_page_cache_by_url( $clear_url );
+                    self::process_clear_request_url( $clear_url );
                 } elseif ( $_GET['_action'] === 'clear' ) {
                     // clear specific site complete cache
                     self::clear_blog_id_cache( get_current_blog_id() );
@@ -930,7 +930,7 @@ final class Cache_Enabler {
         } else {
             if ( $_GET['_action'] === 'clearurl' ) {
                 // clear URL cache
-                self::clear_page_cache_by_url( $clear_url );
+                self::process_clear_request_url( $clear_url );
             } elseif ( $_GET['_action'] === 'clear' ) {
                 // clear complete cache
                 self::clear_total_cache();
@@ -957,6 +957,29 @@ final class Cache_Enabler {
             );
 
             exit();
+        }
+    }
+
+
+    /**
+     * process clear request URL
+     *
+     * @since   1.4.2
+     * @change  1.4.2
+     *
+     * @param   string  $clear_url  URL to be processed
+     */
+
+    public static function process_clear_request_url( $clear_url ) {
+
+        // get home page URL
+        $home_page_url = get_site_url( null, '/' );
+
+        // check clear URL
+        if ( $clear_url === $home_page_url ) {
+            self::clear_home_page_cache();
+        } else {
+            self::clear_page_cache_by_url( $clear_url );
         }
     }
 
