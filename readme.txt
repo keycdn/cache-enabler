@@ -1,8 +1,8 @@
 === Cache Enabler - WordPress Cache ===
 Contributors: keycdn
 Tags: cache, caching, wordpress cache, wp cache, performance, gzip, webp, http2
-Requires at least: 4.6
-Tested up to: 5.4
+Requires at least: 5.1
+Tested up to: 5.5
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -63,7 +63,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = System Requirements =
 * PHP >=5.6
-* WordPress >=4.6
+* WordPress >=5.1
 
 
 = Contribute =
@@ -83,12 +83,17 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = 1.4.0 =
 * Update default cache behavior for WooCommerce stock update
-* Update default publishing action
-* Update settings page
 * Update Cache Behavior setting for plugin actions
-* Add scheme-based caching
+* Update admin bar clear cache buttons
+* Update cache behavior for logged in users
+* Update default clear cache publishing action
+* Update advanced cache settings
+* Update trailing slash handling
+* Update settings page
 * Add Cache Behavior setting for WooCommerce stock update
-* Fix multisite advanced cache settings
+* Add fbclid as default URL query parameter to bypass cache
+* Add scheme-based caching
+* Fix advanced cache for multisite networks
 * Fix minor bugs
 
 = 1.3.5 =

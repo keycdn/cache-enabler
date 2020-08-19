@@ -142,6 +142,7 @@ final class Cache_Enabler_Disk {
 
     public static function clear_cache() {
 
+        // clear complete cache
         self::_clear_dir( CE_CACHE_DIR );
     }
 
@@ -425,7 +426,7 @@ final class Cache_Enabler_Disk {
      * cache path
      *
      * @since   1.0.0
-     * @change  1.1.0
+     * @change  1.4.0
      *
      * @param   string  $path  URI or permalink
      * @return  string  $diff  path to cached file
@@ -438,7 +439,7 @@ final class Cache_Enabler_Disk {
             CE_CACHE_DIR,
             DIRECTORY_SEPARATOR,
             parse_url(
-                'http://' .strtolower( $_SERVER['HTTP_HOST'] ),
+                get_site_url(),
                 PHP_URL_HOST
             ),
             parse_url(
@@ -555,7 +556,7 @@ final class Cache_Enabler_Disk {
         // network with subdirectory configuration
         if ( is_multisite() && ! is_subdomain_install() ) {
             // get blog path
-            $path = trim( get_blog_details( get_current_blog_id() )->path, '/' );
+            $path = trim( get_blog_details()->path, '/' );
             // check if subsite
             if ( ! empty( $path ) ) {
                 $path = '-' . $path;
@@ -568,11 +569,8 @@ final class Cache_Enabler_Disk {
         // get settings file
         $settings_file = sprintf(
             '%s-%s%s.json',
-            WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache',
-            parse_url(
-                get_site_url(),
-                PHP_URL_HOST
-            ),
+            CE_SETTINGS_PATH,
+            Cache_Enabler::get_blog_domain(),
             $path
         );
 

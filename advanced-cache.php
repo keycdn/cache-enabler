@@ -1,4 +1,10 @@
 <?php
+/**
+ * Cache Enabler advanced cache
+ *
+ * @since   1.2.0
+ * @change  1.4.0
+ */
 
 // check if request method is GET
 if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GET' ) {
@@ -22,7 +28,7 @@ if ( ! is_readable( $path_html ) ) {
 // check if there are settings
 $settings_file = sprintf(
     '%s-%s%s.json',
-    WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache',
+    CE_SETTINGS_PATH,
     parse_url(
         'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
         PHP_URL_HOST
