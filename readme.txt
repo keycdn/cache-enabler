@@ -81,6 +81,9 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.4.1 =
+* Fix minor bugs
+
 = 1.4.0 =
 * Update default cache behavior for WooCommerce stock update
 * Update Cache Behavior setting for plugin actions
