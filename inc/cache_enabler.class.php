@@ -312,22 +312,13 @@ final class Cache_Enabler {
      * create or update advanced cache settings
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.4.3
      */
 
     public static function create_advcache_settings() {
 
-        // get Cache Enabler options
-        $options = self::_get_options();
-
-        // create advanced cache settings file
-        if ( empty( $options ) ) {
-            // ignore results and only call permalink structure recording
-            self::handle_trailing_slash();
-        } else {
-            // ignore results and call all advance cache settings recordings
-            self::validate_settings( $options );
-        }
+        // ignore results and create advanced cache settings file
+        self::validate_settings( self::_get_options() );
     }
 
 
@@ -909,7 +900,7 @@ final class Cache_Enabler {
             } else {
                 if ( $_GET['_action'] === 'clearurl' ) {
                     // clear specific site URL cache
-                    self::process_clear_request_url( $clear_url );
+                    self::clear_page_cache_by_url( $clear_url );
                 } elseif ( $_GET['_action'] === 'clear' ) {
                     // clear specific site complete cache
                     self::clear_blog_id_cache( get_current_blog_id() );
@@ -930,7 +921,7 @@ final class Cache_Enabler {
         } else {
             if ( $_GET['_action'] === 'clearurl' ) {
                 // clear URL cache
-                self::process_clear_request_url( $clear_url );
+                self::clear_page_cache_by_url( $clear_url );
             } elseif ( $_GET['_action'] === 'clear' ) {
                 // clear complete cache
                 self::clear_total_cache();
@@ -957,29 +948,6 @@ final class Cache_Enabler {
             );
 
             exit();
-        }
-    }
-
-
-    /**
-     * process clear request URL
-     *
-     * @since   1.4.2
-     * @change  1.4.2
-     *
-     * @param   string  $clear_url  URL to be processed
-     */
-
-    public static function process_clear_request_url( $clear_url ) {
-
-        // get home page URL
-        $home_page_url = get_site_url( null, '/' );
-
-        // check clear URL
-        if ( $clear_url === $home_page_url ) {
-            self::clear_home_page_cache();
-        } else {
-            self::clear_page_cache_by_url( $clear_url );
         }
     }
 
@@ -1258,7 +1226,7 @@ final class Cache_Enabler {
      * clear page cache by URL
      *
      * @since   1.0.0
-     * @change  1.2.3
+     * @change  1.4.3
      *
      * @param  string  $url  URL of a page
      */
@@ -1270,13 +1238,21 @@ final class Cache_Enabler {
             return;
         }
 
-        call_user_func(
-            array(
-                self::$disk,
-                'delete_asset',
-            ),
-            $url
-        );
+        // get home page URL
+        $home_page_url = get_site_url( null, '/' );
+
+        // check if URL is the home page
+        if ( $url === $home_page_url ) {
+            self::clear_home_page_cache();
+        } else {
+            call_user_func(
+                array(
+                    self::$disk,
+                    'delete_asset',
+                ),
+                $url
+            );
+        }
 
         // clear cache by URL post hook
         do_action( 'ce_action_cache_by_url_cleared' );
@@ -1432,7 +1408,7 @@ final class Cache_Enabler {
      * check to bypass the cache
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.3
      *
      * @return  boolean  true if exception, false otherwise
      *
@@ -1451,7 +1427,12 @@ final class Cache_Enabler {
             return true;
         }
 
-        // check if conditional tags
+        // check trailing slash
+        if ( self::_bypass_cache_for_trailing_slash() ) {
+            return true;
+        }
+
+        // check conditional tags
         if ( self::_is_index() || is_search() || is_404() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
             return true;
         }
@@ -1511,6 +1492,33 @@ final class Cache_Enabler {
             }
             // bypass the cache if no included URL query parameters are found
             if ( sizeof( preg_grep( $parameters_regex, array_keys( $_GET ), PREG_GREP_INVERT ) ) > 0 ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * bypass cache for trailing slash
+     *
+     * @since   1.4.3
+     * @change  1.4.3
+     *
+     * @return  boolean  true if cache should be bypassed to allow a redirect, false otherwise
+     */
+
+    private static function _bypass_cache_for_trailing_slash() {
+
+        if ( self::permalink_structure_has_trailing_slash() ) {
+            // if trailing slash is missing, check if we have to bypass the cache to allow a redirect
+            if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+                return true;
+            }
+        } else {
+            // if trailing slash is appended, check if we have to bypass the cache to allow a redirect
+            if ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
                 return true;
             }
         }
@@ -1672,12 +1680,12 @@ final class Cache_Enabler {
      * handle cache
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.3
      */
 
     public static function handle_cache() {
 
-        // bypass cache
+        // check if cache needs to be bypassed
         if ( self::_bypass_cache() ) {
             return;
         }
@@ -1693,11 +1701,6 @@ final class Cache_Enabler {
         // check if cache is empty
         if ( empty( $cached ) ) {
             ob_start( 'Cache_Enabler::set_cache' );
-            return;
-        }
-
-        // check trailing slash
-        if ( self::handle_trailing_slash() ) {
             return;
         }
 
@@ -1978,39 +1981,26 @@ final class Cache_Enabler {
 
 
     /**
-     * handle trailing slash
+     * permalink structure has trailing slash
      *
-     * @since   1.2.3
-     * @change  1.4.0
+     * @since   1.4.3
+     * @change  1.4.3
      *
-     * @return  boolean  true if cache should be bypassed to allow a redirect, false otherwise
+     * @return  boolean  true if permalink structure has a trailing slash, false otherwise
      */
 
-    public static function handle_trailing_slash() {
+    public static function permalink_structure_has_trailing_slash() {
 
         $permalink_structure = get_option( 'permalink_structure' );
 
+        // check permalink structure
         if ( $permalink_structure && preg_match( '/\/$/', $permalink_structure ) ) {
-            // record permalink structure has trailing slash for advanced cache
-            Cache_Enabler_Disk::record_advcache_settings( array(
-                'permalink_trailing_slash' => true,
-            ) );
-            // if trailing slash is missing, check if we have to bypass the cache to allow a redirect
-            if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
-                return true;
-            }
+            // permalink structure has a trailing slash
+            return true;
         } else {
-            // record permalink structure does not have trailing slash for advanced cache
-            Cache_Enabler_Disk::record_advcache_settings( array(
-                'permalink_trailing_slash' => false,
-            ) );
-            // if trailing slash is appended, check if we have to bypass the cache to allow a redirect
-            if ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
-                return true;
-            }
+            // permalink structure does not have a trailing slash
+            return false;
         }
-
-        return false;
     }
 
 
@@ -2063,8 +2053,16 @@ final class Cache_Enabler {
             self::clear_total_cache();
         }
 
-        // ignore results and call permalink structure recording
-        self::handle_trailing_slash();
+        // record permalink structure for advanced cache
+        if ( self::permalink_structure_has_trailing_slash() ) {
+            Cache_Enabler_Disk::record_advcache_settings( array(
+                'permalink_trailing_slash' => true,
+            ) );
+        } else {
+            Cache_Enabler_Disk::record_advcache_settings( array(
+                'permalink_trailing_slash' => false,
+            ) );
+        }
 
         // record cache expiry for advanced cache
         if ( $data['expires'] > 0 ) {

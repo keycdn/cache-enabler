@@ -81,13 +81,17 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.4.3 =
+* Update URL cache clearing
+* Update advcache settings
+
 = 1.4.2 =
 * Update cache clearing for the Clear URL Cache admin bar button
 * Update scheme-based caching
 * Fix advanced cache
 
 = 1.4.1 =
-* Fix minor bugs
+* Fix undefined constant
 
 = 1.4.0 =
 * Update default cache behavior for WooCommerce stock update
