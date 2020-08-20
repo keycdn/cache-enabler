@@ -2067,7 +2067,7 @@ final class Cache_Enabler {
         self::handle_trailing_slash();
 
         // record cache expiry for advanced cache
-        if ( $data['expires'] > 0 ){
+        if ( $data['expires'] > 0 ) {
             Cache_Enabler_Disk::record_advcache_settings( array(
                 'expires' => $data['expires'],
             ) );
