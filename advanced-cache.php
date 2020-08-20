@@ -3,7 +3,7 @@
  * Cache Enabler advanced cache
  *
  * @since   1.2.0
- * @change  1.4.0
+ * @change  1.4.2
  */
 
 // check if request method is GET
