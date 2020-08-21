@@ -23,7 +23,7 @@ The Cache Enabler plugin creates static HTML files and stores them on the server
 * Efficient and fast disk cache engine
 * Automated and/or manual clearing of the cache
 * Manually clear the cache of specific pages
-* WP CLI cache clearing
+* WP-CLI cache clearing
 * Display of the actual cache size in your dashboard
 * Minification of HTML and inline JavaScript
 * WordPress multisite support
@@ -81,32 +81,34 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.4.4 =
+* Update cache handling (#100)
+
 = 1.4.3 =
-* Update URL cache clearing
-* Update advcache settings
+* Update cache clearing by URL (#99)
+* Update advanced cache settings (#99)
 
 = 1.4.2 =
-* Update cache clearing for the Clear URL Cache admin bar button
-* Update scheme-based caching
-* Fix advanced cache
+* Update cache clearing for the Clear URL Cache admin bar button (#98)
+* Update scheme-based caching (#98)
+* Fix advanced cache (#98)
 
 = 1.4.1 =
 * Fix undefined constant
 
 = 1.4.0 =
-* Update default cache behavior for WooCommerce stock update
-* Update Cache Behavior setting for plugin actions
-* Update admin bar clear cache buttons
-* Update cache behavior for logged in users
-* Update default clear cache publishing action
-* Update advanced cache settings
-* Update trailing slash handling
-* Update settings page
-* Add Cache Behavior setting for WooCommerce stock update
-* Add fbclid as default URL query parameter to bypass cache
-* Add scheme-based caching
-* Fix advanced cache for multisite networks
-* Fix minor bugs
+* Update default cache behavior for WooCommerce stock update (#88)
+* Update Cache Behavior setting for plugin actions (#91)
+* Update admin bar clear cache buttons (#96)
+* Update cache behavior for logged in users (#95)
+* Update default clear cache publishing action (#88)
+* Update advanced cache settings (#91 and #92)
+* Update trailing slash handling (#91)
+* Update settings page (#84 and #92)
+* Add Cache Behavior setting for WooCommerce stock update (#88)
+* Add fbclid as default URL query parameter to bypass cache (#84)
+* Add scheme-based caching (#94)
+* Fix advanced cache for multisite networks (#92)
 
 = 1.3.5 =
 * WP-CLI cache clearing (Thanks to Steve Grunwell)
