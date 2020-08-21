@@ -460,9 +460,9 @@ final class Cache_Enabler_Disk {
      * get file scheme
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.4.2
      *
-     * @return  string  https, http, or port
+     * @return  string  https or http
      */
 
     private static function _file_scheme() {

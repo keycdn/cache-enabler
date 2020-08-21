@@ -63,7 +63,7 @@ final class Cache_Enabler {
      * constructor
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.4
      */
 
     public function __construct() {
@@ -85,6 +85,7 @@ final class Cache_Enabler {
         add_action( 'activated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
         add_action( 'deactivated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
         add_action( 'wp_trash_post', array( __CLASS__, 'on_trash_post' ) );
+        add_action( 'permalink_structure_changed', array( __CLASS__, 'clear_total_cache' ) );
         // third party
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_total_cache' ) );
         add_action( 'woocommerce_product_set_stock', array( __CLASS__, 'on_woocommerce_stock_update' ) );
@@ -714,7 +715,7 @@ final class Cache_Enabler {
                 '<a href="%s" title="%s">%s %s</a>',
                 add_query_arg(
                     array(
-                        'page' => 'cache-enabler'
+                        'page' => 'cache-enabler',
                     ),
                     admin_url( 'options-general.php' )
                 ),
@@ -1408,7 +1409,7 @@ final class Cache_Enabler {
      * check to bypass the cache
      *
      * @since   1.0.0
-     * @change  1.4.3
+     * @change  1.4.4
      *
      * @return  boolean  true if exception, false otherwise
      *
@@ -1427,13 +1428,13 @@ final class Cache_Enabler {
             return true;
         }
 
-        // check trailing slash
-        if ( self::_bypass_cache_for_trailing_slash() ) {
+        // check HTTP status code
+        if ( http_response_code() !== 200 ) {
             return true;
         }
 
         // check conditional tags
-        if ( self::_is_index() || is_search() || is_404() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
+        if ( self::_is_index() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
             return true;
         }
 
@@ -1492,33 +1493,6 @@ final class Cache_Enabler {
             }
             // bypass the cache if no included URL query parameters are found
             if ( sizeof( preg_grep( $parameters_regex, array_keys( $_GET ), PREG_GREP_INVERT ) ) > 0 ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-
-    /**
-     * bypass cache for trailing slash
-     *
-     * @since   1.4.3
-     * @change  1.4.3
-     *
-     * @return  boolean  true if cache should be bypassed to allow a redirect, false otherwise
-     */
-
-    private static function _bypass_cache_for_trailing_slash() {
-
-        if ( self::permalink_structure_has_trailing_slash() ) {
-            // if trailing slash is missing, check if we have to bypass the cache to allow a redirect
-            if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
-                return true;
-            }
-        } else {
-            // if trailing slash is appended, check if we have to bypass the cache to allow a redirect
-            if ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
                 return true;
             }
         }
@@ -1882,7 +1856,7 @@ final class Cache_Enabler {
      * check plugin requirements
      *
      * @since   1.1.0
-     * @change  1.4.0
+     * @change  1.4.4
      */
 
     public static function requirements_check() {
@@ -1932,7 +1906,12 @@ final class Cache_Enabler {
                         esc_html__( 'Cache Minification', 'cache-enabler' ),
                         sprintf(
                             '<a href="%s">%s</a>',
-                            admin_url( 'options-general.php' ) . '?page=cache-enabler',
+                            add_query_arg(
+                                array(
+                                    'page' => 'cache-enabler',
+                                ),
+                                admin_url( 'options-general.php' )
+                            ),
                             esc_html__( 'Cache Enabler Settings', 'cache-enabler' )
                         )
                     )
