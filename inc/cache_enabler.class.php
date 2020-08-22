@@ -135,7 +135,7 @@ final class Cache_Enabler {
      * activation hook
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.5
      *
      * @param   boolean  $network_wide  network activated
      */
@@ -145,8 +145,8 @@ final class Cache_Enabler {
         // activation requirements
         self::on_ce_activation_deactivation( 'activated', $network_wide );
 
-        // set WP_CACHE
-        if ( ! defined( 'WP_CACHE' ) || ! WP_CACHE ) {
+        // set WP_CACHE if not already set
+        if ( defined( 'WP_CACHE' ) && ! WP_CACHE ) {
             self::_set_wp_cache();
         }
 
@@ -289,7 +289,7 @@ final class Cache_Enabler {
      * Cache Enabler update actions
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.4.5
      *
      * @param   boolean  $network_wide  network activated
      */
@@ -300,6 +300,8 @@ final class Cache_Enabler {
         self::on_ce_activation_deactivation( 'deactivated', $network_wide );
         // decom: delete old advanced cache settings file(s) (1.4.0)
         array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) );
+        // clean: delete incorrect advanced cache settings file(s) that may have been created (1.4.5)
+        array_map( 'unlink', glob( ABSPATH . '/CE_SETTINGS_PATH-*.json' ) );
 
         // create advanced cache settings file(s)
         self::on_ce_activation_deactivation( 'activated', $network_wide );
@@ -440,34 +442,43 @@ final class Cache_Enabler {
 
 
     /**
-     * set or unset WP_CACHE
+     * set or unset WP_CACHE constant
      *
      * @since   1.1.1
-     * @change  1.1.1
+     * @change  1.4.5
      *
      * @param   boolean  $wp_cache_value  true to set WP_CACHE constant in wp-config.php, false to unset
      */
 
     private static function _set_wp_cache( $wp_cache_value = true ) {
 
+        // get wp-config.php file
         $wp_config_file = ABSPATH . 'wp-config.php';
 
+        // check if wp-config.php file exists
         if ( file_exists( $wp_config_file ) && is_writable( $wp_config_file ) ) {
             // get wp-config.php as array
             $wp_config = file( $wp_config_file );
 
+            // set Cache Enabler line
             if ( $wp_cache_value ) {
-                $wp_cache_ce_line = "define('WP_CACHE', true); // Added by Cache Enabler" . "\r\n";
+                $wp_cache_ce_line = "define( 'WP_CACHE', true ); // Added by Cache Enabler" . "\r\n";
             } else {
                 $wp_cache_ce_line = '';
             }
 
+            // search for WP_CACHE constant
             $found_wp_cache = false;
-
             foreach ( $wp_config as &$line ) {
-                if ( preg_match( '/^\s*define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,\s*(.*)\s*\)/', $line ) ) {
-                    $line = $wp_cache_ce_line;
+                if ( preg_match( '/^\s*define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,\s*(.*)\s*\);/', $line ) ) {
+                    // found WP_CACHE constant
                     $found_wp_cache = true;
+                    // check if constant was set by Cache Enabler
+                    if ( preg_match( '/\/\/\sAdded\sby\sCache\sEnabler/', $line ) ) {
+                        // update Cache Enabler line
+                        $line = $wp_cache_ce_line;
+                    }
+
                     break;
                 }
             }
@@ -602,7 +613,7 @@ final class Cache_Enabler {
      * warning if no custom permlink structure
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.5
      */
 
     public static function warning_is_permalink() {
@@ -611,9 +622,10 @@ final class Cache_Enabler {
 
             show_message(
                 sprintf(
-                    '<div class="error"><p>%s</p></div>',
+                    '<div class="notice notice-error"><p>%s</p></div>',
                     sprintf(
-                        esc_html__( 'The %s plugin requires a custom permalink structure to start caching properly. Please enable a custom structure in the %s.', 'cache-enabler' ),
+                        // translators: 1. Cache Enabler 2. Permalink Settings
+                        esc_html__( 'The %1$s plugin requires a custom permalink structure to start caching properly. Please enable a custom structure in the %2$s.', 'cache-enabler' ),
                         '<strong>Cache Enabler</strong>',
                         sprintf(
                             '<a href="%s">%s</a>',
@@ -655,7 +667,7 @@ final class Cache_Enabler {
                         ),
                         admin_url( 'options-general.php' )
                     ),
-                    esc_html__( 'Settings' )
+                    esc_html__( 'Settings', 'cache-enabler' )
                 )
             )
         );
@@ -808,7 +820,7 @@ final class Cache_Enabler {
                                 '_cache'  => 'cache-enabler',
                                 '_action' => 'clear',
                                 '_cid'    => time(),
-                            ) ) ),
+                            ) ), '_cache__clear_nonce' ),
                 'parent' => 'top-secondary',
                 'title'  => '<span class="ab-item">' . $title . '</span>',
                 'meta'   => array(
@@ -826,7 +838,7 @@ final class Cache_Enabler {
                                     '_cache'  => 'cache-enabler',
                                     '_action' => 'clearurl',
                                     '_cid'    => time(),
-                                ) ) ),
+                                ) ), '_cache__clear_nonce' ),
                     'parent' => 'top-secondary',
                     'title'  => '<span class="ab-item">' . esc_html__( 'Clear URL Cache', 'cache-enabler' ) . '</span>',
                     'meta'   => array(
@@ -860,7 +872,7 @@ final class Cache_Enabler {
         }
 
         // validate nonce
-        if ( empty( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'] ) ) {
+        if ( empty( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], '_cache__clear_nonce' ) ) {
             return;
         }
 
@@ -1365,6 +1377,25 @@ final class Cache_Enabler {
 
 
     /**
+     * check if caching is disabled
+     *
+     * @since   1.4.5
+     * @change  1.4.5
+     *
+     * @return  boolean  true if WP_CACHE is set to disable caching, false otherwise
+     */
+
+    private static function _is_wp_cache_disabled() {
+
+        if ( defined( 'WP_CACHE' ) && ! WP_CACHE ) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /**
      * check if mobile
      *
      * @since   1.0.0
@@ -1409,7 +1440,7 @@ final class Cache_Enabler {
      * check to bypass the cache
      *
      * @since   1.0.0
-     * @change  1.4.4
+     * @change  1.4.5
      *
      * @return  boolean  true if exception, false otherwise
      *
@@ -1434,7 +1465,7 @@ final class Cache_Enabler {
         }
 
         // check conditional tags
-        if ( self::_is_index() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
+        if ( self::_is_wp_cache_disabled() || self::_is_index() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
             return true;
         }
 
@@ -1706,13 +1737,15 @@ final class Cache_Enabler {
      * add clear option dropdown on post publish widget
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.5
+     *
+     * @param   WP_Post  $post  post instance
      */
 
-    public static function add_clear_dropdown() {
+    public static function add_clear_dropdown( $post ) {
 
         // on published post/page only
-        if ( empty( $GLOBALS['pagenow'] ) || $GLOBALS['pagenow'] !== 'post.php' || empty( $GLOBALS['post'] ) || ! is_object( $GLOBALS['post'] ) || $GLOBALS['post']->post_status !== 'publish' ) {
+        if ( empty( $GLOBALS['pagenow'] ) || $GLOBALS['pagenow'] !== 'post.php' || empty( $post ) || ! is_object( $post ) || $post->post_status !== 'publish' ) {
             return;
         }
 
@@ -1722,7 +1755,7 @@ final class Cache_Enabler {
         }
 
         // validate nonce
-        wp_nonce_field( CE_BASE, '_cache__status_nonce_' . $GLOBALS['post']->ID );
+        wp_nonce_field( CE_BASE, '_cache__status_nonce_' . $post->ID );
 
         // get current publishing action
         $current_action = (int) get_user_meta(
@@ -1767,10 +1800,10 @@ final class Cache_Enabler {
             </div>',
             esc_html__( 'Clear cache', 'cache-enabler' ),
             $available_options[ $current_action ],
-            esc_html__( 'Edit' ),
+            esc_html__( 'Edit', 'cache-enabler' ),
             $dropdown_options,
-            esc_html__( 'OK' ),
-            esc_html__( 'Cancel' )
+            esc_html__( 'OK', 'cache-enabler' ),
+            esc_html__( 'Cancel', 'cache-enabler' )
         );
     }
 
@@ -1856,7 +1889,7 @@ final class Cache_Enabler {
      * check plugin requirements
      *
      * @since   1.1.0
-     * @change  1.4.4
+     * @change  1.4.5
      */
 
     public static function requirements_check() {
@@ -1865,9 +1898,10 @@ final class Cache_Enabler {
         if ( version_compare( $GLOBALS['wp_version'], CE_MIN_WP . 'alpha', '<' ) ) {
             show_message(
                 sprintf(
-                    '<div class="error"><p>%s</p></div>',
+                    '<div class="notice notice-error"><p>%s</p></div>',
                     sprintf(
-                        esc_html__( 'The %s is optimized for WordPress %s. Please disable the plugin or upgrade your WordPress installation (recommended).', 'cache-enabler' ),
+                        // translators: 1. Cache Enabler 2. WordPress version (e.g. 5.1)
+                        esc_html__( 'The %1$s plugin is optimized for WordPress %2$s. Please disable the plugin or upgrade your WordPress installation (recommended).', 'cache-enabler' ),
                         '<strong>Cache Enabler</strong>',
                         CE_MIN_WP
                     )
@@ -1879,9 +1913,10 @@ final class Cache_Enabler {
         if ( file_exists( CE_CACHE_DIR ) && ! is_writable( CE_CACHE_DIR ) ) {
             show_message(
                 sprintf(
-                    '<div class="error"><p>%s</p></div>',
+                    '<div class="notice notice-error"><p>%s</p></div>',
                     sprintf(
-                        esc_html__( 'The %s plugin requires write permissions %s in %s. Please change the %s.', 'cache-enabler' ),
+                        // translators: 1. Cache Enabler 2. 755 3. wp-content/cache 4. file permissions
+                        esc_html__( 'The %1$s plugin requires write permissions %2$s in %3$s. Please change the %4$s.', 'cache-enabler' ),
                         '<strong>Cache Enabler</strong>',
                         '<code>755</code>',
                         '<code>wp-content/cache</code>',
@@ -1899,9 +1934,10 @@ final class Cache_Enabler {
         if ( defined( 'AUTOPTIMIZE_PLUGIN_DIR' ) && self::$options['minify_html'] && get_option( 'autoptimize_html', '' ) !== '' ) {
             show_message(
                 sprintf(
-                    '<div class="error"><p>%s</p></div>',
+                    '<div class="notice notice-error"><p>%s</p></div>',
                     sprintf(
-                        esc_html__( 'The %s plugin is already active. Please disable %s in the %s.', 'cache-enabler' ),
+                        // translators: 1. Autoptimize 2. Cache Minification 3. Cache Enabler Settings
+                        esc_html__( 'The %1$s plugin is already active. Please disable %2$s in the %3$s.', 'cache-enabler' ),
                         '<strong>Autoptimize</strong>',
                         esc_html__( 'Cache Minification', 'cache-enabler' ),
                         sprintf(
@@ -2091,19 +2127,20 @@ final class Cache_Enabler {
      * settings page
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.5
      */
 
     public static function settings_page() {
 
-        // WP_CACHE check
-        if ( ! defined( 'WP_CACHE' ) || ! WP_CACHE ) {
+        // check WP_CACHE constant
+        if ( self::_is_wp_cache_disabled() ) {
             show_message(
                 sprintf(
                     '<div class="notice notice-warning"><p>%s</p></div>',
                     sprintf(
-                        esc_html__( '%s is not set in the %s file.', 'cache-enabler' ),
-                        "<code>define('WP_CACHE', true);</code>",
+                        // translators: 1. define( 'WP_CACHE', true ); 2. wp-config.php
+                        esc_html__( 'Caching is disabled because %1$s is not set in the %2$s file.', 'cache-enabler' ),
+                        "<code>define( 'WP_CACHE', true );</code>",
                         '<code>wp-config.php</code>'
                     )
                 )
