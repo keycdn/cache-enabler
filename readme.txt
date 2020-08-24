@@ -81,6 +81,9 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.4.6 =
+* Fix cache clearing for subdirectory multisite networks (#103)
+
 = 1.4.5 =
 * Update WP_CACHE constant handling (#102)
 * Add cache bypass method for WP_CACHE constant (#102)

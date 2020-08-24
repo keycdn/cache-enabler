@@ -1353,7 +1353,6 @@ final class Cache_Enabler {
                 self::clear_home_page_cache();
             // subsite
             } else {
-                $clear_url .= $blog_path;
                 // clear subsite cache
                 self::clear_page_cache_by_url( $clear_url );
             }
