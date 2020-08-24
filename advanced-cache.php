@@ -164,7 +164,7 @@ function _ce_file_path( $path = null ) {
             PHP_URL_HOST
         ),
         parse_url(
-            ( $path ? $path : $_SERVER['REQUEST_URI'] ),
+            ( $path ) ? $path : $_SERVER['REQUEST_URI'],
             PHP_URL_PATH
         )
     );

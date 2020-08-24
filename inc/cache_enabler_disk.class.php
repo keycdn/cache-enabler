@@ -426,7 +426,7 @@ final class Cache_Enabler_Disk {
      * cache path
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.5
      *
      * @param   string  $path  URI or permalink
      * @return  string  $diff  path to cached file
@@ -439,11 +439,11 @@ final class Cache_Enabler_Disk {
             CE_CACHE_DIR,
             DIRECTORY_SEPARATOR,
             parse_url(
-                get_site_url(),
+                ( $path ) ? get_site_url() : 'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
                 PHP_URL_HOST
             ),
             parse_url(
-                ( $path ? $path : $_SERVER['REQUEST_URI'] ),
+                ( $path ) ? $path : $_SERVER['REQUEST_URI'],
                 PHP_URL_PATH
             )
         );

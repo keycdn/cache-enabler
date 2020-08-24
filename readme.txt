@@ -81,17 +81,23 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.4.5 =
+* Update WP_CACHE constant handling (#102)
+* Add cache bypass method for WP_CACHE constant (#102)
+* Add translation descriptions (#102)
+* Fix cache handling for default redirects (#102)
+
 = 1.4.4 =
-* Update cache handling (#100)
+* Update cache handling for HTTP status codes (#100)
 
 = 1.4.3 =
 * Update cache clearing by URL (#99)
-* Update advanced cache settings (#99)
+* Fix advanced cache settings updating unnecessarily (#99)
 
 = 1.4.2 =
 * Update cache clearing for the Clear URL Cache admin bar button (#98)
 * Update scheme-based caching (#98)
-* Fix advanced cache (#98)
+* Fix advanced cache path variants (#98)
 
 = 1.4.1 =
 * Fix undefined constant
@@ -108,7 +114,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Add Cache Behavior setting for WooCommerce stock update (#88)
 * Add fbclid as default URL query parameter to bypass cache (#84)
 * Add scheme-based caching (#94)
-* Fix advanced cache for multisite networks (#92)
+* Fix advanced cache settings recognition for multisite networks (#92)
 
 = 1.3.5 =
 * WP-CLI cache clearing (Thanks to Steve Grunwell)
