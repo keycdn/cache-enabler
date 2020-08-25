@@ -1394,6 +1394,25 @@ final class Cache_Enabler {
 
 
     /**
+     * check if sitemap
+     *
+     * @since   1.4.6
+     * @change  1.4.6
+     *
+     * @return  boolean  true if sitemap, false otherwise
+     */
+
+    private static function _is_sitemap() {
+
+        if ( preg_match( '/\.x(m|s)l$/', $_SERVER['REQUEST_URI'] ) ) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /**
      * check if mobile
      *
      * @since   1.0.0
@@ -1438,7 +1457,7 @@ final class Cache_Enabler {
      * check to bypass the cache
      *
      * @since   1.0.0
-     * @change  1.4.5
+     * @change  1.4.6
      *
      * @return  boolean  true if exception, false otherwise
      *
@@ -1463,7 +1482,7 @@ final class Cache_Enabler {
         }
 
         // check conditional tags
-        if ( self::_is_wp_cache_disabled() || self::_is_index() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
+        if ( self::_is_wp_cache_disabled() || self::_is_index() || is_search() || self::_is_sitemap() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
             return true;
         }
 
