@@ -1297,7 +1297,7 @@ final class Cache_Enabler {
      * clear blog ID cache
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.4.6
      *
      * @param   integer  $blog_id  blog ID
      */
@@ -1343,9 +1343,8 @@ final class Cache_Enabler {
                     $page_path = str_replace( $glob_path, '', $page_path );
                     // if cached page belongs to main site
                     if ( ! in_array( $page_path, $blog_paths ) ) {
-                        $clear_url .= $page_path;
                         // clear page cache
-                        self::clear_page_cache_by_url( $clear_url );
+                        self::clear_page_cache_by_url( $clear_url . $page_path );
                     }
                 }
 
