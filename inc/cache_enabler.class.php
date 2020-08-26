@@ -445,19 +445,25 @@ final class Cache_Enabler {
      * set or unset WP_CACHE constant
      *
      * @since   1.1.1
-     * @change  1.4.5
+     * @change  1.4.7
      *
      * @param   boolean  $wp_cache_value  true to set WP_CACHE constant in wp-config.php, false to unset
      */
 
     private static function _set_wp_cache( $wp_cache_value = true ) {
 
-        // get wp-config.php file
-        $wp_config_file = ABSPATH . 'wp-config.php';
+        // get config file
+        if ( file_exists( ABSPATH . 'wp-config.php' ) ) {
+            // config file resides in ABSPATH
+            $wp_config_file = ABSPATH . 'wp-config.php';
+        } elseif ( @file_exists( dirname( ABSPATH ) . '/wp-config.php' ) && ! @file_exists( dirname( ABSPATH ) . '/wp-settings.php' ) ) {
+            // config file resides one level above ABSPATH but is not part of another installation
+            $wp_config_file = dirname( ABSPATH ) . '/wp-config.php';
+        }
 
-        // check if wp-config.php file exists
-        if ( file_exists( $wp_config_file ) && is_writable( $wp_config_file ) ) {
-            // get wp-config.php as array
+        // check if config file can be written to
+        if ( is_writable( $wp_config_file ) ) {
+            // get config file as array
             $wp_config = file( $wp_config_file );
 
             // set Cache Enabler line
@@ -489,7 +495,7 @@ final class Cache_Enabler {
                 array_unshift( $wp_config, "<?php\r\n", $wp_cache_ce_line );
             }
 
-            // write wp-config.php file
+            // write config file
             $fh = @fopen( $wp_config_file, 'w' );
             foreach( $wp_config as $ln ) {
                 @fwrite( $fh, $ln );

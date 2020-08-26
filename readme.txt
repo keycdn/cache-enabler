@@ -81,6 +81,9 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.4.7 =
+* Update getting wp-config.php if one level above installation (#106)
+
 = 1.4.6 =
 * Add cache bypass method for sitemaps (#104)
 * Fix cache clearing for subdirectory multisite networks (#103)
