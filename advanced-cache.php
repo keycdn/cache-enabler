@@ -182,11 +182,17 @@ function _ce_file_path( $path = null ) {
 
 // get blog path
 function _get_blog_path() {
-    $path = $_SERVER['REQUEST_URI'];
 
-    $path = explode( '/', $path, 3 );
+    // get blog path
+    $path = explode( '/', $_SERVER['REQUEST_URI'], 3 );
+    $path = $path[1];
 
-    return '-' . $path[1];
+    // check if blog path is empty
+    if ( ! empty( $path ) ) {
+        $path = '-' . $path;
+    }
+
+    return $path;
 }
 
 // read settings file
