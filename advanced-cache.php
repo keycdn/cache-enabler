@@ -12,7 +12,7 @@ if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GE
 }
 
 // base path
-$path = _ce_file_path();
+$path = _file_path();
 
 // scheme
 $scheme = ( ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' ) || $_SERVER['SERVER_PORT'] === '443' ) ? 'https' : 'http';
@@ -152,8 +152,8 @@ readfile( $path_html );
 exit;
 
 
-// generate cache path
-function _ce_file_path( $path = null ) {
+// get cached file path
+function _file_path() {
 
     $path = sprintf(
         '%s%s%s%s',
@@ -164,12 +164,12 @@ function _ce_file_path( $path = null ) {
             PHP_URL_HOST
         ),
         parse_url(
-            ( $path ) ? $path : $_SERVER['REQUEST_URI'],
+            $_SERVER['REQUEST_URI'],
             PHP_URL_PATH
         )
     );
 
-    if ( is_file( $path ) > 0 ) {
+    if ( is_file( $path ) ) {
         header( $_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found', true, 404 );
         exit;
     }

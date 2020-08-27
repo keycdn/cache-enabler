@@ -423,10 +423,10 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * cache path
+     * get cached file path
      *
      * @since   1.0.0
-     * @change  1.4.5
+     * @change  1.4.7
      *
      * @param   string  $path  URI or permalink
      * @return  string  $diff  path to cached file
@@ -448,7 +448,7 @@ final class Cache_Enabler_Disk {
             )
         );
 
-        if ( is_file( $path ) > 0 ) {
+        if ( is_file( $path ) ) {
             wp_die( 'Path is not valid.' );
         }
 
