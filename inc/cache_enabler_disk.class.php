@@ -460,14 +460,14 @@ final class Cache_Enabler_Disk {
      * get file scheme
      *
      * @since   1.4.0
-     * @change  1.4.2
+     * @change  1.4.7
      *
      * @return  string  https or http
      */
 
     private static function _file_scheme() {
 
-        return ( ( isset( $_SERVER['HTTPS'] ) && ! empty( $_SERVER['HTTPS'] ) ) || $_SERVER['SERVER_PORT'] === '443' ) ? 'https' : 'http';
+        return ( ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' ) || $_SERVER['SERVER_PORT'] === '443' ) ? 'https' : 'http';
     }
 
 

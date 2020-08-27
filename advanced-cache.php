@@ -3,7 +3,7 @@
  * Cache Enabler advanced cache
  *
  * @since   1.2.0
- * @change  1.4.2
+ * @change  1.4.7
  */
 
 // check if request method is GET
@@ -15,7 +15,7 @@ if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GE
 $path = _ce_file_path();
 
 // scheme
-$scheme = ( ( isset( $_SERVER['HTTPS'] ) && ! empty( $_SERVER['HTTPS'] ) ) || $_SERVER['SERVER_PORT'] === '443' ) ? 'https' : 'http';
+$scheme = ( ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' ) || $_SERVER['SERVER_PORT'] === '443' ) ? 'https' : 'http';
 
 // path to cached variants
 $path_html      = $path . $scheme . '-index.html';
