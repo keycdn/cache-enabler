@@ -1418,6 +1418,31 @@ final class Cache_Enabler {
     }
 
 
+
+
+    /**
+     * check if trailing slash redirect
+     *
+     * @since   1.4.7
+     * @change  1.4.7
+     *
+     * @return  boolean  true if a redirect is required, false otherwise
+     */
+
+    private static function _is_trailing_slash_redirect() {
+
+        // check if trailing slash is set and missing
+        if ( self::permalink_structure_has_trailing_slash() && ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+            return true;
+        // check if trailing slash is not set and appended
+        } elseif ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+            return true;
+        }
+
+        return false;
+    }
+
+
     /**
      * check if mobile
      *
@@ -1488,7 +1513,7 @@ final class Cache_Enabler {
         }
 
         // check conditional tags
-        if ( self::_is_wp_cache_disabled() || self::_is_index() || is_search() || self::_is_sitemap() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
+        if ( self::_is_wp_cache_disabled() || self::_is_index() || self::_is_sitemap() || self::_is_trailing_slash_redirect() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
             return true;
         }
 
