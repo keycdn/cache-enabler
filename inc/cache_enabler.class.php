@@ -1432,9 +1432,11 @@ final class Cache_Enabler {
     private static function _is_trailing_slash_redirect() {
 
         // check if trailing slash is set and missing
-        if ( self::permalink_structure_has_trailing_slash() && ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
-            return true;
-        // check if trailing slash is not set and appended
+        if ( self::permalink_structure_has_trailing_slash() ) {
+            if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+                return true;
+            }
+        // if trailing slash is not set and appended
         } elseif ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
             return true;
         }
