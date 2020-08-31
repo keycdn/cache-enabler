@@ -1224,16 +1224,26 @@ final class Cache_Enabler {
      * clear page cache by post ID
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.7
      *
-     * @param   integer  $post_id  post ID
+     * @param   integer|string  $post_id  post ID
      */
 
     public static function clear_page_cache_by_post_id( $post_id ) {
 
+        // check if post ID is empty
+        if ( empty( $post_id ) ) {
+            return;
+        }
+
         // validate integer
         if ( ! is_int( $post_id ) ) {
-            return;
+            // if string try to convert to integer
+            $post_id = (int) $post_id;
+            // conversion failed
+            if ( ! $post_id ) {
+                return;
+            }
         }
 
         // clear page cache
@@ -1245,36 +1255,29 @@ final class Cache_Enabler {
      * clear page cache by URL
      *
      * @since   1.0.0
-     * @change  1.4.3
+     * @change  1.4.7
      *
-     * @param  string  $url  URL of a page
+     * @param   string  $clear_url   full or relative URL of a page
+     * @param   string  $clear_type  clear all specific `page` variants or the entire `dir`
      */
 
-    public static function clear_page_cache_by_url( $url ) {
+    public static function clear_page_cache_by_url( $clear_url, $clear_type = 'page' ) {
 
-        // validate string
-        if ( ! is_string( $url ) ) {
+        // check if clear URL is empty
+        if ( empty( $clear_url ) ) {
             return;
         }
 
-        // get home page URL
-        $home_page_url = get_site_url( null, '/' );
-
-        // check if URL is the home page
-        if ( $url === $home_page_url ) {
-            self::clear_home_page_cache();
-        } else {
-            call_user_func(
-                array(
-                    self::$disk,
-                    'delete_asset',
-                ),
-                $url
-            );
+        // validate string
+        if ( ! is_string( $clear_url ) ) {
+            return;
         }
 
+        // clear URL
+        call_user_func( array( self::$disk, 'delete_asset' ), $clear_url, $clear_type );
+
         // clear cache by URL post hook
-        do_action( 'ce_action_cache_by_url_cleared' );
+        do_action( 'ce_action_cache_by_url_cleared', $clear_url );
     }
 
 
@@ -1282,17 +1285,13 @@ final class Cache_Enabler {
      * clear home page cache
      *
      * @since   1.0.7
-     * @change  1.2.3
+     * @change  1.4.7
      */
 
     public static function clear_home_page_cache() {
 
-        call_user_func(
-            array(
-                self::$disk,
-                'clear_home',
-            )
-        );
+        // clear home page cache
+        self::clear_page_cache_by_url( get_site_url() );
 
         // clear home page cache post hook
         do_action( 'ce_action_home_page_cache_cleared' );
@@ -1303,9 +1302,9 @@ final class Cache_Enabler {
      * clear blog ID cache
      *
      * @since   1.4.0
-     * @change  1.4.6
+     * @change  1.4.7
      *
-     * @param   integer  $blog_id  blog ID
+     * @param   integer|string  $blog_id  blog ID
      */
 
     public static function clear_blog_id_cache( $blog_id ) {
@@ -1317,7 +1316,12 @@ final class Cache_Enabler {
 
         // validate integer
         if ( ! is_int( $blog_id ) ) {
-            return;
+            // if string try to convert to integer
+            $blog_id = (int) $blog_id;
+            // conversion failed
+            if ( ! $blog_id ) {
+                return;
+            }
         }
 
         // set clear URL
@@ -1326,7 +1330,7 @@ final class Cache_Enabler {
         // network with subdomain configuration
         if ( is_subdomain_install() ) {
             // clear main site or subsite cache
-            self::clear_page_cache_by_url( $clear_url );
+            self::clear_page_cache_by_url( $clear_url, 'dir' );
         // network with subdirectory configuration
         } else {
             // get blog path
@@ -1350,7 +1354,7 @@ final class Cache_Enabler {
                     // if cached page belongs to main site
                     if ( ! in_array( $page_path, $blog_paths ) ) {
                         // clear page cache
-                        self::clear_page_cache_by_url( $clear_url . $page_path );
+                        self::clear_page_cache_by_url( $clear_url . $page_path, 'dir' );
                     }
                 }
 
@@ -1359,7 +1363,7 @@ final class Cache_Enabler {
             // subsite
             } else {
                 // clear subsite cache
-                self::clear_page_cache_by_url( $clear_url );
+                self::clear_page_cache_by_url( $clear_url, 'dir' );
             }
         }
     }
@@ -1490,7 +1494,7 @@ final class Cache_Enabler {
      * check to bypass the cache
      *
      * @since   1.0.0
-     * @change  1.4.6
+     * @change  1.4.7
      *
      * @return  boolean  true if exception, false otherwise
      *
@@ -1711,7 +1715,7 @@ final class Cache_Enabler {
 
     public static function set_cache( $data ) {
 
-        // check if empty
+        // check if page is empty
         if ( empty( $data ) ) {
             return '';
         }
@@ -1719,13 +1723,7 @@ final class Cache_Enabler {
         $data = apply_filters( 'cache_enabler_before_store', $data );
 
         // store as asset
-        call_user_func(
-            array(
-                self::$disk,
-                'store_asset',
-            ),
-            self::_minify_cache( $data )
-        );
+        call_user_func( array( self::$disk, 'store_asset' ), self::_minify_cache( $data ) );
 
         return $data;
     }
@@ -1746,12 +1744,7 @@ final class Cache_Enabler {
         }
 
         // get asset cache status
-        $cached = call_user_func(
-            array(
-                self::$disk,
-                'check_asset',
-            )
-        );
+        $cached = call_user_func( array( self::$disk, 'check_asset' ) );
 
         // check if cache is empty
         if ( empty( $cached ) ) {
@@ -1760,12 +1753,7 @@ final class Cache_Enabler {
         }
 
         // get cache expiry status
-        $expired = call_user_func(
-            array(
-                self::$disk,
-                'check_expiry',
-            )
-        );
+        $expired = call_user_func( array( self::$disk, 'check_expiry' ) );
 
         // check if cache has expired
         if ( $expired ) {
@@ -1774,12 +1762,7 @@ final class Cache_Enabler {
         }
 
         // return cached asset
-        call_user_func(
-            array(
-                self::$disk,
-                'get_asset',
-            )
-        );
+        call_user_func( array( self::$disk, 'get_asset' ) );
     }
 
 

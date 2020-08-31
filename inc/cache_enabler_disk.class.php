@@ -116,20 +116,27 @@ final class Cache_Enabler_Disk {
      * delete asset
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.4.7
      *
-     * @param   string  $url  URL of cached asset
+     * @param   string  $clear_url   full or relative URL of a page
+     * @param   string  $clear_type  if `dir` clear the entire directory
      */
 
-    public static function delete_asset( $url ) {
+    public static function delete_asset( $clear_url, $clear_type ) {
 
-        // check if URL is empty
-        if ( empty( $url ) ) {
-            wp_die( 'URL is empty.' );
+        // get directory
+        $dir = self::_file_path( $clear_url );
+
+        // delete all cached variants in directory
+        array_map( 'unlink', glob( $dir . self::FILE_GLOB ) );
+
+        // get directory data
+        $objects = self::_get_dir( $dir );
+
+        // check if directory is now empty or if it needs to be cleared anyways
+        if ( empty( $objects ) || $clear_type === 'dir' ) {
+            self::_clear_dir( $dir );
         }
-
-        // delete
-        self::_clear_dir( self::_file_path( $url ) );
     }
 
 
@@ -144,27 +151,6 @@ final class Cache_Enabler_Disk {
 
         // clear complete cache
         self::_clear_dir( CE_CACHE_DIR );
-    }
-
-
-    /**
-     * clear home cache
-     *
-     * @since   1.0.7
-     * @change  1.4.0
-     */
-
-    public static function clear_home() {
-
-        $path = sprintf(
-            '%s%s%s%s',
-            CE_CACHE_DIR,
-            DIRECTORY_SEPARATOR,
-            preg_replace( '#^https?://#', '', get_option( 'siteurl' ) ),
-            DIRECTORY_SEPARATOR
-        );
-
-        array_map( 'unlink', glob( $path . self::FILE_GLOB ) );
     }
 
 
@@ -328,7 +314,7 @@ final class Cache_Enabler_Disk {
      * clear directory
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.4.7
      *
      * @param   string  $dir  directory
      */
@@ -344,16 +330,24 @@ final class Cache_Enabler_Disk {
         }
 
         // get directory data
-        $data_dir = @scandir( $dir );
-        if( gettype( $data_dir ) === 'array' ) {
-            $objects = array_diff(
-                $data_dir,
-                array( '..', '.' )
-            );
-        }
+        $objects = self::_get_dir( $dir );
 
-        // check if empty
+        // check if directory is empty
         if ( empty( $objects ) ) {
+            // delete empty directory
+            @rmdir( $dir );
+
+            // get parent directory
+            $parent_dir = preg_replace( '/\/[^\/]+$/', '', $dir );
+
+            // get parent directory data
+            $parent_objects = self::_get_dir( $parent_dir );
+
+            // check if parent directory is also empty
+            if ( empty( $parent_objects ) ) {
+                self::_clear_dir( $parent_dir );
+            }
+
             return;
         }
 
@@ -369,7 +363,7 @@ final class Cache_Enabler_Disk {
             }
         }
 
-        // delete
+        // delete directory
         @rmdir( $dir );
 
         // clears file status cache
@@ -389,17 +383,15 @@ final class Cache_Enabler_Disk {
 
     public static function cache_size( $dir = '.' ) {
 
-        // check if not directory
+        // check if directory
         if ( ! is_dir( $dir ) ) {
             return;
         }
 
         // get directory data
-        $objects = array_diff(
-            scandir( $dir ),
-            array( '..', '.' )
-        );
+        $objects = self::_get_dir( $dir );
 
+        // check if empty
         if ( empty( $objects ) ) {
             return;
         }
@@ -564,6 +556,28 @@ final class Cache_Enabler_Disk {
         );
 
         return $settings_file;
+    }
+
+
+    /**
+     * get directory data
+     *
+     * @since   1.4.7
+     * @change  1.4.7
+     *
+     * @param   string  $dir      directory path
+     * @return  array   $objects  directory objects
+     */
+
+    private static function _get_dir( $dir ) {
+
+        // scan directory
+        $data_dir = @scandir( $dir );
+
+        if ( is_array( $data_dir ) ) {
+            $objects = array_diff( $data_dir, array( '..', '.' ) );
+            return $objects;
+        }
     }
 
 

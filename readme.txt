@@ -83,7 +83,10 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = 1.4.7 =
 * Update getting wp-config.php if one level above installation (#106)
-* Fix advanced cache settings recognition for main site in subdirectory network
+* Add clear types for strict cache clearing (#110)
+* Fix advanced cache settings recognition for subdirectory multisite networks
+* Fix WP-CLI clear command for post IDs (#110)
+* Fix scheme-based caching for NGINX/PHP-FPM (#109)
 * Fix trailing slash handling
 
 = 1.4.6 =
