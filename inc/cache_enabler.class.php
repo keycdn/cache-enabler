@@ -1224,17 +1224,12 @@ final class Cache_Enabler {
      * clear page cache by post ID
      *
      * @since   1.0.0
-     * @change  1.4.7
+     * @change  1.4.8
      *
      * @param   integer|string  $post_id  post ID
      */
 
     public static function clear_page_cache_by_post_id( $post_id ) {
-
-        // check if post ID is empty
-        if ( empty( $post_id ) ) {
-            return;
-        }
 
         // validate integer
         if ( ! is_int( $post_id ) ) {
@@ -1255,21 +1250,21 @@ final class Cache_Enabler {
      * clear page cache by URL
      *
      * @since   1.0.0
-     * @change  1.4.7
+     * @change  1.4.8
      *
-     * @param   string  $clear_url   full or relative URL of a page
-     * @param   string  $clear_type  clear all specific `page` variants or the entire `dir`
+     * @param   string  $clear_url   full URL of a cached page
+     * @param   string  $clear_type  clear all specific cached `page` variants or the entire `dir`
      */
 
     public static function clear_page_cache_by_url( $clear_url, $clear_type = 'page' ) {
 
-        // check if clear URL is empty
-        if ( empty( $clear_url ) ) {
+        // validate string
+        if ( ! is_string( $clear_url ) ) {
             return;
         }
 
-        // validate string
-        if ( ! is_string( $clear_url ) ) {
+        // validate URL
+        if ( ! filter_var( $clear_url, FILTER_VALIDATE_URL ) ) {
             return;
         }
 
@@ -1285,13 +1280,21 @@ final class Cache_Enabler {
      * clear home page cache
      *
      * @since   1.0.7
-     * @change  1.4.7
+     * @change  1.4.8
+     *
+     * @param   integer  $blog_id  blog ID
      */
 
-    public static function clear_home_page_cache() {
+    public static function clear_home_page_cache( $blog_id = null ) {
+
+        // set blog ID if given, get current site otherwise
+        $blog_id = ( $blog_id ) ? $blog_id : get_current_blog_id();
+
+        // get home page URL
+        $home_page_url = get_site_url( $blog_id );
 
         // clear home page cache
-        self::clear_page_cache_by_url( get_site_url() );
+        self::clear_page_cache_by_url( $home_page_url );
 
         // clear home page cache post hook
         do_action( 'ce_action_home_page_cache_cleared' );
@@ -1302,7 +1305,7 @@ final class Cache_Enabler {
      * clear blog ID cache
      *
      * @since   1.4.0
-     * @change  1.4.7
+     * @change  1.4.8
      *
      * @param   integer|string  $blog_id  blog ID
      */
@@ -1324,6 +1327,11 @@ final class Cache_Enabler {
             }
         }
 
+        // check if blog ID exists
+        if ( ! in_array( $blog_id, self::_get_blog_ids() ) ) {
+            return;
+        }
+
         // set clear URL
         $clear_url = get_site_url( $blog_id );
 
@@ -1340,10 +1348,8 @@ final class Cache_Enabler {
             if ( $blog_path === '/' ) {
                 // get blog paths
                 $blog_paths = self::_get_blog_paths();
-
                 // get blog domain
                 $blog_domain = self::get_blog_domain();
-
                 // glob path
                 $glob_path = CE_CACHE_DIR . '/' . $blog_domain;
 
@@ -1359,7 +1365,7 @@ final class Cache_Enabler {
                 }
 
                 // clear home page cache
-                self::clear_home_page_cache();
+                self::clear_home_page_cache( $blog_id );
             // subsite
             } else {
                 // clear subsite cache

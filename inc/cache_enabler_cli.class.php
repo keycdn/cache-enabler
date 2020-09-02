@@ -6,7 +6,7 @@ defined( 'ABSPATH' ) || exit;
 
 
 /**
- * Interact with Cache Enabler
+ * Interact with Cache Enabler.
  *
  * @since  1.3.5
  */
@@ -25,16 +25,26 @@ class Cache_Enabler_CLI {
      * [--urls=<url>]
      * : Clear the cache for the given URL(s). Separate multiple URLs with commas.
      *
+     * [--sites=<site>]
+     * : Clear the cache for the given blog ID(s). Separate multiple blog IDs with commas.
+     *
      * ## EXAMPLES
      *
-     * # Clear all page caches
-     * wp cache-enabler clear
+     *    # Clear all pages cache.
+     *    $ wp cache-enabler clear
+     *    Success: Cache cleared.
      *
-     * # Clear the cache for object IDs 1, 2, and 3
-     * wp cache-enabler clear --ids=1,2,3
+     *    # Clear the page cache for post IDs 1, 2, and 3.
+     *    $ wp cache-enabler clear --ids=1,2,3
+     *    Success: Pages cache cleared.
      *
-     * # Clear the cache for a particular URL
-     * wp cache-enabler clear --urls=https://example.com/about-us
+     *    # Clear the page cache for a particular URL.
+     *    $ wp cache-enabler clear --urls=https://example.com/about-us
+     *    Success: Page cache cleared.
+     *
+     *    # Clear all pages cache for sites with blog IDs 1, 2, and 3.
+     *    $ wp cache-enabler clear --sites=1,2,3
+     *    Success: Sites cache cleared.
      *
      * @alias clear
      */
@@ -44,22 +54,49 @@ class Cache_Enabler_CLI {
         $assoc_args = wp_parse_args(
             $assoc_args,
             array(
-                'ids'  => '',
-                'urls' => '',
+                'ids'   => '',
+                'urls'  => '',
+                'sites' => '',
             )
         );
 
-        // clear everything if we are not given IDs and/or URLs
-        if ( empty( $assoc_args['ids'] ) && empty( $assoc_args['urls'] ) ) {
+        // clear complete cache if no associative arguments are given
+        if ( empty( $assoc_args['ids'] ) && empty( $assoc_args['urls'] ) && empty( $assoc_args['sites'] ) ) {
             Cache_Enabler::clear_total_cache();
 
-            return WP_CLI::success( esc_html__( 'The page cache has been cleared.', 'cache-enabler' ) );
+            return WP_CLI::success( ( is_multisite() && is_plugin_active_for_network( CE_BASE ) ) ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Cache cleared.', 'cache-enabler' ) );
         }
 
-        // clear specific IDs and/or URLs
-        array_map( 'Cache_Enabler::clear_page_cache_by_post_id', explode( ',', $assoc_args['ids'] ) );
-        array_map( 'Cache_Enabler::clear_page_cache_by_url', explode( ',', $assoc_args['urls'] ) );
+        // clear page(s) cache by post ID(s) and/or URL(s)
+        if ( ! empty( $assoc_args['ids'] ) || ! empty( $assoc_args['urls'] ) ) {
+            array_map( 'Cache_Enabler::clear_page_cache_by_post_id', explode( ',', $assoc_args['ids'] ) );
+            array_map( 'Cache_Enabler::clear_page_cache_by_url', explode( ',', $assoc_args['urls'] ) );
 
-        WP_CLI::success( 'The requested caches have been cleared.', 'cache-enabler' );
+            // check if there is more than one ID and/or URL
+            $separators = substr_count( $assoc_args['ids'], ',' ) + substr_count( $assoc_args['urls'], ',' );
+
+            if ( $separators > 0 ) {
+                return WP_CLI::success( esc_html__( 'Pages cache cleared.', 'cache-enabler' ) );
+            } else {
+                return WP_CLI::success( esc_html__( 'Page cache cleared.', 'cache-enabler' ) );
+            }
+        }
+
+        // clear pages cache by blog ID(s)
+        if ( ! empty( $assoc_args['sites'] ) ) {
+            array_map( 'Cache_Enabler::clear_blog_id_cache', explode( ',', $assoc_args['sites'] ) );
+
+            // check if there is more than one site
+            $separators = substr_count( $assoc_args['sites'], ',' );
+
+            if ( $separators > 0 ) {
+                return WP_CLI::success( esc_html__( 'Sites cache cleared.', 'cache-enabler' ) );
+            } else {
+                return WP_CLI::success( esc_html__( 'Site cache cleared.', 'cache-enabler' ) );
+            }
+        }
     }
 }
+
+// add WP-CLI command for Cache Enabler
+WP_CLI::add_command( 'cache-enabler', 'Cache_Enabler_CLI' );
