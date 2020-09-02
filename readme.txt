@@ -47,14 +47,17 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = WP-CLI =
 
-* Clear all page caches
-  `wp cache-enabler clear`
+* Clear all pages cache.
+    `wp cache-enabler clear`
 
-* Clear the cache for object IDs 1, 2, and 3
-  `wp cache-enabler clear --ids=1,2,3`
+* Clear the page cache for post IDs 1, 2, and 3.
+    `wp cache-enabler clear --ids=1,2,3`
 
-* Clear the cache for a particular URL
-  `wp cache-enabler clear --urls=https://example.com/about-us`
+* Clear the page cache for a particular URL.
+    `wp cache-enabler clear --urls=https://example.com/about-us`
+
+* Clear all pages cache for sites with blog IDs 1, 2, and 3.
+    `wp cache-enabler clear --sites=1,2,3`
 
 
 = Website =
@@ -81,11 +84,15 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.4.8 =
+* Update WP-CLI clear subcommand messages (#111)
+* Update WP-CLI clear subcommand for multisite networks (#111)
+
 = 1.4.7 =
 * Update getting wp-config.php if one level above installation (#106)
 * Add clear types for strict cache clearing (#110)
 * Fix advanced cache settings recognition for subdirectory multisite networks
-* Fix WP-CLI clear command for post IDs (#110)
+* Fix WP-CLI clear subcommand for post IDs (#110)
 * Fix scheme-based caching for NGINX/PHP-FPM (#109)
 * Fix trailing slash handling
 

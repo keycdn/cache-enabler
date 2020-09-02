@@ -418,33 +418,34 @@ final class Cache_Enabler_Disk {
      * get cached file path
      *
      * @since   1.0.0
-     * @change  1.4.7
+     * @change  1.4.8
      *
-     * @param   string  $path  URI or permalink
-     * @return  string  $diff  path to cached file
+     * @param   string  $url  full URL of a cached page
+     * @return  string        path to cached file
      */
 
-    private static function _file_path( $path = null ) {
+    private static function _file_path( $url = null ) {
 
-        $path = sprintf(
+        $file_path = sprintf(
             '%s%s%s%s',
             CE_CACHE_DIR,
             DIRECTORY_SEPARATOR,
             parse_url(
-                ( $path ) ? get_site_url() : 'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
+                ( $url ) ? $url : 'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
                 PHP_URL_HOST
             ),
             parse_url(
-                ( $path ) ? $path : $_SERVER['REQUEST_URI'],
+                ( $url ) ? $url : $_SERVER['REQUEST_URI'],
                 PHP_URL_PATH
             )
         );
 
-        if ( is_file( $path ) ) {
-            wp_die( 'Path is not valid.' );
+        if ( is_file( $file_path ) ) {
+            header( $_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found', true, 404 );
+            exit;
         }
 
-        return trailingslashit( $path );
+        return trailingslashit( $file_path );
     }
 
 
@@ -527,7 +528,7 @@ final class Cache_Enabler_Disk {
      * get settings file
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.4.8
      *
      * @return  string  settings file path
      */
@@ -537,14 +538,14 @@ final class Cache_Enabler_Disk {
         // network with subdirectory configuration
         if ( is_multisite() && ! is_subdomain_install() ) {
             // get blog path
-            $path = trim( get_blog_details()->path, '/' );
+            $blog_path = trim( get_blog_details()->path, '/' );
             // check if subsite
-            if ( ! empty( $path ) ) {
-                $path = '-' . $path;
+            if ( ! empty( $blog_path ) ) {
+                $blog_path = '-' . $blog_path;
             }
         // single site, network subdirectory main site, or any network subdomain site
         } else {
-            $path = '';
+            $blog_path = '';
         }
 
         // get settings file
@@ -552,7 +553,7 @@ final class Cache_Enabler_Disk {
             '%s-%s%s.json',
             WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache',
             Cache_Enabler::get_blog_domain(),
-            $path
+            $blog_path
         );
 
         return $settings_file;
