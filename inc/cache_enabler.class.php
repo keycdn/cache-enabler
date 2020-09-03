@@ -1960,7 +1960,7 @@ final class Cache_Enabler {
                         '<code>755</code>',
                         '<code>wp-content/cache</code>',
                         sprintf(
-                            '<a href="%s" target="_blank"></a>',
+                            '<a href="%s" target="_blank">%s</a>',
                             'https://wordpress.org/support/article/changing-file-permissions/',
                             esc_html__( 'file permissions', 'cache-enabler' )
                         )
