@@ -87,6 +87,8 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 = 1.4.8 =
 * Update WP-CLI clear subcommand messages (#111)
 * Update WP-CLI clear subcommand for multisite networks (#111)
+* Fix cache clearing for installations in a subdirectory
+* Fix advanced cache settings recognition for installations in a subdirectory
 
 = 1.4.7 =
 * Update getting wp-config.php if one level above installation (#106)

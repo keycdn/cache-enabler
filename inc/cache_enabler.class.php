@@ -778,7 +778,7 @@ final class Cache_Enabler {
      * get blog domain
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.4.8
      *
      * @return  string  $domain  current blog domain
      */
@@ -786,7 +786,7 @@ final class Cache_Enabler {
     public static function get_blog_domain() {
 
         // get current blog domain
-        $domain = parse_url( get_site_url(), PHP_URL_HOST );
+        $domain = parse_url( get_home_url(), PHP_URL_HOST );
 
         // check if empty when creating new site in network
         if ( is_multisite() && empty( $domain ) ) {
@@ -1291,7 +1291,7 @@ final class Cache_Enabler {
         $blog_id = ( $blog_id ) ? $blog_id : get_current_blog_id();
 
         // get home page URL
-        $home_page_url = get_site_url( $blog_id );
+        $home_page_url = get_home_url( $blog_id );
 
         // clear home page cache
         self::clear_page_cache_by_url( $home_page_url );
@@ -1333,7 +1333,7 @@ final class Cache_Enabler {
         }
 
         // set clear URL
-        $clear_url = get_site_url( $blog_id );
+        $clear_url = get_home_url( $blog_id );
 
         // network with subdomain configuration
         if ( is_subdomain_install() ) {
