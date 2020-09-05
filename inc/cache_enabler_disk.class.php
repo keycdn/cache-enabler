@@ -235,7 +235,7 @@ final class Cache_Enabler_Disk {
      * create files
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.8
      *
      * @param   string  $data  HTML content
      */
@@ -264,7 +264,7 @@ final class Cache_Enabler_Disk {
         // create webp supported files
         if ( $options['webp'] ) {
             // magic regex rule
-            $regex_rule = '#(?<=(?:(ref|src|set)=[\"\']))(?:[^\"\']+)(\.png|\.jp[e]?g)(?:[^\"\']+)?(?=[\"\')])#';
+            $regex_rule = '#(?:(?:(src|srcset|data-[^=]+)\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+w[^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
 
             // call the webp converter callback
             $converted_data = apply_filters( 'cache_enabler_disk_webp_converted_data', preg_replace_callback( $regex_rule, 'self::_convert_webp', $data ) );
@@ -694,119 +694,70 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * convert to webp
+     * get image path
      *
-     * @since   1.0.1
-     * @change  1.1.1
+     * @since   1.4.8
+     * @change  1.4.8
      *
-     * @return  string  converted HTML file
+     * @param   string  $image_url   full or relative URL with or without intrinsic width
+     * @return  string  $image_path  path to image
      */
 
-    private static function _convert_webp( $asset ) {
+    private static function _image_path( $image_url ) {
 
-        if ( $asset[1] === 'src' ) {
-            return self::_convert_webp_src( $asset[0] );
-        } elseif ( $asset[1] === 'ref' ) {
-            return self::_convert_webp_src( $asset[0] );
-        } elseif ( $asset[1] === 'set' ) {
-            return self::_convert_webp_srcset( $asset[0] );
-        }
+        // in case image has intrinsic width
+        $image_parts = explode( ' ', $image_url );
+        $image_url = $image_parts[0];
+        $image_path = ABSPATH . ltrim( parse_url( $image_url, PHP_URL_PATH ), '/' );
 
-        return $asset[0];
+        return $image_path;
     }
 
 
     /**
-     * convert src to webp source
+     * convert image URL to WebP
      *
      * @since   1.0.1
-     * @change  1.1.0
+     * @change  1.4.8
      *
-     * @return  string  converted src webp source
+     * @param   array   $matches      pattern matches from parsed HTML file
+     * @return  string  $conversion   converted image URL(s) to WebP if applicable, default URL(s) otherwise
      */
 
-    private static function _convert_webp_src( $src ) {
+    private static function _convert_webp( $matches ) {
 
-        $upload_dir = wp_upload_dir();
-        $src_url = parse_url( $upload_dir['baseurl'] );
-        $upload_path = $src_url['path'];
+        $full_match = strtolower( $matches[0] );
+        $image_count = substr_count( $full_match, '.png' ) + substr_count( $full_match, '.jpg' ) + substr_count( $full_match, '.jpeg' );
 
-        if ( strpos( $src, $upload_path ) !== false ) {
+        if ( $image_count > 0 ) {
+            $image_urls = explode( ',', $full_match );
+            foreach ( $image_urls as &$image_url ) {
+                // remove spaces if there are any
+                $image_url = trim( $image_url, ' ' );
+                // append .webp extension
+                $image_url_webp = preg_replace( '/(\.jpe?g|\.png)/', '$1.webp', $image_url );
+                // get WebP image path
+                $image_path_webp = self::_image_path( $image_url_webp );
 
-            $src_webp = str_replace( '.jpg', '.webp', $src );
-            $src_webp = str_replace( '.jpeg', '.webp', $src_webp );
-            $src_webp = str_replace( '.png', '.webp', $src_webp );
-
-            $parts = explode( $upload_path, $src_webp );
-            $relative_path = $parts[1];
-
-            // check if relative path is not empty and file exists
-            if ( ! empty( $relative_path ) && file_exists( $upload_dir['basedir'] . $relative_path ) ) {
-                return $src_webp;
-            } else {
-                // try appended webp extension
-                $src_webp_appended = $src . '.webp';
-                $parts_appended = explode( $upload_path, $src_webp_appended );
-                $relative_path_appended = $parts_appended[1];
-
-                // check if relative path is not empty and file exists
-                if ( ! empty( $relative_path_appended ) && file_exists( $upload_dir['basedir'] . $relative_path_appended ) ) {
-                    return $src_webp_appended;
-                }
-            }
-        }
-
-        return $src;
-    }
-
-
-    /**
-     * convert srcset to webp source
-     *
-     * @since   1.0.8
-     * @change  1.1.0
-     *
-     * @return  string  converted srcset webp source
-     */
-
-    private static function _convert_webp_srcset( $srcset ) {
-
-        $sizes = explode( ', ', $srcset );
-        $upload_dir = wp_upload_dir();
-        $src_url = parse_url( $upload_dir['baseurl'] );
-        $upload_path = $src_url['path'];
-
-        for ( $i = 0; $i < count( $sizes ); $i++ ) {
-            if ( strpos( $sizes[ $i ], $upload_path ) !== false ) {
-                $src_webp = str_replace( '.jpg', '.webp', $sizes[ $i ] );
-                $src_webp = str_replace( '.jpeg', '.webp', $src_webp );
-                $src_webp = str_replace( '.png', '.webp', $src_webp );
-
-                $size_parts = explode( ' ', $src_webp );
-                $parts = explode( $upload_path, $size_parts[0] );
-                $relative_path = $parts[1];
-
-                // check if relative path is not empty and file exists
-                if ( ! empty( $relative_path ) && file_exists( $upload_dir['basedir'] . $relative_path ) ) {
-                    $sizes[ $i ] = $src_webp;
+                // check if WebP image exists
+                if ( is_file( $image_path_webp ) ) {
+                    $image_url = $image_url_webp;
                 } else {
-                    // try appended webp extension
-                    $size_parts_appended = explode( ' ', $sizes[ $i ] );
-                    $src_webp_appended = $size_parts_appended[0] . '.webp';
-                    $parts_appended = explode( $upload_path, $src_webp_appended );
-                    $relative_path_appended = $parts_appended[1];
-                    $src_webp_appended = $src_webp_appended . ' '. $size_parts_appended[1];
+                    // remove default extension
+                    $image_url_webp = preg_replace( '/(\.jpe?g|\.png)/', '', $image_url_webp );
+                    // get WebP image path
+                    $image_path_webp = self::_image_path( $image_url_webp );
 
-                    // check if relative path is not empty and file exists
-                    if ( ! empty( $relative_path_appended ) && file_exists( $upload_dir['basedir'] . $relative_path_appended ) ) {
-                        $sizes[ $i ] = $src_webp_appended;
+                    // check if WebP image exists
+                    if ( is_file( $image_path_webp ) ) {
+                        $image_url = $image_url_webp;
                     }
                 }
             }
+
+            $conversion = implode( ', ', $image_urls );
+
+            return $conversion;
         }
-
-        $srcset = implode( ', ', $sizes );
-
-        return $srcset;
     }
 }

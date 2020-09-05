@@ -85,6 +85,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 == Changelog ==
 
 = 1.4.8 =
+* Update WebP URL conversion (#116)
 * Update WP-CLI clear subcommand messages (#111)
 * Update WP-CLI clear subcommand for multisite networks (#111)
 * Fix cache clearing for installations in a subdirectory
