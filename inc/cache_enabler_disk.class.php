@@ -718,16 +718,16 @@ final class Cache_Enabler_Disk {
      * convert image URL to WebP
      *
      * @since   1.0.1
-     * @change  1.4.8
+     * @change  1.4.9
      *
-     * @param   array   $matches      pattern matches from parsed HTML file
-     * @return  string  $conversion   converted image URL(s) to WebP if applicable, default URL(s) otherwise
+     * @param   array   $matches     pattern matches from parsed HTML file
+     * @return  string  $conversion  converted image URL(s) to WebP if applicable, default URL(s) otherwise
      */
 
     private static function _convert_webp( $matches ) {
 
-        $full_match = strtolower( $matches[0] );
-        $image_count = substr_count( $full_match, '.png' ) + substr_count( $full_match, '.jpg' ) + substr_count( $full_match, '.jpeg' );
+        $full_match = $matches[0];
+        $image_count = preg_match_all( '/(\.jpe?g|\.png)/i', $full_match );
 
         if ( $image_count > 0 ) {
             $image_urls = explode( ',', $full_match );
@@ -735,7 +735,7 @@ final class Cache_Enabler_Disk {
                 // remove spaces if there are any
                 $image_url = trim( $image_url, ' ' );
                 // append .webp extension
-                $image_url_webp = preg_replace( '/(\.jpe?g|\.png)/', '$1.webp', $image_url );
+                $image_url_webp = preg_replace( '/(\.jpe?g|\.png)/i', '$1.webp', $image_url );
                 // get WebP image path
                 $image_path_webp = self::_image_path( $image_url_webp );
 
@@ -744,7 +744,7 @@ final class Cache_Enabler_Disk {
                     $image_url = $image_url_webp;
                 } else {
                     // remove default extension
-                    $image_url_webp = preg_replace( '/(\.jpe?g|\.png)/', '', $image_url_webp );
+                    $image_url_webp = preg_replace( '/(\.jpe?g|\.png)/i', '', $image_url_webp );
                     // get WebP image path
                     $image_path_webp = self::_image_path( $image_url_webp );
 
