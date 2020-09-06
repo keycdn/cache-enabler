@@ -183,7 +183,7 @@ final class Cache_Enabler {
      * Cache Enabler activation and deactivation actions
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.4.9
      *
      * @param   string   $action        activated or deactivated
      * @param   boolean  $network_wide  network activated or deactivated
@@ -209,10 +209,10 @@ final class Cache_Enabler {
                     // delete advanced cache settings file
                     Cache_Enabler_Disk::delete_advcache_settings();
                 }
-            }
 
-            // restore blog
-            restore_current_blog();
+                // restore blog
+                restore_current_blog();
+            }
         // site activated
         } else {
             if ( $action === 'activated') {
@@ -373,7 +373,7 @@ final class Cache_Enabler {
      * uninstall Cache Enabler
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.4.9
      */
 
     public static function on_uninstall() {
@@ -388,10 +388,9 @@ final class Cache_Enabler {
                 switch_to_blog( $blog_id );
                 // uninstall requirements
                 self::_uninstall_backend();
+                // restore blog
+                restore_current_blog();
             }
-
-            // restore blog
-            restore_current_blog();
         // site
         } else {
             // uninstall requirements
@@ -1928,7 +1927,7 @@ final class Cache_Enabler {
      * check plugin requirements
      *
      * @since   1.1.0
-     * @change  1.4.5
+     * @change  1.4.8
      */
 
     public static function requirements_check() {
