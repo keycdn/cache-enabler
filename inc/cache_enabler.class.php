@@ -2165,7 +2165,7 @@ final class Cache_Enabler {
      * settings page
      *
      * @since   1.0.0
-     * @change  1.4.5
+     * @change  1.5.0
      */
 
     public static function settings_page() {
@@ -2225,7 +2225,6 @@ final class Cache_Enabler {
                                 <label for="cache_clear_on_upgrade">
                                     <input name="cache-enabler[clear_on_upgrade]" type="checkbox" id="cache_clear_on_upgrade" value="1" <?php checked( '1', $options['clear_on_upgrade'] ); ?> />
                                     <?php esc_html_e( 'Clear the complete cache if a plugin has been activated, updated, or deactivated.', 'cache-enabler' ); ?>
-                                    <span style="display: inline-block; color: #155724; background-color: #d4edda; font-size: 75%; font-weight: 700; white-space: nowrap; border-radius: .25rem; padding: .25em .4em; margin-left: .5rem;"><?php esc_html_e( 'Updated', 'cache-enabler' ); ?></span>
                                 </label>
 
                                 <br />
@@ -2248,7 +2247,6 @@ final class Cache_Enabler {
                                 <label for="cache_update_product_stock">
                                     <input name="cache-enabler[update_product_stock]" type="checkbox" id="cache_update_product_stock" value="1" <?php checked( '1', $options['update_product_stock'] ); ?> />
                                     <?php esc_html_e( 'Clear the complete cache if a product stock has been updated (instead of only the page specific cache).', 'cache-enabler' ); ?>
-                                    <span style="display: inline-block; color: #155724; background-color: #d4edda; font-size: 75%; font-weight: 700; white-space: nowrap; border-radius: .25rem; padding: .25em .4em; margin-left: .5rem;"><?php esc_html_e( 'New', 'cache-enabler' ); ?></span>
                                 </label>
 
                                 <br />
@@ -2312,7 +2310,7 @@ final class Cache_Enabler {
                                     <input name="cache-enabler[incl_parameters]" type="text" id="cache_incl_parameters" value="<?php echo esc_attr( $options['incl_parameters'] ) ?>" class="regular-text code" />
                                     <p class="description"><?php esc_html_e( 'A regex matching URL query parameters that should not cause the cache to be bypassed.', 'cache-enabler' ); ?></p>
                                     <p><?php esc_html_e( 'Example:', 'cache-enabler' ); ?> <code>/^fbclid|pk_(source|medium|campaign|kwd|content)$/</code></p>
-                                    <p><?php esc_html_e( 'Default if unset:', 'cache-enabler' ); ?> <code>/^fbclid|utm_(source|medium|campaign|term|content)$/</code><span style="display: inline-block; color: #155724; background-color: #d4edda; font-size: 75%; font-weight: 700; white-space: nowrap; border-radius: .25rem; padding: .25em .4em; margin-left: .5rem;"><?php esc_html_e( 'Updated', 'cache-enabler' ); ?></span></p>
+                                    <p><?php esc_html_e( 'Default if unset:', 'cache-enabler' ); ?> <code>/^fbclid|utm_(source|medium|campaign|term|content)$/</code></p>
                                 </label>
                             </fieldset>
                         </td>
