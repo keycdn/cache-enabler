@@ -84,6 +84,10 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.5.0 =
+* Update WebP URL conversion for images with density descriptors (#125)
+* Fix WebP URL conversion for installations in a subdirectory (#125)
+
 = 1.4.9 =
 * Fix WebP URL conversion
 
