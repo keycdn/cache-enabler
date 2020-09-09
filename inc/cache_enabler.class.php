@@ -859,7 +859,7 @@ final class Cache_Enabler {
      * process clear request
      *
      * @since   1.0.0
-     * @change  1.4.6
+     * @change  1.5.0
      *
      * @param   array  $data  array of metadata
      */
@@ -894,8 +894,9 @@ final class Cache_Enabler {
         // set clear ID cookie
         setcookie( 'cache_enabler_clear_id', $_GET['_cid'] );
 
-        // set clear URL without query string
-        $clear_url = preg_replace( '/\?.*/', '', home_url( add_query_arg( null, null ) ) );
+        // set clear URL without query string and check if installation is in a subdirectory
+        $installation_dir = parse_url( get_home_url(), PHP_URL_PATH );
+        $clear_url = str_replace( $installation_dir, '', get_home_url() ) . preg_replace( '/\?.*/', '', $_SERVER['REQUEST_URI'] );
 
         // network activated
         if ( is_multisite() && is_plugin_active_for_network( CE_BASE ) ) {
