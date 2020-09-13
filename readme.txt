@@ -85,17 +85,29 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 == Changelog ==
 
 = 1.5.0 =
+* Update default cache behavior to not bypass the cache for query strings (#129)
+* Update cache clearing setting for when any post type is published to clear the associated cache by default (#129)
+* Update settings page layout (#129)
 * Update WebP URL conversion for images with density descriptors (#125)
-* Fix cache clearing for installations in a subdirectory (#127)
+* Add new cache clearing structure for post publish, update, and trash actions (#129)
+* Add post type, taxonomies, author, and date archives to the new associated cache (#129)
+* Add new cache clearing setting for when any published post type is updated (#129)
+* Add new cache exclusions setting for query strings (#129)
+* Fix advanced cache settings from using unvalidated data (#129)
+* Fix clear URL admin bar button for installations in a subdirectory (#127)
 * Fix WebP URL conversion for installations in a subdirectory (#125)
+* Remove cache clearing publishing action from post sidebar in favor of the new cache clearing structure for post actions (#129)
+* Remove cache clearing setting for WooCommerce stock updates in favor of the new cache clearing structure for post actions (#129)
+* Remove cache inclusions setting for URL query parameters because of the updated default cache behavior for query strings (#129)
 
 = 1.4.9 =
-* Fix WebP URL conversion
+* Fix WebP URL conversion changing all image paths to lowercase
 
 = 1.4.8 =
-* Update WebP URL conversion (#116)
+* Update WebP URL conversion for inline CSS (#116)
 * Update WP-CLI clear subcommand messages (#111)
 * Update WP-CLI clear subcommand for multisite networks (#111)
+* Fix WebP URL conversion image matching edge cases (#116)
 * Fix cache clearing for installations in a subdirectory
 * Fix advanced cache settings recognition for installations in a subdirectory
 * Fix file permissions requirement notice
@@ -126,7 +138,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Fix advanced cache settings updating unnecessarily (#99)
 
 = 1.4.2 =
-* Update cache clearing for the Clear URL Cache admin bar button (#98)
+* Update cache clearing for the clear URL admin bar button (#98)
 * Update scheme-based caching (#98)
 * Fix advanced cache path variants (#98)
 
@@ -135,14 +147,14 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = 1.4.0 =
 * Update default cache behavior for WooCommerce stock update (#88)
-* Update Cache Behavior setting for plugin actions (#91)
+* Update cache clearing setting for plugin actions (#91)
 * Update admin bar clear cache buttons (#96)
 * Update cache behavior for logged in users (#95)
 * Update default clear cache publishing action (#88)
 * Update advanced cache settings (#91 and #92)
 * Update trailing slash handling (#91)
 * Update settings page (#84 and #92)
-* Add Cache Behavior setting for WooCommerce stock update (#88)
+* Add cache clearing setting for WooCommerce stock updates (#88)
 * Add fbclid as default URL query parameter to bypass cache (#84)
 * Add scheme-based caching (#94)
 * Fix advanced cache settings recognition for multisite networks (#92)
