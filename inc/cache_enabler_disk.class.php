@@ -122,7 +122,7 @@ final class Cache_Enabler_Disk {
      * @param   string  $clear_type  if `dir` clear the entire directory
      */
 
-    public static function delete_asset( $clear_url, $clear_type ) {
+    public static function delete_asset( $clear_url, $clear_type = 'dir' ) {
 
         // get directory
         $dir = self::_file_path( $clear_url );
