@@ -405,7 +405,7 @@ final class Cache_Enabler_Disk {
             // check if directory
             if ( is_dir( $object ) ) {
                 $size += self::cache_size( $object );
-            } else {
+            } else if ( file_exists( $object ) ) {
                 $size += filesize( $object );
             }
         }
