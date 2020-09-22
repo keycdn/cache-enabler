@@ -64,8 +64,12 @@ final class Cache_Enabler {
         self::_set_default_vars();
 
         // init hooks
+        add_action( 'init', array( __CLASS__, 'start_buffering' ) );
         add_action( 'init', array( __CLASS__, 'process_clear_request' ) );
         add_action( 'init', array( __CLASS__, 'register_textdomain' ) );
+
+        // deliver cache hook
+        add_action( 'wp', array( __CLASS__, 'deliver_cache' ) );
 
         // clear cache hooks
         add_action( 'ce_clear_post_cache', array( __CLASS__, 'clear_page_cache_by_post_id' ) );
@@ -79,14 +83,15 @@ final class Cache_Enabler {
         add_action( 'post_updated', array( __CLASS__, 'on_post_updated' ), 10, 3 );
         add_action( 'wp_trash_post', array( __CLASS__, 'on_trash_post' ) );
         add_action( 'transition_post_status', array( __CLASS__, 'on_transition_post_status' ), 10, 3 );
+        add_action( 'pre_comment_approved', array( __CLASS__, 'new_comment' ), 99, 2 );
         add_action( 'permalink_structure_changed', array( __CLASS__, 'clear_total_cache' ) );
         // third party
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_total_cache' ) );
 
-        // advanced cache hooks
+        // advanced cache hook
         add_action( 'permalink_structure_changed', array( __CLASS__, 'create_advcache_settings' ), 10, 0 );
 
-        // admin bar hooks
+        // admin bar hook
         add_action( 'admin_bar_menu', array( __CLASS__, 'add_admin_links' ), 90 );
 
         // admin interface hooks
@@ -109,12 +114,6 @@ final class Cache_Enabler {
             // warnings and notices
             add_action( 'admin_notices', array( __CLASS__, 'warning_is_permalink' ) );
             add_action( 'admin_notices', array( __CLASS__, 'requirements_check' ) );
-        // caching hooks
-        } else {
-            // comments
-            add_action( 'pre_comment_approved', array( __CLASS__, 'new_comment' ), 99, 2 );
-            // output buffer
-            add_action( 'template_redirect', array( __CLASS__, 'handle_cache' ), 0 );
         }
     }
 
@@ -1560,17 +1559,44 @@ final class Cache_Enabler {
 
 
     /**
-     * check if index.php
+     * check if installation directory index
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.5.0
      *
-     * @return  boolean  true if index.php
+     * @return  boolean  true if installation directory index, false otherwise
      */
 
     private static function _is_index() {
 
-        return strtolower( basename( $_SERVER['SCRIPT_NAME'] ) ) !== 'index.php';
+        if ( strtolower( basename( $_SERVER['SCRIPT_NAME'] ) ) === 'index.php' ) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /**
+     * check if page can be cached
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     *
+     * @param   string  $page  content of a page from the output buffer
+     */
+
+    private static function _is_cacheable( $page ) {
+
+        $has_html_tag       = ( stripos( $page, '<html' ) !== false );
+        $has_html5_doctype  = ( preg_match( '/^<!DOCTYPE.+html>/i', ltrim( $page ) ) > 0 );
+        $has_xsl_stylesheet = ( stripos( $page, '<xsl:stylesheet' ) !== false || stripos( $page, '<?xml-stylesheet' ) !== false );
+
+        if ( ! $has_html_tag && ! $has_html5_doctype || $has_xsl_stylesheet ) {
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -1594,42 +1620,23 @@ final class Cache_Enabler {
 
 
     /**
-     * check if sitemap
-     *
-     * @since   1.4.6
-     * @change  1.4.6
-     *
-     * @return  boolean  true if sitemap, false otherwise
-     */
-
-    private static function _is_sitemap() {
-
-        if ( preg_match( '/\.x(m|s)l$/', $_SERVER['REQUEST_URI'] ) ) {
-            return true;
-        }
-
-        return false;
-    }
-
-
-    /**
      * check if trailing slash redirect
      *
      * @since   1.4.7
-     * @change  1.4.7
+     * @change  1.5.0
      *
      * @return  boolean  true if a redirect is required, false otherwise
      */
 
     private static function _is_trailing_slash_redirect() {
 
-        // check if trailing slash is set and missing
+        // check if trailing slash is set and missing (ignoring root index and file extensions)
         if ( self::permalink_structure_has_trailing_slash() ) {
-            if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+            if ( preg_match( '/\/[^\.\/\?]+(\?.*)?$/', $_SERVER['REQUEST_URI'] ) ) {
                 return true;
             }
-        // if trailing slash is not set and appended
-        } elseif ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+        // if trailing slash is not set and appended (ignoring root index and file extensions)
+        } elseif ( preg_match( '/\/[^\.\/\?]+\/(\?.*)?$/', $_SERVER['REQUEST_URI'] ) ) {
             return true;
         }
 
@@ -1638,69 +1645,22 @@ final class Cache_Enabler {
 
 
     /**
-     * check if mobile
+     * check if page is excluded from cache
      *
-     * @since   1.0.0
-     * @change  1.0.0
-     *
-     * @return  boolean  true if mobile
-     */
-
-    private static function _is_mobile() {
-
-        return ( strpos( TEMPLATEPATH, 'wptouch' ) || strpos( TEMPLATEPATH, 'carrington' ) || strpos( TEMPLATEPATH, 'jetpack' ) || strpos( TEMPLATEPATH, 'handheld' ) );
-    }
-
-
-    /**
-     * check to bypass the cache
-     *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.5.0
      *
-     * @return  boolean  true if exception, false otherwise
-     *
-     * @hook    boolean  bypass_cache
+     * @return  boolean  true if page is excluded from the cache, false otherwise
      */
 
-    private static function _bypass_cache() {
-
-        // bypass cache hook
-        if ( apply_filters( 'bypass_cache', false ) ) {
-            return true;
-        }
-
-        // check if request method is GET
-        if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GET' ) {
-            return true;
-        }
-
-        // check HTTP status code
-        if ( http_response_code() !== 200 ) {
-            return true;
-        }
-
-        // check conditional tags
-        if ( self::_is_wp_cache_disabled() || self::_is_index() || self::_is_sitemap() || self::_is_trailing_slash_redirect() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
-            return true;
-        }
-
-        // check DONOTCACHEPAGE
-        if ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE ) {
-            return true;
-        }
-
-        // check mobile request
-        if ( self::_is_mobile() ) {
-            return true;
-        }
+    private static function _is_excluded() {
 
         // get Cache Enabler settings
         $settings = self::$settings;
 
         // if post ID excluded
         if ( $settings['excluded_post_ids'] && is_singular() ) {
-            if ( in_array( $GLOBALS['wp_query']->get_queried_object_id(), (array) explode( ',', $settings['excluded_post_ids'] ) ) ) {
+            if ( in_array( get_queried_object_id(), (array) explode( ',', $settings['excluded_post_ids'] ) ) ) {
                 return true;
             }
         }
@@ -1744,27 +1704,84 @@ final class Cache_Enabler {
 
 
     /**
+     * check if mobile
+     *
+     * @since   1.0.0
+     * @change  1.0.0
+     *
+     * @return  boolean  true if mobile
+     */
+
+    private static function _is_mobile() {
+
+        return ( strpos( TEMPLATEPATH, 'wptouch' ) || strpos( TEMPLATEPATH, 'carrington' ) || strpos( TEMPLATEPATH, 'jetpack' ) || strpos( TEMPLATEPATH, 'handheld' ) );
+    }
+
+
+    /**
+     * check if cache should be bypassed
+     *
+     * @since   1.0.0
+     * @change  1.5.0
+     *
+     * @return  boolean  true if cache should be bypassed, false otherwise
+     *
+     * @hook    boolean  bypass_cache
+     */
+
+    private static function _bypass_cache() {
+
+        // bypass cache hook
+        if ( apply_filters( 'bypass_cache', false ) ) {
+            return true;
+        }
+
+        // check request method
+        if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GET' ) {
+            return true;
+        }
+
+        // check HTTP status code
+        if ( http_response_code() !== 200 ) {
+            return true;
+        }
+
+        // check DONOTCACHEPAGE constant
+        if ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE ) {
+            return true;
+        }
+
+        // check conditional tags
+        if ( self::_is_wp_cache_disabled() || self::_is_trailing_slash_redirect() || self::_is_excluded() || is_admin() || self::_is_mobile() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /**
      * minify HTML
      *
      * @since   1.0.0
      * @change  1.0.0
      *
-     * @param   string  $data  minify request data
-     * @return  string  $data  minify response data
+     * @param   string  $page                  content of a page from the output buffer
+     * @return  string  $minified_cache|$page  minified page if applicable, unchanged otherwise
      *
      * @hook    array   cache_minify_ignore_tags
      */
 
-    private static function _minify_cache( $data ) {
+    private static function _minify_cache( $page ) {
 
         // check if disabled
         if ( ! self::$settings['minify_html'] ) {
-            return $data;
+            return $page;
         }
 
         // HTML character limit
-        if ( strlen( $data ) > 700000) {
-            return $data;
+        if ( strlen( $page ) > 700000) {
+            return $page;
         }
 
         // HTML tags to ignore
@@ -1781,16 +1798,16 @@ final class Cache_Enabler {
             $ignore_tags[] = 'script';
         }
 
-        // return of no ignore tags
+        // check if there are ignore tags
         if ( ! $ignore_tags ) {
-            return $data;
+            return $page;
         }
 
         // stringify
         $ignore_regex = implode( '|', $ignore_tags );
 
         // regex minification
-        $cleaned = preg_replace(
+        $minified_cache = preg_replace(
             array(
                 '/<!--[^\[><](.*?)-->/s',
                 '#(?ix)(?>[^\S ]\s*|\s{2,})(?=(?:(?:[^<]++|<(?!/?(?:' . $ignore_regex . ')\b))*+)(?:<(?>' . $ignore_regex . ')\b|\z))#',
@@ -1799,80 +1816,99 @@ final class Cache_Enabler {
                 '',
                 ' ',
             ),
-            $data
+            $page
         );
 
         // something went wrong
-        if ( strlen( $cleaned ) <= 1 ) {
-            return $data;
+        if ( strlen( $minified_cache ) <= 1 ) {
+            return $page;
         }
 
-        return $cleaned;
+        return $minified_cache;
     }
 
 
     /**
-     * set cache
+     * deliver cache
      *
-     * @since   1.0.0
-     * @change  1.3.1
-     *
-     * @param   string  $data  content of a page
-     * @return  string  $data  content of a page
-     *
-     * @hook    string  cache_enabler_before_store
+     * @since   1.5.0
+     * @change  1.5.0
      */
 
-    public static function set_cache( $data ) {
+    public static function deliver_cache() {
 
-        // check if page is empty
-        if ( empty( $data ) ) {
-            return '';
-        }
+        $cached = call_user_func( array( self::$disk, 'check_asset' ) );
 
-        $data = apply_filters( 'cache_enabler_before_store', $data );
-
-        // store as asset
-        call_user_func( array( self::$disk, 'store_asset' ), self::_minify_cache( $data ) );
-
-        return $data;
-    }
-
-
-    /**
-     * handle cache
-     *
-     * @since   1.0.0
-     * @change  1.4.3
-     */
-
-    public static function handle_cache() {
-
-        // check if cache needs to be bypassed
-        if ( self::_bypass_cache() ) {
+        if ( ! $cached || self::_bypass_cache() ) {
             return;
         }
 
-        // get asset cache status
+        // deliver cached asset
+        call_user_func( array( self::$disk, 'get_asset' ) );
+    }
+
+
+    /**
+     * start output buffering
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     */
+
+    public static function start_buffering() {
+
+        // check if output buffer should start
+        if ( ! self::_is_index() ) {
+            return;
+        }
+
+        // get cached page status
         $cached = call_user_func( array( self::$disk, 'check_asset' ) );
 
-        // check if cache is empty
-        if ( empty( $cached ) ) {
-            ob_start( 'Cache_Enabler::set_cache' );
+        // check if page is cached
+        if ( ! $cached ) {
+            ob_start( 'Cache_Enabler::end_buffering' );
             return;
         }
 
         // get cache expiry status
         $expired = call_user_func( array( self::$disk, 'check_expiry' ) );
 
-        // check if cache has expired
+        // check if cached page has expired
         if ( $expired ) {
-            ob_start( 'Cache_Enabler::set_cache' );
+            ob_start( 'Cache_Enabler::end_buffering' );
             return;
         }
+    }
 
-        // return cached asset
-        call_user_func( array( self::$disk, 'get_asset' ) );
+
+    /**
+     * end output buffering and cache (potentially minified) page if applicable
+     *
+     * @since   1.0.0
+     * @change  1.5.0
+     *
+     * @param   string   $page   content of a page from the output buffer
+     * @param   integer  $phase  bitmask of PHP_OUTPUT_HANDLER_* constants
+     * @return  string   $page   content of a page from the output buffer
+     *
+     * @hook    string   cache_enabler_before_store
+     */
+
+    public static function end_buffering( $page, $phase ) {
+
+        if ( $phase & PHP_OUTPUT_HANDLER_FINAL || $phase & PHP_OUTPUT_HANDLER_END ) {
+            if ( ! self::_is_cacheable( $page ) || self::_bypass_cache() ) {
+                return $page;
+            }
+
+            $page = apply_filters( 'cache_enabler_before_store', $page );
+
+            // store as asset
+            call_user_func( array( self::$disk, 'store_asset' ), self::_minify_cache( $page ) );
+
+            return $page;
+        }
     }
 
 
@@ -2319,7 +2355,7 @@ final class Cache_Enabler {
 
                                 <p class="subheading"><?php esc_html_e( 'Query Strings', 'cache-enabler' ); ?><span class="badge badge--success"><?php esc_html_e( 'New', 'cache-enabler' ); ?></span></p>
                                 <label for="excluded_query_strings">
-                                    <input name="cache-enabler[excluded_query_strings']" type="text" id="excluded_query_strings" value="<?php echo esc_attr( $settings['excluded_query_strings'] ) ?>" class="regular-text code" />
+                                    <input name="cache-enabler[excluded_query_strings]" type="text" id="excluded_query_strings" value="<?php echo esc_attr( $settings['excluded_query_strings'] ) ?>" class="regular-text code" />
                                     <p class="description"><?php esc_html_e( 'A regex matching query strings that should bypass the cache.', 'cache-enabler' ); ?></p>
                                     <p><?php esc_html_e( 'Example:', 'cache-enabler' ); ?> <code>/^nocache$/</code></p>
                                 </label>
