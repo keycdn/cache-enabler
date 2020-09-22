@@ -92,16 +92,16 @@ final class Cache_Enabler_Disk {
 
     public static function check_expiry() {
 
-        // get Cache Enabler options
-        $options = Cache_Enabler::$options;
+        // get Cache Enabler settings
+        $settings = Cache_Enabler::$settings;
 
         // check if an expiry time is set
-        if ( $options['expires'] === 0) {
+        if ( $settings['cache_expiry_time'] === 0) {
             return false;
         }
 
         $now = time();
-        $expires_seconds = 3600 * $options['expires'];
+        $expires_seconds = 3600 * $settings['cache_expiry_time'];
 
         // check if asset has expired
         if ( ( filemtime( self::_file_html() ) + $expires_seconds ) <= $now ) {
@@ -116,10 +116,10 @@ final class Cache_Enabler_Disk {
      * delete asset
      *
      * @since   1.0.0
-     * @change  1.4.7
+     * @change  1.5.0
      *
-     * @param   string  $clear_url   full or relative URL of a page
-     * @param   string  $clear_type  if `dir` clear the entire directory
+     * @param   string  $clear_url   full URL of a cached page
+     * @param   string  $clear_type  clear the `pagination` or the entire `dir` instead of only the cached `page`
      */
 
     public static function delete_asset( $clear_url, $clear_type ) {
@@ -129,6 +129,17 @@ final class Cache_Enabler_Disk {
 
         // delete all cached variants in directory
         array_map( 'unlink', glob( $dir . self::FILE_GLOB ) );
+
+        // check if pagination needs to be cleared
+        if ( $clear_type === 'pagination' ) {
+            // get pagination base
+            $pagination_base = $GLOBALS['wp_rewrite']->pagination_base;
+            if ( strlen( $pagination_base ) > 0 ) {
+                $pagination_dir = $dir . $pagination_base;
+                // clear pagination page(s) cache
+                self::_clear_dir( $pagination_dir );
+            }
+        }
 
         // get directory data
         $objects = self::_get_dir( $dir );
@@ -242,8 +253,8 @@ final class Cache_Enabler_Disk {
 
     private static function _create_files( $data ) {
 
-        // get Cache Enabler options
-        $options = Cache_Enabler::$options;
+        // get Cache Enabler settings
+        $settings = Cache_Enabler::$settings;
 
         // get base signature
         $cache_signature = self::_cache_signature();
@@ -257,12 +268,12 @@ final class Cache_Enabler_Disk {
         self::_create_file( self::_file_html(), $data . $cache_signature . ' (' . self::_file_scheme() . ' html) -->' );
 
         // create pre-compressed file
-        if ( $options['compress'] ) {
+        if ( $settings['compress_cache_with_gzip'] ) {
             self::_create_file( self::_file_gzip(), gzencode( $data . $cache_signature . ' (' . self::_file_scheme() . ' gzip) -->', 9) );
         }
 
         // create WebP supported files
-        if ( $options['webp'] ) {
+        if ( $settings['convert_image_urls_to_webp'] ) {
             // magic regex rule
             $image_urls_regex = '#(?:(?:(src|srcset|data-[^=]+)\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
 
@@ -272,7 +283,7 @@ final class Cache_Enabler_Disk {
             self::_create_file( self::_file_webp_html(), $converted_data . $cache_signature . ' (' . self::_file_scheme() . ' webp html) -->' );
 
             // create pre-compressed file
-            if ( $options['compress'] ) {
+            if ( $settings['compress_cache_with_gzip'] ) {
                 self::_create_file( self::_file_webp_gzip(), gzencode( $converted_data . $cache_signature . ' (' . self::_file_scheme() . ' webp gzip) -->', 9 ) );
             }
         }

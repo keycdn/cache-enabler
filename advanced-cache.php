@@ -3,7 +3,7 @@
  * Cache Enabler advanced cache
  *
  * @since   1.2.0
- * @change  1.4.7
+ * @change  1.5.0
  */
 
 // check if request method is GET
@@ -41,22 +41,22 @@ $settings_file = sprintf(
 $settings = _read_settings( $settings_file );
 
 // check trailing slash
-if ( isset( $settings['permalink_trailing_slash'] ) && $settings['permalink_trailing_slash'] ) {
-    // if trailing slash is missing, check if we have to bypass the cache to allow a redirect
+if ( isset( $settings['permalink_structure_has_trailing_slash'] ) && $settings['permalink_structure_has_trailing_slash'] ) {
+    // if trailing slash is set and missing
     if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
         return false;
     }
-} elseif ( isset( $settings['permalink_trailing_slash'] ) && ! $settings['permalink_trailing_slash'] ) {
-    // if trailing slash is appended, check if we have to bypass the cache to allow a redirect
+} elseif ( isset( $settings['permalink_structure_has_trailing_slash'] ) && ! $settings['permalink_structure_has_trailing_slash'] ) {
+    // if trailing slash is not set and appended
     if ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
         return false;
     }
 }
 
-// if an expiry time is set, check the file against it
-if ( isset( $settings['expires'] ) && $settings['expires'] > 0 ) {
+// check cache expiry time
+if ( isset( $settings['cache_expiry_time'] ) && $settings['cache_expiry_time'] > 0 ) {
     $now = time();
-    $expires_seconds = 3600 * $settings['expires'];
+    $expires_seconds = 3600 * $settings['cache_expiry_time'];
 
     // check if cached file has expired
     if ( ( filemtime( $path_html ) + $expires_seconds ) <= $now ) {
@@ -64,43 +64,28 @@ if ( isset( $settings['expires'] ) && $settings['expires'] > 0 ) {
     }
 }
 
-// if a cache timeout is set, check if we have to bypass the cache
-if ( ! empty( $settings['cache_timeout'] ) ) {
-    $now = time();
+// check query string
+if ( ! empty( $settings['excluded_query_strings'] ) ) {
+    $query_string = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY );
 
-    // check if timeout has been reached
-    if ( $settings['cache_timeout'] <= $now ) {
-        return false;
+    if ( preg_match( $settings['excluded_query_strings'], $query_string ) ) {
+        return true;
     }
 }
 
 // check cookies
 if ( ! empty( $_COOKIE ) ) {
-    // set regex matching cookies that should cause the cache to be bypassed
-    if ( ! empty( $settings['excl_cookies'] ) ) {
-        $cookies_regex = $settings['excl_cookies'];
+    // set regex matching cookies that should bypass the cache
+    if ( ! empty( $settings['excluded_cookies'] ) ) {
+        $cookies_regex = $settings['excluded_cookies'];
     } else {
         $cookies_regex = '/^(wp-postpass|wordpress_logged_in|comment_author)_/';
     }
-    // bypass the cache if an excluded cookie is found
+    // bypass cache if an excluded cookie is found
     foreach ( $_COOKIE as $key => $value) {
         if ( preg_match( $cookies_regex, $key ) ) {
             return false;
         }
-    }
-}
-
-// check URL query parameters
-if ( ! empty( $_GET ) ) {
-    // set regex matching URL query parameters that should not cause the cache to be bypassed
-    if ( ! empty( $settings['incl_parameters'] ) ) {
-        $parameters_regex = $settings['incl_parameters'];
-    } else {
-        $parameters_regex = '/^fbclid|utm_(source|medium|campaign|term|content)$/';
-    }
-    // bypass the cache if no included URL query parameters are found
-    if ( sizeof( preg_grep( $parameters_regex, array_keys( $_GET ), PREG_GREP_INVERT ) ) > 0 ) {
-        return false;
     }
 }
 
