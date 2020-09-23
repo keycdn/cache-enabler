@@ -6,7 +6,7 @@
  * @change  1.5.0
  */
 
-// check if request method is GET
+// check request method
 if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GET' ) {
     return false;
 }
@@ -42,13 +42,13 @@ $settings = _read_settings( $settings_file );
 
 // check trailing slash
 if ( isset( $settings['permalink_structure_has_trailing_slash'] ) && $settings['permalink_structure_has_trailing_slash'] ) {
-    // if trailing slash is set and missing
-    if ( ! preg_match( '/\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+    // if trailing slash is set and missing (ignoring root index and file extensions)
+    if ( preg_match( '/\/[^\.\/\?]+(\?.*)?$/', $_SERVER['REQUEST_URI'] ) ) {
         return false;
     }
 } elseif ( isset( $settings['permalink_structure_has_trailing_slash'] ) && ! $settings['permalink_structure_has_trailing_slash'] ) {
-    // if trailing slash is not set and appended
-    if ( preg_match( '/(?!^)\/(|\?.*)$/', $_SERVER['REQUEST_URI'] ) ) {
+    // if trailing slash is not set and appended (ignoring root index and file extensions)
+    if ( preg_match( '/\/[^\.\/\?]+\/(\?.*)?$/', $_SERVER['REQUEST_URI'] ) ) {
         return false;
     }
 }
@@ -90,7 +90,7 @@ if ( ! empty( $_COOKIE ) ) {
 }
 
 // set X-Cache-Handler response header
-header( 'X-Cache-Handler: wp' );
+header( 'X-Cache-Handler: WP' );
 
 // get request headers
 if ( function_exists( 'apache_request_headers' ) ) {

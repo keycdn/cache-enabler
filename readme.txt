@@ -85,6 +85,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 == Changelog ==
 
 = 1.5.0 =
+* Update output buffer timing to start earlier on the `init` hook instead of `template_redirect` (#137)
 * Update default cache behavior to not bypass the cache for query strings (#129)
 * Update cache clearing setting for when any post type is published to clear the associated cache by default (#129)
 * Update settings page layout (#129)
@@ -113,7 +114,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Fix file permissions requirement notice
 
 = 1.4.7 =
-* Update getting wp-config.php if one level above installation (#106)
+* Update getting `wp-config.php` if one level above installation (#106)
 * Add clear types for strict cache clearing (#110)
 * Fix advanced cache settings recognition for subdirectory multisite networks
 * Fix WP-CLI clear subcommand for post IDs (#110)
@@ -125,8 +126,8 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Fix cache clearing for subdirectory multisite networks (#103)
 
 = 1.4.5 =
-* Update WP_CACHE constant handling (#102)
-* Add cache bypass method for WP_CACHE constant (#102)
+* Update `WP_CACHE` constant handling (#102)
+* Add cache bypass method for `WP_CACHE` constant (#102)
 * Add translation descriptions (#102)
 * Fix cache handling for default redirects (#102)
 
