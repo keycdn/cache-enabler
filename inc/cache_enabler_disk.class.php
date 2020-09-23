@@ -417,6 +417,7 @@ final class Cache_Enabler_Disk {
             if ( is_dir( $object ) ) {
                 $size += self::cache_size( $object );
             } else {
+                clearstatcache();
                 $size += filesize( $object );
             }
         }
