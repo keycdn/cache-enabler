@@ -85,6 +85,8 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 == Changelog ==
 
 = 1.5.0 =
+* Update cache cleared admin notice (#139)
+* Update admin bar clear cache buttons (#139)
 * Update output buffer timing to start earlier on the `init` hook instead of `template_redirect` (#137)
 * Update default cache behavior to not bypass the cache for query strings (#129)
 * Update cache clearing setting for when any post type is published to clear the associated cache by default (#129)
@@ -106,8 +108,8 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = 1.4.8 =
 * Update WebP URL conversion for inline CSS (#116)
-* Update WP-CLI clear subcommand messages (#111)
-* Update WP-CLI clear subcommand for multisite networks (#111)
+* Update WP-CLI `clear` subcommand messages (#111)
+* Update WP-CLI `clear` subcommand for multisite networks (#111)
 * Fix WebP URL conversion image matching edge cases (#116)
 * Fix cache clearing for installations in a subdirectory
 * Fix advanced cache settings recognition for installations in a subdirectory
@@ -117,8 +119,8 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Update getting `wp-config.php` if one level above installation (#106)
 * Add clear types for strict cache clearing (#110)
 * Fix advanced cache settings recognition for subdirectory multisite networks
-* Fix WP-CLI clear subcommand for post IDs (#110)
-* Fix scheme-based caching for NGINX/PHP-FPM (#109)
+* Fix WP-CLI `clear` subcommand for post IDs (#110)
+* Fix scheme-based caching for NGINX/PHP-FPM (#109 @centminmod)
 * Fix trailing slash handling
 
 = 1.4.6 =
