@@ -111,9 +111,10 @@ final class Cache_Enabler {
             // dashboard
             add_filter( 'dashboard_glance_items', array( __CLASS__, 'add_dashboard_count' ) );
             add_filter( 'plugin_action_links_' . CE_BASE, array( __CLASS__, 'action_links' ) );
-            // warnings and notices
-            add_action( 'admin_notices', array( __CLASS__, 'warning_is_permalink' ) );
+            // notices
             add_action( 'admin_notices', array( __CLASS__, 'requirements_check' ) );
+            add_action( 'admin_notices', array( __CLASS__, 'clear_notice' ) );
+            add_action( 'network_admin_notices', array( __CLASS__, 'clear_notice' ) );
         }
     }
 
@@ -533,9 +534,7 @@ final class Cache_Enabler {
         self::$settings = self::_get_settings();
 
         // disk cache
-        if ( Cache_Enabler_Disk::is_permalink() ) {
-            self::$disk = new Cache_Enabler_Disk;
-        }
+        self::$disk = new Cache_Enabler_Disk;
     }
 
 
@@ -620,6 +619,23 @@ final class Cache_Enabler {
 
 
     /**
+     * get the cache cleared transient name used for the clear notice
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     *
+     * @return  string  $transient_name  transient name
+     */
+
+    private static function _get_cache_cleared_transient_name() {
+
+        $transient_name = 'cache_enabler_cache_cleared_' . get_current_user_id();
+
+        return $transient_name;
+    }
+
+
+    /**
      * convert Cache Enabler settings to new structure
      *
      * @since   1.5.0
@@ -676,36 +692,6 @@ final class Cache_Enabler {
         }
 
         return $settings;
-    }
-
-
-    /**
-     * warning if no custom permlink structure
-     *
-     * @since   1.0.0
-     * @change  1.4.5
-     */
-
-    public static function warning_is_permalink() {
-
-        if ( ! Cache_Enabler_Disk::is_permalink() && current_user_can( 'manage_options' ) ) {
-
-            show_message(
-                sprintf(
-                    '<div class="notice notice-error"><p>%s</p></div>',
-                    sprintf(
-                        // translators: 1. Cache Enabler 2. Permalink Settings
-                        esc_html__( 'The %1$s plugin requires a custom permalink structure to start caching properly. Please enable a custom structure in the %2$s.', 'cache-enabler' ),
-                        '<strong>Cache Enabler</strong>',
-                        sprintf(
-                            '<a href="%s">%s</a>',
-                            admin_url( 'options-permalink.php' ),
-                            esc_html__( 'Permalink Settings', 'cache-enabler' )
-                        )
-                    )
-                )
-            );
-        }
     }
 
 
@@ -889,7 +875,6 @@ final class Cache_Enabler {
                 'href'   => wp_nonce_url( add_query_arg( array(
                                 '_cache'  => 'cache-enabler',
                                 '_action' => 'clear',
-                                '_cid'    => time(),
                             ) ), '_cache__clear_nonce' ),
                 'parent' => 'top-secondary',
                 'title'  => '<span class="ab-item">' . $title . '</span>',
@@ -907,7 +892,6 @@ final class Cache_Enabler {
                     'href'   => wp_nonce_url( add_query_arg( array(
                                     '_cache'  => 'cache-enabler',
                                     '_action' => 'clearurl',
-                                    '_cid'    => time(),
                                 ) ), '_cache__clear_nonce' ),
                     'parent' => 'top-secondary',
                     'title'  => '<span class="ab-item">' . esc_html__( 'Clear URL Cache', 'cache-enabler' ) . '</span>',
@@ -925,19 +909,12 @@ final class Cache_Enabler {
      *
      * @since   1.0.0
      * @change  1.5.0
-     *
-     * @param   array  $data  array of metadata
      */
 
-    public static function process_clear_request( $data ) {
+    public static function process_clear_request() {
 
         // check if clear request
         if ( empty( $_GET['_cache'] ) || empty( $_GET['_action'] ) || $_GET['_cache'] !== 'cache-enabler' && ( $_GET['_action'] !== 'clear' || $_GET['_action'] !== 'clearurl' ) ) {
-            return;
-        }
-
-        // validate clear ID (prevent duplicate processing)
-        if ( empty( $_GET['_cid'] ) || ! empty( $_COOKIE['cache_enabler_clear_id'] ) && $_COOKIE['cache_enabler_clear_id'] === $_GET['_cid'] ) {
             return;
         }
 
@@ -956,9 +933,6 @@ final class Cache_Enabler {
             require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
         }
 
-        // set clear ID cookie
-        setcookie( 'cache_enabler_clear_id', $_GET['_cid'] );
-
         // set clear URL without query string and check if installation is in a subdirectory
         $installation_dir = parse_url( home_url(), PHP_URL_PATH );
         $clear_url = str_replace( $installation_dir, '', home_url() ) . preg_replace( '/\?.*/', '', $_SERVER['REQUEST_URI'] );
@@ -969,17 +943,6 @@ final class Cache_Enabler {
             if ( is_network_admin() && $_GET['_action'] === 'clear' ) {
                 // clear complete cache
                 self::clear_total_cache();
-
-                // clear notice
-                if ( is_admin() ) {
-                    add_action(
-                        'network_admin_notices',
-                        array(
-                            __CLASS__,
-                            'clear_notice',
-                        )
-                    );
-                }
             // site admin
             } else {
                 if ( $_GET['_action'] === 'clearurl' ) {
@@ -988,17 +951,6 @@ final class Cache_Enabler {
                 } elseif ( $_GET['_action'] === 'clear' ) {
                     // clear specific site complete cache
                     self::clear_blog_id_cache( get_current_blog_id() );
-
-                    // clear notice
-                    if ( is_admin() ) {
-                        add_action(
-                            'admin_notices',
-                            array(
-                                __CLASS__,
-                                'clear_notice',
-                            )
-                        );
-                    }
                 }
             }
         // site activated
@@ -1009,53 +961,46 @@ final class Cache_Enabler {
             } elseif ( $_GET['_action'] === 'clear' ) {
                 // clear complete cache
                 self::clear_total_cache();
-
-                // clear notice
-                if ( is_admin() ) {
-                    add_action(
-                        'admin_notices',
-                        array(
-                            __CLASS__,
-                            'clear_notice',
-                        )
-                    );
-                }
             }
         }
 
-        if ( ! is_admin() ) {
-            wp_safe_redirect(
-                remove_query_arg(
-                    '_cache',
-                    wp_get_referer()
-                )
-            );
+        // redirect to same page
+        wp_safe_redirect( wp_get_referer() );
 
-            exit();
+        // set transient for clear notice
+        if ( is_admin() ) {
+            set_transient( self::_get_cache_cleared_transient_name(), 1 );
         }
+
+        // clear request processing completed
+        exit;
     }
 
 
     /**
-     * notification after clear cache
+     * notice after cache has been cleared
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.5.0
      *
      * @hook    mixed  user_can_clear_cache
      */
 
     public static function clear_notice() {
 
-        // check if admin
+        // check user role
         if ( ! is_admin_bar_showing() || ! apply_filters( 'user_can_clear_cache', current_user_can( 'manage_options' ) ) ) {
-            return false;
+            return;
         }
 
-        echo sprintf(
-            '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
-            esc_html__( 'The cache has been cleared.', 'cache-enabler' )
-        );
+        if ( get_transient( self::_get_cache_cleared_transient_name() ) ) {
+            echo sprintf(
+                '<div class="notice notice-success is-dismissible"><p><strong>%s</strong></p></div>',
+                ( is_multisite() && is_network_admin() ) ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Cache cleared.', 'cache-enabler' )
+            );
+
+            delete_transient( self::_get_cache_cleared_transient_name() );
+        }
     }
 
 
@@ -1645,6 +1590,25 @@ final class Cache_Enabler {
 
 
     /**
+     * check if permalink structure is plain
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     *
+     * @return  boolean  true if permalink structure is plain, false otherwise
+     */
+
+    private static function _is_plain_permalink_structure() {
+
+        if ( get_option( 'permalink_structure' ) === null ) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /**
      * check if page is excluded from cache
      *
      * @since   1.5.0
@@ -1752,7 +1716,7 @@ final class Cache_Enabler {
         }
 
         // check conditional tags
-        if ( self::_is_wp_cache_disabled() || self::_is_trailing_slash_redirect() || self::_is_excluded() || is_admin() || self::_is_mobile() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
+        if ( self::_is_wp_cache_disabled() || self::_is_trailing_slash_redirect() || self::_is_plain_permalink_structure() || self::_is_excluded() || is_admin() || self::_is_mobile() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
             return true;
         }
 
@@ -1962,61 +1926,72 @@ final class Cache_Enabler {
 
     public static function requirements_check() {
 
-        // WordPress version check
+        // check WordPress version
         if ( version_compare( $GLOBALS['wp_version'], CE_MIN_WP . 'alpha', '<' ) ) {
-            show_message(
+            echo sprintf(
+                '<div class="notice notice-error"><p>%s</p></div>',
                 sprintf(
-                    '<div class="notice notice-error"><p>%s</p></div>',
+                    // translators: 1. Cache Enabler 2. WordPress version (e.g. 5.1)
+                    esc_html__( 'The %1$s plugin is optimized for WordPress %2$s. Please disable the plugin or upgrade your WordPress installation (recommended).', 'cache-enabler' ),
+                    '<strong>Cache Enabler</strong>',
+                    CE_MIN_WP
+                )
+            );
+        }
+
+        // check permalink structure
+        if ( self::_is_plain_permalink_structure() && current_user_can( 'manage_options' ) ) {
+            echo sprintf(
+                '<div class="notice notice-error"><p>%s</p></div>',
+                sprintf(
+                    // translators: 1. Cache Enabler 2. Permalink Settings
+                    esc_html__( 'The %1$s plugin requires a custom permalink structure to start caching properly. Please enable a custom structure in the %2$s.', 'cache-enabler' ),
+                    '<strong>Cache Enabler</strong>',
                     sprintf(
-                        // translators: 1. Cache Enabler 2. WordPress version (e.g. 5.1)
-                        esc_html__( 'The %1$s plugin is optimized for WordPress %2$s. Please disable the plugin or upgrade your WordPress installation (recommended).', 'cache-enabler' ),
-                        '<strong>Cache Enabler</strong>',
-                        CE_MIN_WP
+                        '<a href="%s">%s</a>',
+                        admin_url( 'options-permalink.php' ),
+                        esc_html__( 'Permalink Settings', 'cache-enabler' )
                     )
                 )
             );
         }
 
-        // permission check
+        // check permissions
         if ( file_exists( CE_CACHE_DIR ) && ! is_writable( CE_CACHE_DIR ) ) {
-            show_message(
+            echo sprintf(
+                '<div class="notice notice-error"><p>%s</p></div>',
                 sprintf(
-                    '<div class="notice notice-error"><p>%s</p></div>',
+                    // translators: 1. Cache Enabler 2. 755 3. wp-content/cache 4. file permissions
+                    esc_html__( 'The %1$s plugin requires write permissions %2$s in %3$s. Please change the %4$s.', 'cache-enabler' ),
+                    '<strong>Cache Enabler</strong>',
+                    '<code>755</code>',
+                    '<code>wp-content/cache</code>',
                     sprintf(
-                        // translators: 1. Cache Enabler 2. 755 3. wp-content/cache 4. file permissions
-                        esc_html__( 'The %1$s plugin requires write permissions %2$s in %3$s. Please change the %4$s.', 'cache-enabler' ),
-                        '<strong>Cache Enabler</strong>',
-                        '<code>755</code>',
-                        '<code>wp-content/cache</code>',
-                        sprintf(
-                            '<a href="%s" target="_blank" rel="nofollow noopener">%s</a>',
-                            'https://wordpress.org/support/article/changing-file-permissions/',
-                            esc_html__( 'file permissions', 'cache-enabler' )
-                        )
+                        '<a href="%s" target="_blank" rel="nofollow noopener">%s</a>',
+                        'https://wordpress.org/support/article/changing-file-permissions/',
+                        esc_html__( 'file permissions', 'cache-enabler' )
                     )
                 )
             );
         }
 
-        // autoptimize minification check
+        // check Autoptimize HTML optimization
         if ( defined( 'AUTOPTIMIZE_PLUGIN_DIR' ) && self::$settings['minify_html'] && get_option( 'autoptimize_html', '' ) !== '' ) {
-            show_message(
+            echo sprintf(
+                '<div class="notice notice-error"><p>%s</p></div>',
                 sprintf(
-                    '<div class="notice notice-error"><p>%s</p></div>',
+                    // translators: 1. Autoptimize 2. Cache Enabler Settings
+                    esc_html__( 'The %1$s plugin HTML optimization is enabled. Please disable HTML minification in the %2$s.', 'cache-enabler' ),
+                    '<strong>Autoptimize</strong>',
                     sprintf(
-                        // translators: 1. Autoptimize 2. Cache Enabler Settings
-                        esc_html__( 'The %1$s plugin HTML optimization is enabled. Please disable HTML minification in the %2$s.', 'cache-enabler' ),
-                        '<strong>Autoptimize</strong>',
-                        sprintf(
-                            '<a href="%s">%s</a>',
-                            add_query_arg(
-                                array(
-                                    'page' => 'cache-enabler',
-                                ),
-                                admin_url( 'options-general.php' )
+                        '<a href="%s">%s</a>',
+                        add_query_arg(
+                            array(
+                                'page' => 'cache-enabler',
                             ),
-                            esc_html__( 'Cache Enabler Settings', 'cache-enabler' )
-                        )
+                            admin_url( 'options-general.php' )
+                        ),
+                        esc_html__( 'Cache Enabler Settings', 'cache-enabler' )
                     )
                 )
             );
@@ -2155,6 +2130,7 @@ final class Cache_Enabler {
         // check if cache should be cleared
         if ( ! empty( $data['clear_complete_cache_on_saved_settings'] ) ) {
             self::clear_total_cache();
+            set_transient( self::_get_cache_cleared_transient_name(), 1 );
         }
 
         return $validated_settings;
@@ -2170,21 +2146,6 @@ final class Cache_Enabler {
 
     public static function settings_page() {
 
-        // check WP_CACHE constant
-        if ( self::_is_wp_cache_disabled() ) {
-            show_message(
-                sprintf(
-                    '<div class="notice notice-warning"><p>%s</p></div>',
-                    sprintf(
-                        // translators: 1. define( 'WP_CACHE', true ); 2. wp-config.php
-                        esc_html__( 'Caching is disabled because %1$s is not set in the %2$s file.', 'cache-enabler' ),
-                        "<code>define( 'WP_CACHE', true );</code>",
-                        '<code>wp-config.php</code>'
-                    )
-                )
-            );
-        }
-
         ?>
 
         <div id="cache-enabler-settings" class="wrap">
@@ -2192,7 +2153,21 @@ final class Cache_Enabler {
                 <?php esc_html_e( 'Cache Enabler Settings', 'cache-enabler' ); ?>
             </h2>
 
-            <div class="notice notice-info" style="margin-bottom: 35px;">
+            <?php
+            if ( self::_is_wp_cache_disabled() ) {
+                printf(
+                    '<div class="notice notice-warning"><p>%s</p></div>',
+                    sprintf(
+                        // translators: 1. define( 'WP_CACHE', true ); 2. wp-config.php
+                        esc_html__( 'Caching is disabled because %1$s is not set in the %2$s file.', 'cache-enabler' ),
+                        "<code>define( 'WP_CACHE', true );</code>",
+                        '<code>wp-config.php</code>'
+                    )
+                );
+            }
+            ?>
+
+            <div class="notice notice-info">
                 <p>
                 <?php
                 printf(
@@ -2314,7 +2289,7 @@ final class Cache_Enabler {
                                     }
                                     $minify_inline_js .= '</select>';
                                     printf(
-                                        // translators: %s: Form field control for 'including' or 'excluding' inline JavaScript during HTML minification.
+                                        // translators: %s: Form field control for 'excluding' or 'including' inline JavaScript during HTML minification.
                                         esc_html__( 'Minify HTML in cached pages %s inline JavaScript.', 'cache-enabler' ),
                                         $minify_inline_js
                                     );

@@ -31,21 +31,6 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * permalink check
-     *
-     * @since   1.0.0
-     * @change  1.0.0
-     *
-     * @return  boolean  true if installed
-     */
-
-    public static function is_permalink() {
-
-        return get_option( 'permalink_structure' );
-    }
-
-
-    /**
      * store asset
      *
      * @since   1.0.0
