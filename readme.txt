@@ -85,6 +85,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 == Changelog ==
 
 = 1.5.0 =
+* Update `WP_CACHE` constant handling (#140)
 * Update cache cleared admin notice (#139)
 * Update admin bar clear cache buttons (#139)
 * Update output buffer timing to start earlier on the `init` hook instead of `template_redirect` (#137)
@@ -96,6 +97,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Add post type, taxonomies, author, and date archives to the new associated cache (#129)
 * Add new cache clearing setting for when any published post type is updated (#129)
 * Add new cache exclusions setting for query strings (#129)
+* Fix `WP_CACHE` constant not being set edge case (#140)
 * Fix advanced cache settings from using unvalidated data (#129)
 * Fix clear URL admin bar button for installations in a subdirectory (#127)
 * Fix WebP URL conversion for installations in a subdirectory (#125)
