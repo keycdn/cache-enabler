@@ -123,7 +123,7 @@ final class Cache_Enabler {
      * activation hook
      *
      * @since   1.0.0
-     * @change  1.4.5
+     * @change  1.5.0
      *
      * @param   boolean  $network_wide  network activated
      */
@@ -133,10 +133,8 @@ final class Cache_Enabler {
         // activation requirements
         self::on_ce_activation_deactivation( 'activated', $network_wide );
 
-        // set WP_CACHE if not already set
-        if ( defined( 'WP_CACHE' ) && ! WP_CACHE ) {
-            self::_set_wp_cache();
-        }
+        // set WP_CACHE constant if not already set
+        self::_set_wp_cache_constant();
 
         // copy advanced cache file
         copy( CE_DIR . '/advanced-cache.php', WP_CONTENT_DIR . '/advanced-cache.php' );
@@ -147,7 +145,7 @@ final class Cache_Enabler {
      * deactivation hook
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.5.0
      *
      * @param   boolean  $network_wide  network deactivated
      */
@@ -157,10 +155,8 @@ final class Cache_Enabler {
         // deactivation requirements
         self::on_ce_activation_deactivation( 'deactivated', $network_wide );
 
-        // unset WP_CACHE
-        if ( defined( 'WP_CACHE' ) && WP_CACHE ) {
-            self::_set_wp_cache( false );
-        }
+        // unset WP_CACHE constant if set by Cache Enabler
+        self::_set_wp_cache_constant( false );
 
         // delete advanced cache file
         unlink( WP_CONTENT_DIR . '/advanced-cache.php' );
@@ -460,12 +456,12 @@ final class Cache_Enabler {
      * set or unset WP_CACHE constant
      *
      * @since   1.1.1
-     * @change  1.4.7
+     * @change  1.5.0
      *
-     * @param   boolean  $wp_cache_value  true to set WP_CACHE constant in wp-config.php, false to unset
+     * @param   boolean  $set  true to set WP_CACHE constant in wp-config.php, false to unset
      */
 
-    private static function _set_wp_cache( $wp_cache_value = true ) {
+    private static function _set_wp_cache_constant( $set = true ) {
 
         // get config file
         if ( file_exists( ABSPATH . 'wp-config.php' ) ) {
@@ -477,47 +473,41 @@ final class Cache_Enabler {
         }
 
         // check if config file can be written to
-        if ( is_writable( $wp_config_file ) ) {
-            // get config file as array
-            $wp_config = file( $wp_config_file );
-
-            // set Cache Enabler line
-            if ( $wp_cache_value ) {
-                $wp_cache_ce_line = "define( 'WP_CACHE', true ); // Added by Cache Enabler" . "\r\n";
-            } else {
-                $wp_cache_ce_line = '';
-            }
-
-            // search for WP_CACHE constant
-            $found_wp_cache = false;
-            foreach ( $wp_config as &$line ) {
-                if ( preg_match( '/^\s*define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,\s*(.*)\s*\);/', $line ) ) {
-                    // found WP_CACHE constant
-                    $found_wp_cache = true;
-                    // check if constant was set by Cache Enabler
-                    if ( preg_match( '/\/\/\sAdded\sby\sCache\sEnabler/', $line ) ) {
-                        // update Cache Enabler line
-                        $line = $wp_cache_ce_line;
-                    }
-
-                    break;
-                }
-            }
-
-            // add WP_CACHE if not found
-            if ( ! $found_wp_cache ) {
-                array_shift( $wp_config );
-                array_unshift( $wp_config, "<?php\r\n", $wp_cache_ce_line );
-            }
-
-            // write config file
-            $fh = @fopen( $wp_config_file, 'w' );
-            foreach ( $wp_config as $ln ) {
-                @fwrite( $fh, $ln );
-            }
-
-            @fclose( $fh );
+        if ( ! is_writable( $wp_config_file ) ) {
+            return;
         }
+
+        // get config file contents
+        $wp_config_file_contents = file_get_contents( $wp_config_file );
+
+        // validate string
+        if ( ! is_string( $wp_config_file_contents ) ) {
+            return;
+        }
+
+        // search for WP_CACHE constant
+        $found_wp_cache_constant = preg_match( '/define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,.+\);/', $wp_config_file_contents );
+
+        // if not found set WP_CACHE constant when config file is default (must be before WordPress sets up)
+        if ( $set && ! $found_wp_cache_constant ) {
+            $ce_wp_config_lines  = '/** Enables page caching for Cache Enabler. */' . PHP_EOL;
+            $ce_wp_config_lines .= "if ( ! defined( 'WP_CACHE' ) ) {" . PHP_EOL;
+            $ce_wp_config_lines .= "\tdefine( 'WP_CACHE', true );" . PHP_EOL;
+            $ce_wp_config_lines .= '}' . PHP_EOL;
+            $ce_wp_config_lines .= PHP_EOL;
+            $wp_config_file_contents = preg_replace( '/(\/\*\* Sets up WordPress vars and included files\. \*\/)/', $ce_wp_config_lines . '$1', $wp_config_file_contents );
+        }
+
+        // unset WP_CACHE constant if added by Cache Enabler
+        if ( ! $set ) {
+            $wp_config_file_contents = preg_replace( '/.+Added by Cache Enabler\r\n/', '', $wp_config_file_contents ); // < 1.5.0
+            $wp_config_file_contents = preg_replace( '/\/\*\* Enables page caching for Cache Enabler\. \*\/' . PHP_EOL . '.+' . PHP_EOL . '.+' . PHP_EOL . '\}' . PHP_EOL . PHP_EOL . '/', '', $wp_config_file_contents );
+        }
+
+        // update config file
+        $handle = @fopen( $wp_config_file, 'w' );
+        @fwrite( $handle, $wp_config_file_contents );
+        @fclose( $handle );
     }
 
 
@@ -669,7 +659,7 @@ final class Cache_Enabler {
             'compress'             => 'compress_cache_with_gzip',
             'webp'                 => 'convert_image_urls_to_webp',
             'excl_ids'             => 'excluded_post_ids',
-            'excl_regexp'          => 'excluded_page_paths', // <= 1.3.5
+            'excl_regexp'          => 'excluded_page_paths', // < 1.4.0
             'excl_paths'           => 'excluded_page_paths',
             'excl_cookies'         => 'excluded_cookies',
             'incl_parameters'      => '', // depracted in 1.5.0
