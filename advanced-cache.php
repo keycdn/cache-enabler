@@ -15,7 +15,7 @@ if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GE
 $path = _file_path();
 
 // scheme
-$scheme = ( ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' ) || $_SERVER['SERVER_PORT'] === '443' ) ? 'https' : 'http';
+$scheme = ( ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' ) || $_SERVER['SERVER_PORT'] == '443' ) ? 'https' : 'http';
 
 // path to cached variants
 $path_html      = $path . $scheme . '-index.html';
