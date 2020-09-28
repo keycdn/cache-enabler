@@ -583,9 +583,7 @@ final class Cache_Enabler {
         $default_settings = array(
             'cache_expires'                          => 0,
             'cache_expiry_time'                      => 0,
-            'clear_complete_cache_on_published_post' => 0,
-            'clear_cache_on_updated_post'            => 0,
-            'clear_type_on_updated_post'             => 'associated',
+            'clear_complete_cache_on_saved_post'     => 0,
             'clear_complete_cache_on_new_comment'    => 0,
             'clear_complete_cache_on_changed_plugin' => 0,
             'compress_cache_with_gzip'               => 0,
@@ -652,7 +650,7 @@ final class Cache_Enabler {
         // renamed or removed settings
         $settings_names = array(
             'expires'              => 'cache_expiry_time',
-            'new_post'             => 'clear_complete_cache_on_published_post',
+            'new_post'             => 'clear_complete_cache_on_saved_post',
             'update_product_stock' => '', // depracted in 1.5.0
             'new_comment'          => 'clear_complete_cache_on_new_comment',
             'clear_on_upgrade'     => 'clear_complete_cache_on_changed_plugin',
@@ -1025,9 +1023,9 @@ final class Cache_Enabler {
 
     public static function on_post_updated( $post_id, $post_after, $post_before ) {
 
-        // if setting enabled and any published post type author changes
+        // if setting disabled and any published post type author changes
         if ( $post_before->post_author !== $post_after->post_author ) {
-            if ( self::$settings['clear_cache_on_updated_post'] && self::$settings['clear_type_on_updated_post'] === 'associated' ) {
+            if ( ! self::$settings['clear_complete_cache_on_saved_post'] ) {
                 // clear before the update author archives
                 self::clear_author_archives_cache_by_user_id( $post_before->post_author );
             }
@@ -1067,7 +1065,7 @@ final class Cache_Enabler {
 
     public static function on_transition_post_status( $new_status, $old_status, $post ) {
 
-        // if any published post type status is changed
+        // if any published post type status has changed
         if ( $old_status === 'publish' && in_array( $new_status, array( 'future', 'draft', 'pending', 'private') ) ) {
             self::clear_cache_on_post_save( $post->ID );
         }
@@ -1445,7 +1443,7 @@ final class Cache_Enabler {
 
 
     /**
-     * clear cache on post save
+     * clear cache when any post type is created or updated
      *
      * @since   1.5.0
      * @change  1.5.0
@@ -1459,36 +1457,18 @@ final class Cache_Enabler {
         // get post data
         $post = get_post( $post_id );
 
-        // any trashed post type
-        if ( $trashed ) {
-            // clear page cache
-            self::clear_page_cache_by_post_id( $post_id );
+        // if setting enabled clear complete cache
+        if ( self::$settings['clear_complete_cache_on_saved_post'] ) {
+            self::clear_total_cache();
+        // clear page and/or associated cache otherwise
+        } else {
+            // if updated or trashed
+            if ( strtotime( $post->post_modified_gmt ) > strtotime( $post->post_date_gmt ) || $trashed ) {
+                // clear page cache
+                self::clear_page_cache_by_post_id( $post_id );
+            }
             // clear associated cache
             self::clear_associated_cache( $post );
-        // any new post type
-        } elseif ( strtotime( $post->post_date_gmt ) >= strtotime( $post->post_modified_gmt ) ) {
-            // if setting enabled clear complete cache
-            if ( self::$settings['clear_complete_cache_on_published_post'] ) {
-                self::clear_total_cache();
-            // clear associated cache otherwise
-            } else {
-                self::clear_associated_cache( $post );
-            }
-        // any updated post type
-        } else {
-            // clear page cache
-            self::clear_page_cache_by_post_id( $post_id );
-
-            if ( self::$settings['clear_cache_on_updated_post'] ) {
-                // if setting enabled clear associated cache
-                if ( self::$settings['clear_type_on_updated_post'] === 'associated' ) {
-                    self::clear_associated_cache( $post );
-                }
-                // if setting enabled clear complete cache
-                if ( self::$settings['clear_type_on_updated_post'] === 'complete' ) {
-                    self::clear_total_cache();
-                }
-            }
         }
     }
 
@@ -2099,9 +2079,7 @@ final class Cache_Enabler {
         $validated_settings = array(
             'cache_expires'                          => (int) ( ! empty( $data['cache_expires'] ) ),
             'cache_expiry_time'                      => (int) @$data['cache_expiry_time'],
-            'clear_complete_cache_on_published_post' => (int) ( ! empty( $data['clear_complete_cache_on_published_post'] ) ),
-            'clear_cache_on_updated_post'            => (int) ( ! empty( $data['clear_cache_on_updated_post'] ) ),
-            'clear_type_on_updated_post'             => (string) sanitize_text_field( @$data['clear_type_on_updated_post'] ),
+            'clear_complete_cache_on_saved_post'     => (int) ( ! empty( $data['clear_complete_cache_on_saved_post'] ) ),
             'clear_complete_cache_on_new_comment'    => (int) ( ! empty( $data['clear_complete_cache_on_new_comment'] ) ),
             'clear_complete_cache_on_changed_plugin' => (int) ( ! empty( $data['clear_complete_cache_on_changed_plugin'] ) ),
             'compress_cache_with_gzip'               => (int) ( ! empty( $data['compress_cache_with_gzip'] ) ),
@@ -2195,35 +2173,10 @@ final class Cache_Enabler {
                                 <br />
 
                                 <p class="subheading"><?php esc_html_e( 'Clearing', 'cache-enabler' ); ?></p>
-                                <label for="clear_complete_cache_on_published_post">
-                                    <input name="cache-enabler[clear_complete_cache_on_published_post]" type="checkbox" id="clear_complete_cache_on_published_post" value="1" <?php checked( '1', $settings['clear_complete_cache_on_published_post'] ); ?> />
-                                    <?php esc_html_e( 'Clear the complete cache if any post type has been published (instead of only the associated cache).', 'cache-enabler' ); ?>
+                                <label for="clear_complete_cache_on_saved_post">
+                                    <input name="cache-enabler[clear_complete_cache_on_saved_post]" type="checkbox" id="clear_complete_cache_on_saved_post" value="1" <?php checked( '1', $settings['clear_complete_cache_on_saved_post'] ); ?> />
+                                    <?php esc_html_e( 'Clear the complete cache if any post type has been published, updated, or trashed (instead of only the page and/or associated cache).', 'cache-enabler' ); ?>
                                     <span class="badge badge--success"><?php esc_html_e( 'Updated', 'cache-enabler' ); ?></span>
-                                </label>
-
-                                <br />
-
-                                <label for="clear_cache_on_updated_post" class="checkbox--form-control">
-                                    <input name="cache-enabler[clear_cache_on_updated_post]" type="checkbox" id="clear_cache_on_updated_post" value="1" <?php checked( '1', $settings['clear_cache_on_updated_post'] ); ?> />
-                                </label>
-                                <label for="clear_type_on_updated_post">
-                                    <?php
-                                    $clear_type_on_updated_post_options = array(
-                                        esc_html__( 'associated' ) => 'associated',
-                                        esc_html__( 'complete' ) => 'complete',
-                                    );
-                                    $clear_type_on_updated_post = '<select name="cache-enabler[clear_type_on_updated_post]" id="clear_type_on_updated_post">';
-                                    foreach ( $clear_type_on_updated_post_options as $key => $value ) {
-                                        $clear_type_on_updated_post .= '<option value="' . esc_attr( $value ) . '"' . selected( $value, $settings['clear_type_on_updated_post'], false ) . '>' . $key . '</option>';
-                                    }
-                                    $clear_type_on_updated_post .= '</select>';
-                                    printf(
-                                        // translators: %s: Form field control for clearing the 'associated' or 'complete' cache.
-                                        esc_html__( 'Clear the %s cache if any published post type has been updated (instead of only the page cache).', 'cache-enabler' ),
-                                        $clear_type_on_updated_post
-                                    );
-                                    ?>
-                                    <span class="badge badge--success"><?php esc_html_e( 'New', 'cache-enabler' ); ?></span>
                                 </label>
 
                                 <br />
