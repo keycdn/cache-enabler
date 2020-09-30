@@ -1,18 +1,15 @@
 <?php
-
-
-// exit
-defined( 'ABSPATH' ) || exit;
-
-
 /**
- * Cache_Enabler
+ * Cache Enabler base
  *
  * @since  1.0.0
  */
 
-final class Cache_Enabler {
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
+final class Cache_Enabler {
 
     /**
      * plugin settings
@@ -498,7 +495,7 @@ final class Cache_Enabler {
             $wp_config_file_contents = preg_replace( '/(\/\*\* Sets up WordPress vars and included files\. \*\/)/', $ce_wp_config_lines . '$1', $wp_config_file_contents );
         }
 
-        // unset WP_CACHE constant if added by Cache Enabler
+        // unset WP_CACHE constant if set by Cache Enabler
         if ( ! $set ) {
             $wp_config_file_contents = preg_replace( '/.+Added by Cache Enabler\r\n/', '', $wp_config_file_contents ); // < 1.5.0
             $wp_config_file_contents = preg_replace( '/\/\*\* Enables page caching for Cache Enabler\. \*\/' . PHP_EOL . '.+' . PHP_EOL . '.+' . PHP_EOL . '\}' . PHP_EOL . PHP_EOL . '/', '', $wp_config_file_contents );
@@ -541,7 +538,7 @@ final class Cache_Enabler {
 
         global $wpdb;
 
-        return $wpdb->get_col("SELECT blog_id FROM `$wpdb->blogs`");
+        return $wpdb->get_col( "SELECT blog_id FROM `$wpdb->blogs`" );
     }
 
 
@@ -558,7 +555,7 @@ final class Cache_Enabler {
 
         global $wpdb;
 
-        return $wpdb->get_col("SELECT path FROM `$wpdb->blogs`");
+        return $wpdb->get_col( "SELECT path FROM `$wpdb->blogs`" );
     }
 
 
@@ -597,10 +594,7 @@ final class Cache_Enabler {
         );
 
         // merge defined settings into default settings
-        $settings = wp_parse_args(
-            $defined_settings,
-            $default_settings
-        );
+        $settings = wp_parse_args( $defined_settings, $default_settings );
 
         return $settings;
     }
@@ -705,12 +699,7 @@ final class Cache_Enabler {
             array(
                 sprintf(
                     '<a href="%s">%s</a>',
-                    add_query_arg(
-                        array(
-                            'page' => 'cache-enabler',
-                        ),
-                        admin_url( 'options-general.php' )
-                    ),
+                    admin_url( 'options-general.php?page=cache-enabler' ),
                     esc_html__( 'Settings', 'cache-enabler' )
                 )
             )
@@ -769,12 +758,7 @@ final class Cache_Enabler {
         $items = array(
             sprintf(
                 '<a href="%s" title="%s">%s %s</a>',
-                add_query_arg(
-                    array(
-                        'page' => 'cache-enabler',
-                    ),
-                    admin_url( 'options-general.php' )
-                ),
+                admin_url( 'options-general.php?page=cache-enabler' ),
                 esc_html__( 'Disk Cache', 'cache-enabler' ),
                 ( empty( $size ) ? esc_html__( 'Empty', 'cache-enabler' ) : size_format( $size ) ),
                 esc_html__( 'Cache Size', 'cache-enabler' )
@@ -801,11 +785,7 @@ final class Cache_Enabler {
             $size = ( is_object( self::$disk ) ) ? (int) self::$disk->cache_size( CE_CACHE_DIR ) : 0;
 
             // set transient
-            set_transient(
-                'cache_size',
-                $size,
-                60 * 15
-            );
+            set_transient( 'cache_size', $size, 60 * 15 );
         }
 
         return $size;
@@ -866,9 +846,7 @@ final class Cache_Enabler {
                             ) ), '_cache__clear_nonce' ),
                 'parent' => 'top-secondary',
                 'title'  => '<span class="ab-item">' . $title . '</span>',
-                'meta'   => array(
-                                'title' => $title,
-                            ),
+                'meta'   => array( 'title' => $title ),
             )
         );
 
@@ -883,9 +861,7 @@ final class Cache_Enabler {
                                 ) ), '_cache__clear_nonce' ),
                     'parent' => 'top-secondary',
                     'title'  => '<span class="ab-item">' . esc_html__( 'Clear URL Cache', 'cache-enabler' ) . '</span>',
-                    'meta'   => array(
-                                    'title' => esc_html__( 'Clear URL Cache', 'cache-enabler' ),
-                                ),
+                    'meta'   => array( 'title' => esc_html__( 'Clear URL Cache', 'cache-enabler' ) ),
                 )
             );
         }
@@ -918,7 +894,7 @@ final class Cache_Enabler {
 
         // load if network activated
         if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
-            require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
         // set clear URL without query string and check if installation is in a subdirectory
@@ -1719,13 +1695,7 @@ final class Cache_Enabler {
         }
 
         // HTML tags to ignore
-        $ignore_tags = (array) apply_filters(
-            'cache_minify_ignore_tags',
-            array(
-                'textarea',
-                'pre',
-            )
-        );
+        $ignore_tags = (array) apply_filters( 'cache_minify_ignore_tags', array( 'textarea', 'pre' ) );
 
         // if selected exclude inline JavaScript
         if ( ! self::$settings['minify_inline_js'] ) {
@@ -1879,10 +1849,7 @@ final class Cache_Enabler {
             'Cache Enabler',
             'manage_options',
             'cache-enabler',
-            array(
-                __CLASS__,
-                'settings_page',
-            )
+            array( __CLASS__, 'settings_page' )
         );
     }
 
@@ -1955,12 +1922,7 @@ final class Cache_Enabler {
                     '<strong>Autoptimize</strong>',
                     sprintf(
                         '<a href="%s">%s</a>',
-                        add_query_arg(
-                            array(
-                                'page' => 'cache-enabler',
-                            ),
-                            admin_url( 'options-general.php' )
-                        ),
+                        admin_url( 'options-general.php?page=cache-enabler' ),
                         esc_html__( 'Cache Enabler Settings', 'cache-enabler' )
                     )
                 )
@@ -1979,11 +1941,7 @@ final class Cache_Enabler {
     public static function register_textdomain() {
 
         // load translated strings
-        load_plugin_textdomain(
-            'cache-enabler',
-            false,
-            'cache-enabler/lang'
-        );
+        load_plugin_textdomain( 'cache-enabler', false, 'cache-enabler/lang' );
     }
 
 
@@ -1996,14 +1954,7 @@ final class Cache_Enabler {
 
     public static function register_settings() {
 
-        register_setting(
-            'cache-enabler',
-            'cache-enabler',
-            array(
-                __CLASS__,
-                'validate_settings',
-            )
-        );
+        register_setting( 'cache-enabler', 'cache-enabler', array( __CLASS__, 'validate_settings' ) );
     }
 
 
@@ -2114,6 +2065,9 @@ final class Cache_Enabler {
 
     public static function settings_page() {
 
+        // get Cache Enabler settings
+        $settings = self::$settings;
+
         ?>
 
         <div id="cache-enabler-settings" class="wrap">
@@ -2148,7 +2102,6 @@ final class Cache_Enabler {
 
             <form method="post" action="options.php">
                 <?php settings_fields( 'cache-enabler' ); ?>
-                <?php $settings = self::_get_settings(); ?>
                 <table class="form-table">
                     <tr valign="top">
                         <th scope="row">

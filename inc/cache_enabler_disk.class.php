@@ -1,18 +1,15 @@
 <?php
-
-
-// exit
-defined( 'ABSPATH' ) || exit;
-
-
 /**
- * Cache_Enabler_Disk
+ * Cache Enabler disk handling
  *
  * @since  1.0.0
  */
 
-final class Cache_Enabler_Disk {
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
+final class Cache_Enabler_Disk {
 
     /**
      * cached filename settings
@@ -209,7 +206,7 @@ final class Cache_Enabler_Disk {
      * create signature
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.5.0
      *
      * @return  string  signature
      */
@@ -217,7 +214,7 @@ final class Cache_Enabler_Disk {
     private static function _cache_signature() {
 
         return sprintf(
-            "\n\n<!-- %s @ %s",
+            '<!-- %s @ %s',
             'Cache Enabler by KeyCDN',
             date_i18n(
                 'd.m.Y H:i:s',
