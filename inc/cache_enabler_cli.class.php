@@ -1,18 +1,15 @@
 <?php
-
-
-// exit
-defined( 'ABSPATH' ) || exit;
-
-
 /**
  * Interact with Cache Enabler.
  *
  * @since  1.3.5
  */
 
-class Cache_Enabler_CLI {
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
+class Cache_Enabler_CLI {
 
     /**
      * Clear the page cache.
