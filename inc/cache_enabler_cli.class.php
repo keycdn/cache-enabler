@@ -59,7 +59,7 @@ class Cache_Enabler_CLI {
 
         // clear complete cache if no associative arguments are given
         if ( empty( $assoc_args['ids'] ) && empty( $assoc_args['urls'] ) && empty( $assoc_args['sites'] ) ) {
-            Cache_Enabler::clear_total_cache();
+            Cache_Enabler::clear_complete_cache();
 
             return WP_CLI::success( ( is_multisite() && is_plugin_active_for_network( CE_BASE ) ) ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Cache cleared.', 'cache-enabler' ) );
         }
@@ -81,7 +81,7 @@ class Cache_Enabler_CLI {
 
         // clear pages cache by blog ID(s)
         if ( ! empty( $assoc_args['sites'] ) ) {
-            array_map( 'Cache_Enabler::clear_blog_id_cache', explode( ',', $assoc_args['sites'] ) );
+            array_map( 'Cache_Enabler::clear_site_cache_by_blog_id', explode( ',', $assoc_args['sites'] ) );
 
             // check if there is more than one site
             $separators = substr_count( $assoc_args['sites'], ',' );
@@ -95,5 +95,5 @@ class Cache_Enabler_CLI {
     }
 }
 
-// add WP-CLI command for Cache Enabler
+// add WP-CLI command
 WP_CLI::add_command( 'cache-enabler', 'Cache_Enabler_CLI' );
