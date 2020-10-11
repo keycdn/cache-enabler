@@ -12,81 +12,148 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Cache_Enabler_Disk {
 
     /**
-     * cached filename settings
+     * cache directory
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     *
+     */
+
+    public static $cache_dir = WP_CONTENT_DIR . '/cache/cache-enabler';
+
+
+    /**
+     * settings directory
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     *
+     */
+
+    private static $settings_dir = WP_CONTENT_DIR . '/settings/cache-enabler';
+
+
+    /**
+     * base cache file names
      *
      * @since   1.0.7
-     * @change  1.4.0
+     * @change  1.5.0
      *
      * @var     string
      */
 
-    const FILE_GLOB      = '*index*';
-    const FILE_HTML      = 'index.html';
-    const FILE_GZIP      = 'index.html.gz';
-    const FILE_WEBP_HTML = 'index-webp.html';
-    const FILE_WEBP_GZIP = 'index-webp.html.gz';
+    const CACHE_FILE_GLOB      = '*index*';
+    const CACHE_FILE_HTML      = 'index.html';
+    const CACHE_FILE_GZIP      = 'index.html.gz';
+    const CACHE_FILE_WEBP_HTML = 'index-webp.html';
+    const CACHE_FILE_WEBP_GZIP = 'index-webp.html.gz';
 
 
     /**
-     * store asset
+     * configure system files
      *
-     * @since   1.0.0
-     * @change  1.0.0
-     *
-     * @param   string  $data  content of the asset
+     * @since   1.5.0
+     * @change  1.5.0
      */
 
-    public static function store_asset( $data ) {
+    public static function setup() {
 
-        // check if empty
-        if ( empty( $data ) ) {
-            wp_die( 'Asset is empty.' );
+        // add advanced-cache.php drop-in
+        copy( CE_DIR . '/advanced-cache.php', WP_CONTENT_DIR . '/advanced-cache.php' );
+
+        // set WP_CACHE constant in config file if not already set
+        self::set_wp_cache_constant();
+    }
+
+
+    /**
+     * clean system files
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     *
+     * @param   string  $clean_type  `light` or `deep` clean system files
+     */
+
+    public static function clean( $clean_type = 'light' ) {
+
+        // light clean system files
+        if ( $clean_type === 'light') {
+            // delete settings file
+            self::delete_settings_file();
+        // deep clean system files
+        } elseif ( $clean_type === 'deep' ) {
+            // delete old advanced cache settings file(s) (1.4.0)
+            array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) );
+            // delete incorrect advanced cache settings file(s) that may have been created in 1.4.0 (1.4.5)
+            array_map( 'unlink', glob( ABSPATH . 'CE_SETTINGS_PATH-*.json' ) );
+            // delete settings files
+            self::delete_settings_files();
+            // delete advanced-cache.php drop-in
+            @unlink( WP_CONTENT_DIR . '/advanced-cache.php' );
+            // unset WP_CACHE constant in config file if set by Cache Enabler
+            self::set_wp_cache_constant( false );
+        }
+    }
+
+
+    /**
+     * store cached page(s)
+     *
+     * @since   1.0.0
+     * @change  1.5.0
+     *
+     * @param   string  $page_contents  content of a page from the output buffer
+     */
+
+    public static function cache_page( $page_contents ) {
+
+        // check if page is empty
+        if ( empty( $page_contents ) ) {
+            return;
         }
 
-        // save asset
-        self::_create_files( $data );
+        // create cached page(s)
+        self::create_cache_files( $page_contents );
     }
 
 
     /**
-     * check asset
+     * check if cached page exists
      *
      * @since   1.0.0
      * @change  1.0.0
      *
-     * @return  boolean  true if asset exists
+     * @return  boolean  true if cached page exists, false otherwise
      */
 
-    public static function check_asset() {
+    public static function cache_exists() {
 
-        return is_readable( self::_file_html() );
+        return is_readable( self::cache_file_html() );
     }
 
 
     /**
-     * check expiry
+     * check if cached page expired
      *
      * @since   1.0.1
-     * @change  1.0.1
+     * @change  1.5.0
      *
-     * @return  boolean  true if asset expired
+     * @return  boolean  true if cached page expired, false otherwise
      */
 
-    public static function check_expiry() {
+    public static function cache_expired() {
 
-        // get Cache Enabler settings
-        $settings = Cache_Enabler::$settings;
-
-        // check if an expiry time is set
-        if ( $settings['cache_expiry_time'] === 0) {
+        // check if cached pages are set to expire
+        if ( ! Cache_Enabler_Engine::$settings['cache_expires'] || Cache_Enabler_Engine::$settings['cache_expiry_time'] === 0 ) {
             return false;
         }
 
         $now = time();
-        $expires_seconds = 3600 * $settings['cache_expiry_time'];
+        $expires_seconds = 60 * 60 * Cache_Enabler_Engine::$settings['cache_expiry_time'];
 
-        // check if asset has expired
-        if ( ( filemtime( self::_file_html() ) + $expires_seconds ) <= $now ) {
+        // check if cached page has expired
+        if ( ( filemtime( self::cache_file_html() ) + $expires_seconds ) <= $now ) {
             return true;
         }
 
@@ -95,22 +162,94 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * delete asset
+     * create signature
      *
      * @since   1.0.0
      * @change  1.5.0
      *
-     * @param   string  $clear_url   full URL of a cached page
+     * @return  string  signature
+     */
+
+    private static function cache_signature() {
+
+        return sprintf(
+            '<!-- %s @ %s',
+            'Cache Enabler by KeyCDN',
+            date_i18n( 'd.m.Y H:i:s', current_time( 'timestamp' ) )
+        );
+    }
+
+
+    /**
+     * get cache size
+     *
+     * @since   1.0.0
+     * @change  1.5.0
+     *
+     * @param   string   $dir   file system directory
+     * @return  integer  $size  size in bytes
+     */
+
+    public static function cache_size( $dir = null ) {
+
+        // set directory if provided, get directory otherwise
+        $dir = ( $dir ) ? $dir : self::cache_file_dir_path( home_url() );
+
+        // validate directory
+        if ( ! is_dir( $dir ) ) {
+            return;
+        }
+
+        // get directory data
+        $dir_objects = self::get_dir_objects( $dir );
+
+        // check if empty
+        if ( empty( $dir_objects ) ) {
+            return;
+        }
+
+        $size = 0;
+
+        foreach ( $dir_objects as $dir_object ) {
+            // get full path
+            $dir_object = $dir . '/' . $dir_object;
+
+            // check if directory
+            if ( is_dir( $dir_object ) ) {
+                $size += self::cache_size( $dir_object );
+            // check if file otherwise
+            } elseif ( is_file( $dir_object ) ) {
+                $size += filesize( $dir_object );
+            }
+        }
+
+        return $size;
+    }
+
+
+    /**
+     * clear cached page(s)
+     *
+     * @since   1.0.0
+     * @change  1.5.0
+     *
+     * @param   string  $clear_url   full URL to potentially cached page
      * @param   string  $clear_type  clear the `pagination` or the entire `dir` instead of only the cached `page`
      */
 
-    public static function delete_asset( $clear_url, $clear_type ) {
+    public static function clear_cache( $clear_url = null, $clear_type = null ) {
+
+        // check if complete cache should be cleared
+        if ( empty( $clear_url ) || empty( $clear_type ) ) {
+            self::clear_dir( self::$cache_dir );
+            return;
+        }
 
         // get directory
-        $dir = self::_file_path( $clear_url );
+        $dir = self::cache_file_dir_path( $clear_url );
 
         // delete all cached variants in directory
-        array_map( 'unlink', glob( $dir . self::FILE_GLOB ) );
+        array_map( 'unlink', glob( $dir . self::CACHE_FILE_GLOB ) );
 
         // check if pagination needs to be cleared
         if ( $clear_type === 'pagination' ) {
@@ -119,45 +258,340 @@ final class Cache_Enabler_Disk {
             if ( strlen( $pagination_base ) > 0 ) {
                 $pagination_dir = $dir . $pagination_base;
                 // clear pagination page(s) cache
-                self::_clear_dir( $pagination_dir );
+                self::clear_dir( $pagination_dir );
             }
         }
 
         // get directory data
-        $objects = self::_get_dir( $dir );
+        $dir_objects = self::get_dir_objects( $dir );
 
         // check if directory is now empty or if it needs to be cleared anyways
-        if ( empty( $objects ) || $clear_type === 'dir' ) {
-            self::_clear_dir( $dir );
+        if ( empty( $dir_objects ) || $clear_type === 'dir' ) {
+            self::clear_dir( $dir );
         }
     }
 
 
     /**
-     * clear cache
+     * clear directory
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.5.0
+     *
+     * @param   string  $dir  directory
      */
 
-    public static function clear_cache() {
+    private static function clear_dir( $dir ) {
 
-        // clear complete cache
-        self::_clear_dir( CE_CACHE_DIR );
+        // remove trailing slash
+        $dir = untrailingslashit( $dir );
+
+        // validate directory
+        if ( ! is_dir( $dir ) ) {
+            return;
+        }
+
+        // get directory data
+        $dir_objects = self::get_dir_objects( $dir );
+
+        // check if directory is empty
+        if ( empty( $dir_objects ) ) {
+            // delete empty directory
+            @rmdir( $dir );
+
+            // clears file status cache
+            clearstatcache();
+
+            // get parent directory
+            $parent_dir = preg_replace( '/\/[^\/]+$/', '', $dir );
+
+            // get parent directory data
+            $parent_dir_objects = self::get_dir_objects( $parent_dir );
+
+            // check if parent directory is also empty
+            if ( empty( $parent_dir_objects ) ) {
+                self::clear_dir( $parent_dir );
+            }
+
+            return;
+        }
+
+        foreach ( $dir_objects as $dir_object ) {
+            // get full path
+            $dir_object = $dir . '/' . $dir_object;
+
+            // check if directory
+            if ( is_dir( $dir_object ) ) {
+                self::clear_dir( $dir_object );
+            // check if file otherwise
+            } elseif ( is_file( $dir_object ) ) {
+                unlink( $dir_object );
+            }
+        }
+
+        // delete directory
+        @rmdir( $dir );
+
+        // clears file status cache
+        clearstatcache();
     }
 
 
     /**
-     * get asset
+     * create files for cache
      *
      * @since   1.0.0
-     * @change  1.0.9
+     * @change  1.5.0
+     *
+     * @param   string  $page_contents  content of a page from the output buffer
      */
 
-    public static function get_asset() {
+    private static function create_cache_files( $page_contents ) {
+
+        // get base signature
+        $cache_signature = self::cache_signature();
+
+        // make directory if necessary
+        if ( ! wp_mkdir_p( self::cache_file_dir_path() ) ) {
+            wp_die( 'Unable to create directory.' );
+        }
+
+        // minify HTML
+        $page_contents = self::minify_html( $page_contents );
+
+        // create default file
+        self::create_cache_file( self::cache_file_html(), $page_contents . $cache_signature . ' (' . self::cache_file_scheme() . ' html) -->' );
+
+        // create pre-compressed file
+        if ( Cache_Enabler_Engine::$settings['compress_cache'] ) {
+            $compressed_page_contents = gzencode( $page_contents . $cache_signature . ' (' . self::cache_file_scheme() . ' gzip) -->', 9 );
+            // validate compression
+            if ( is_string( $compressed_page_contents ) ) {
+                self::create_cache_file( self::cache_file_gzip(), $compressed_page_contents );
+            }
+        }
+
+        // create WebP supported files
+        if ( Cache_Enabler_Engine::$settings['convert_image_urls_to_webp'] ) {
+            // magic regex rule
+            $image_urls_regex = '#(?:(?:(src|srcset|data-[^=]+)\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
+
+            // call the WebP converter callback
+            $converted_page_contents = apply_filters( 'cache_enabler_disk_webp_converted_data', preg_replace_callback( $image_urls_regex, 'self::convert_webp', $page_contents ) );
+
+            // create default WebP file
+            self::create_cache_file( self::cache_file_webp_html(), $converted_page_contents . $cache_signature . ' (' . self::cache_file_scheme() . ' webp html) -->' );
+
+            // create pre-compressed file
+            if ( Cache_Enabler_Engine::$settings['compress_cache'] ) {
+                $compressed_converted_page_contents = gzencode( $converted_page_contents . $cache_signature . ' (' . self::cache_file_scheme() . ' webp gzip) -->', 9 );
+                // validate compression
+                if ( is_string( $compressed_converted_page_contents ) ) {
+                    self::create_cache_file( self::cache_file_webp_gzip(), $compressed_converted_page_contents );
+                }
+            }
+        }
+    }
+
+
+    /**
+     * create file for cache
+     *
+     * @since   1.0.0
+     * @change  1.5.0
+     *
+     * @param   string  $file_path      file path
+     * @param   string  $page_contents  content of a page from the output buffer
+     */
+
+    private static function create_cache_file( $file_path, $page_contents ) {
+
+        // write page contents from output buffer to file
+        file_put_contents( $file_path, $page_contents );
+
+        // clears file status cache
+        clearstatcache();
+
+        // set permissions
+        $file_stats  = @stat( dirname( $file_path ) );
+        $permissions = $file_stats['mode'] & 0007777;
+        $permissions = $permissions & 0000666;
+        @chmod( $file_path, $permissions );
+
+        // clears file status cache
+        clearstatcache();
+    }
+
+
+    /**
+     * create settings file
+     *
+     * @since   1.2.3
+     * @change  1.5.0
+     *
+     * @param   array  $settings  settings from database
+     */
+
+    public static function create_settings_file( $settings ) {
+
+        // validate array
+        if ( ! is_array( $settings ) ) {
+            return;
+        }
+
+        // check settings file requirements
+        if ( ! function_exists( 'home_url' ) ) {
+            return;
+        }
+
+        // get settings file
+        $settings_file = self::get_settings_file();
+
+        // make directory if necessary
+        if ( ! wp_mkdir_p( dirname( $settings_file ) ) ) {
+            wp_die( 'Unable to create directory.' );
+        }
+
+        // create new settings file
+        $new_settings_file_contents  = '<?php' . PHP_EOL;
+        $new_settings_file_contents .= '/**' . PHP_EOL;
+        $new_settings_file_contents .= ' * Cache Enabler settings for ' . home_url() . PHP_EOL;
+        $new_settings_file_contents .= ' *' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since      1.5.0' . PHP_EOL;
+        $new_settings_file_contents .= ' * @change     1.5.0' . PHP_EOL;
+        $new_settings_file_contents .= ' *' . PHP_EOL;
+        $new_settings_file_contents .= ' * @generated  ' . date_i18n( 'd.m.Y H:i:s', current_time( 'timestamp' ) ) . PHP_EOL;
+        $new_settings_file_contents .= ' */' . PHP_EOL;
+        $new_settings_file_contents .= PHP_EOL;
+        $new_settings_file_contents .= 'return ' . var_export( $settings, true ) . ';';
+
+        file_put_contents( $settings_file, $new_settings_file_contents );
+    }
+
+
+    /**
+     * get cache file directory path
+     *
+     * @since   1.0.0
+     * @change  1.4.8
+     *
+     * @param   string  $url            full URL to potentially cached page
+     * @return  string  $file_dir_path  file directory path to new or potentially cached page
+     */
+
+    private static function cache_file_dir_path( $url = null ) {
+
+        $file_dir_path = sprintf(
+            '%s/%s%s',
+            self::$cache_dir,
+            parse_url(
+                ( $url ) ? $url : 'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
+                PHP_URL_HOST
+            ),
+            parse_url(
+                ( $url ) ? $url : $_SERVER['REQUEST_URI'],
+                PHP_URL_PATH
+            )
+        );
+
+        if ( is_file( $file_dir_path ) ) {
+            header( $_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found', true, 404 );
+            exit;
+        }
+
+        // add trailing slash
+        $file_dir_path = rtrim( $file_dir_path, '/\\' ) . '/';
+
+        return $file_dir_path;
+    }
+
+
+    /**
+     * get cache file scheme
+     *
+     * @since   1.4.0
+     * @change  1.5.0
+     *
+     * @return  string  https or http
+     */
+
+    private static function cache_file_scheme() {
+
+        return ( ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' ) || $_SERVER['SERVER_PORT'] == '443' ) ? 'https' : 'http';
+    }
+
+
+    /**
+     * get complete cache file path (HTML)
+     *
+     * @since   1.0.0
+     * @change  1.4.0
+     *
+     * @return  string  file path to new or potentially cached page
+     */
+
+    private static function cache_file_html() {
+
+        return self::cache_file_dir_path() . self::cache_file_scheme() . '-' . self::CACHE_FILE_HTML;
+    }
+
+
+    /**
+     * get complete cache file path (Gzip)
+     *
+     * @since   1.0.1
+     * @change  1.4.0
+     *
+     * @return  string  file path to new or potentially cached page
+     */
+
+    private static function cache_file_gzip() {
+
+        return self::cache_file_dir_path() . self::cache_file_scheme() . '-' . self::CACHE_FILE_GZIP;
+    }
+
+
+    /**
+     * get complete cache file path (WebP HTML)
+     *
+     * @since   1.0.7
+     * @change  1.4.0
+     *
+     * @return  string  file path to new or potentially cached page
+     */
+
+    private static function cache_file_webp_html() {
+
+        return self::cache_file_dir_path() . self::cache_file_scheme() . '-' . self::CACHE_FILE_WEBP_HTML;
+    }
+
+
+    /**
+     * get complete cache file path (WebP Gzip)
+     *
+     * @since   1.0.1
+     * @change  1.4.0
+     *
+     * @return  string  file path to new or potentially cached page
+     */
+
+    private static function cache_file_webp_gzip() {
+
+        return self::cache_file_dir_path() . self::cache_file_scheme() . '-' . self::CACHE_FILE_WEBP_GZIP;
+    }
+
+
+    /**
+     * get cached page
+     *
+     * @since   1.0.0
+     * @change  1.5.0
+     */
+
+    public static function get_cache() {
 
         // set X-Cache-Handler response header
-        header( 'X-Cache-Handler: PHP' );
+        header( 'X-Cache-Handler: cache-enabler-engine' );
 
         // get request headers
         if ( function_exists( 'apache_request_headers' ) ) {
@@ -172,348 +606,29 @@ final class Cache_Enabler_Disk {
         }
 
         // check modified since with cached file and return 304 if no difference
-        if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) >= filemtime( self::_file_html() ) ) ) {
+        if ( $http_if_modified_since && ( strtotime( $http_if_modified_since ) >= filemtime( self::cache_file_html() ) ) ) {
             header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
             exit;
         }
 
         // check webp and deliver gzip webp file if support
         if ( $http_accept && ( strpos( $http_accept, 'webp' ) !== false ) ) {
-            if ( is_readable( self::_file_webp_gzip() ) ) {
+            if ( is_readable( self::cache_file_webp_gzip() ) ) {
                 header( 'Content-Encoding: gzip' );
-                readfile( self::_file_webp_gzip() );
-                exit;
-            } elseif ( is_readable( self::_file_webp_html() ) ) {
-                readfile( self::_file_webp_html() );
-                exit;
+                return self::cache_file_webp_gzip();
+            } elseif ( is_readable( self::cache_file_webp_html() ) ) {
+                return self::cache_file_webp_html();
             }
         }
 
         // check encoding and deliver gzip file if support
-        if ( $http_accept_encoding && ( strpos( $http_accept_encoding, 'gzip' ) !== false ) && is_readable( self::_file_gzip() )  ) {
+        if ( $http_accept_encoding && ( strpos( $http_accept_encoding, 'gzip' ) !== false ) && is_readable( self::cache_file_gzip() )  ) {
             header( 'Content-Encoding: gzip' );
-            readfile( self::_file_gzip() );
-            exit;
+            return self::cache_file_gzip();
         }
 
-        // deliver cached file (default)
-        readfile( self::_file_html() );
-        exit;
-    }
-
-
-    /**
-     * create signature
-     *
-     * @since   1.0.0
-     * @change  1.5.0
-     *
-     * @return  string  signature
-     */
-
-    private static function _cache_signature() {
-
-        return sprintf(
-            '<!-- %s @ %s',
-            'Cache Enabler by KeyCDN',
-            date_i18n(
-                'd.m.Y H:i:s',
-                current_time( 'timestamp' )
-            )
-        );
-    }
-
-
-    /**
-     * create files
-     *
-     * @since   1.0.0
-     * @change  1.5.0
-     *
-     * @param   string  $data  HTML content
-     */
-
-    private static function _create_files( $data ) {
-
-        // get Cache Enabler settings
-        $settings = Cache_Enabler::$settings;
-
-        // get base signature
-        $cache_signature = self::_cache_signature();
-
-        // create folder
-        if ( ! wp_mkdir_p( self::_file_path() ) ) {
-            wp_die( 'Unable to create directory.' );
-        }
-
-        // create files
-        self::_create_file( self::_file_html(), $data . $cache_signature . ' (' . self::_file_scheme() . ' html) -->' );
-
-        // create pre-compressed file
-        if ( $settings['compress_cache_with_gzip'] ) {
-            self::_create_file( self::_file_gzip(), gzencode( $data . $cache_signature . ' (' . self::_file_scheme() . ' gzip) -->', 9) );
-        }
-
-        // create WebP supported files
-        if ( $settings['convert_image_urls_to_webp'] ) {
-            // magic regex rule
-            $image_urls_regex = '#(?:(?:(src|srcset|data-[^=]+)\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
-
-            // call the WebP converter callback
-            $converted_data = apply_filters( 'cache_enabler_disk_webp_converted_data', preg_replace_callback( $image_urls_regex, 'self::_convert_webp', $data ) );
-
-            self::_create_file( self::_file_webp_html(), $converted_data . $cache_signature . ' (' . self::_file_scheme() . ' webp html) -->' );
-
-            // create pre-compressed file
-            if ( $settings['compress_cache_with_gzip'] ) {
-                self::_create_file( self::_file_webp_gzip(), gzencode( $converted_data . $cache_signature . ' (' . self::_file_scheme() . ' webp gzip) -->', 9 ) );
-            }
-        }
-    }
-
-
-    /**
-     * create file
-     *
-     * @since   1.0.0
-     * @change  1.0.0
-     *
-     * @param   string  $file  file path
-     * @param   string  $data  content of the HTML
-     */
-
-    private static function _create_file( $file, $data ) {
-
-        // open file handler
-        if ( ! $handle = @fopen( $file, 'wb' ) ) {
-            wp_die( 'Cannot write to file.' );
-        }
-
-        // write
-        @fwrite( $handle, $data );
-        fclose( $handle );
-        clearstatcache();
-
-        // set permissions
-        $stat  = @stat( dirname( $file ) );
-        $perms = $stat['mode'] & 0007777;
-        $perms = $perms & 0000666;
-        @chmod( $file, $perms );
-        clearstatcache();
-    }
-
-
-    /**
-     * clear directory
-     *
-     * @since   1.0.0
-     * @change  1.4.7
-     *
-     * @param   string  $dir  directory
-     */
-
-    private static function _clear_dir( $dir ) {
-
-        // remove slashes
-        $dir = untrailingslashit( $dir );
-
-        // check if directory
-        if ( ! is_dir( $dir ) ) {
-            return;
-        }
-
-        // get directory data
-        $objects = self::_get_dir( $dir );
-
-        // check if directory is empty
-        if ( empty( $objects ) ) {
-            // delete empty directory
-            @rmdir( $dir );
-
-            // get parent directory
-            $parent_dir = preg_replace( '/\/[^\/]+$/', '', $dir );
-
-            // get parent directory data
-            $parent_objects = self::_get_dir( $parent_dir );
-
-            // check if parent directory is also empty
-            if ( empty( $parent_objects ) ) {
-                self::_clear_dir( $parent_dir );
-            }
-
-            return;
-        }
-
-        foreach ( $objects as $object ) {
-            // full path
-            $object = $dir . DIRECTORY_SEPARATOR . $object;
-
-            // check if directory
-            if ( is_dir( $object ) ) {
-                self::_clear_dir( $object );
-            } else {
-                @unlink( $object );
-            }
-        }
-
-        // delete directory
-        @rmdir( $dir );
-
-        // clears file status cache
-        clearstatcache();
-    }
-
-
-    /**
-     * get cache size
-     *
-     * @since   1.0.0
-     * @change  1.0.0
-     *
-     * @param   string  $dir   folder path
-     * @return  mixed   $size  size in bytes
-     */
-
-    public static function cache_size( $dir = '.' ) {
-
-        // check if directory
-        if ( ! is_dir( $dir ) ) {
-            return;
-        }
-
-        // get directory data
-        $objects = self::_get_dir( $dir );
-
-        // check if empty
-        if ( empty( $objects ) ) {
-            return;
-        }
-
-        $size = 0;
-
-        foreach ( $objects as $object ) {
-            // full path
-            $object = $dir . DIRECTORY_SEPARATOR . $object;
-
-            // check if directory
-            if ( is_dir( $object ) ) {
-                $size += self::cache_size( $object );
-            } else {
-                $size += filesize( $object );
-            }
-        }
-
-        return $size;
-    }
-
-
-    /**
-     * get cached file path
-     *
-     * @since   1.0.0
-     * @change  1.4.8
-     *
-     * @param   string  $url  full URL of a cached page
-     * @return  string        path to cached file
-     */
-
-    private static function _file_path( $url = null ) {
-
-        $file_path = sprintf(
-            '%s%s%s%s',
-            CE_CACHE_DIR,
-            DIRECTORY_SEPARATOR,
-            parse_url(
-                ( $url ) ? $url : 'http://' . strtolower( $_SERVER['HTTP_HOST'] ),
-                PHP_URL_HOST
-            ),
-            parse_url(
-                ( $url ) ? $url : $_SERVER['REQUEST_URI'],
-                PHP_URL_PATH
-            )
-        );
-
-        if ( is_file( $file_path ) ) {
-            header( $_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found', true, 404 );
-            exit;
-        }
-
-        return trailingslashit( $file_path );
-    }
-
-
-    /**
-     * get file scheme
-     *
-     * @since   1.4.0
-     * @change  1.5.0
-     *
-     * @return  string  https or http
-     */
-
-    private static function _file_scheme() {
-
-        return ( ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off' ) || $_SERVER['SERVER_PORT'] == '443' ) ? 'https' : 'http';
-    }
-
-
-    /**
-     * get file path
-     *
-     * @since   1.0.0
-     * @change  1.4.0
-     *
-     * @return  string  path to the HTML file
-     */
-
-    private static function _file_html() {
-
-        return self::_file_path() . self::_file_scheme() . '-' . self::FILE_HTML;
-    }
-
-
-    /**
-     * get gzip file path
-     *
-     * @since   1.0.1
-     * @change  1.4.0
-     *
-     * @return  string  path to the gzipped HTML file
-     */
-
-    private static function _file_gzip() {
-
-        return self::_file_path() . self::_file_scheme() . '-' . self::FILE_GZIP;
-    }
-
-
-    /**
-     * get webp file path
-     *
-     * @since   1.0.7
-     * @change  1.4.0
-     *
-     * @return  string  path to the webp HTML file
-     */
-
-    private static function _file_webp_html() {
-
-        return self::_file_path() . self::_file_scheme() . '-' . self::FILE_WEBP_HTML;
-    }
-
-
-    /**
-     * get gzip webp file path
-     *
-     * @since   1.0.1
-     * @change  1.4.0
-     *
-     * @return  string  path to the webp gzipped HTML file
-     */
-
-    private static function _file_webp_gzip() {
-
-        return self::_file_path() . self::_file_scheme() . '-' . self::FILE_WEBP_GZIP;
+        // get default cached file
+        return self::cache_file_html();
     }
 
 
@@ -521,32 +636,39 @@ final class Cache_Enabler_Disk {
      * get settings file
      *
      * @since   1.4.0
-     * @change  1.4.8
+     * @change  1.5.0
      *
-     * @return  string  settings file path
+     * @param   boolean  $fallback       whether or not to provide fallback settings file path
+     * @return  string   $settings_file  settings file path
      */
 
-    private static function _get_settings() {
+    private static function get_settings_file( $fallback = false ) {
 
         // network with subdirectory configuration
-        if ( is_multisite() && ! is_subdomain_install() ) {
-            // get blog path
-            $blog_path = trim( get_blog_details()->path, '/' );
-            // check if subsite
-            if ( ! empty( $blog_path ) ) {
-                $blog_path = '-' . $blog_path;
+        if ( ! $fallback && is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
+            if ( function_exists( 'home_url' ) ) {
+                $url_path = parse_url( home_url( '/' ), PHP_URL_PATH ); // trailing slash required
+            } else {
+                $url_path = $_SERVER['REQUEST_URI'];
             }
-        // single site, network subdirectory main site, or any network subdomain site
+
+            $url_path_pieces = explode( '/', $url_path, 3 );
+            $blog_path = $url_path_pieces[1];
+
+            // check if blog path is empty
+            if ( ! empty( $blog_path ) ) {
+                $blog_path = '.' . $blog_path;
+            }
+        // single site, network subdirectory main site, any network subdomain site, or fallback
         } else {
             $blog_path = '';
         }
 
         // get settings file
         $settings_file = sprintf(
-            '%s-%s%s.json',
-            WP_CONTENT_DIR . '/plugins/cache-enabler/settings/cache-enabler-advcache',
-            Cache_Enabler::get_blog_domain(),
-            $blog_path
+            '%s/%s.php',
+            self::$settings_dir,
+            parse_url( ( function_exists( 'home_url' ) ) ? home_url() : 'http://' . strtolower( $_SERVER['HTTP_HOST'] ), PHP_URL_HOST ) . $blog_path
         );
 
         return $settings_file;
@@ -554,47 +676,32 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * get directory data
+     * get settings from settings file
      *
-     * @since   1.4.7
-     * @change  1.4.7
+     * @since   1.5.0
+     * @change  1.5.0
      *
-     * @param   string  $dir      directory path
-     * @return  array   $objects  directory objects
+     * @return  array  $settings  current settings from settings file
      */
 
-    private static function _get_dir( $dir ) {
+    public static function get_settings() {
 
-        // scan directory
-        $data_dir = @scandir( $dir );
+        // get settings file
+        $settings_file = self::get_settings_file();
 
-        if ( is_array( $data_dir ) ) {
-            $objects = array_diff( $data_dir, array( '..', '.' ) );
-            return $objects;
-        }
-    }
-
-
-    /**
-     * read settings file
-     *
-     * @since   1.2.3
-     * @change  1.2.3
-     *
-     * @param   string  $settings_file  settings file path
-     * @return  array                   settings or empty
-     */
-
-    private static function _read_settings( $settings_file ) {
-
-        // check if settings file exists
-        if ( ! file_exists( $settings_file ) ) {
-            return array();
-        }
-
-        // check if any errors occur when reading the settings file
-        if ( ! $settings = json_decode( file_get_contents( $settings_file ), true ) ) {
-            return array();
+        // include existing settings file
+        if ( file_exists( $settings_file ) ) {
+            $settings = include_once $settings_file;
+        // if settings file does not exist try to get fallback settings file when network with subdirectory configuration
+        } elseif ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
+            $fallback = true;
+            $fallback_settings_file = self::get_settings_file( $fallback );
+            // include existing fallback settings file
+            if ( file_exists( $fallback_settings_file ) ) {
+                $settings = include_once $fallback_settings_file;
+            }
+        } else {
+            $settings = array();
         }
 
         return $settings;
@@ -602,87 +709,81 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * write settings file
+     * get directory file system objects
      *
-     * @since   1.2.3
-     * @change  1.2.3
+     * @since   1.4.7
+     * @change  1.5.0
      *
-     * @param   string  $settings_file  settings file path
-     * @param   array   $settings       settings
+     * @param   string  $dir          directory path
+     * @return  array   $dir_objects  directory objects
      */
 
-    private static function _write_settings( $settings_file, $settings ) {
+    private static function get_dir_objects( $dir ) {
 
-        file_put_contents( $settings_file, wp_json_encode( $settings ) );
+        // scan directory
+        $dir_data = @scandir( $dir );
+
+        if ( is_array( $dir_data ) ) {
+            $dir_objects = array_diff( $dir_data, array( '..', '.' ) );
+            return $dir_objects;
+        }
     }
 
 
     /**
-     * record settings for advanced-cache.php
+     * set or unset WP_CACHE constant in wp-config.php
      *
-     * @since   1.2.3
-     * @change  1.4.0
+     * @since   1.1.1
+     * @change  1.5.0
      *
-     * @param   array    settings as array pairs
-     * @return  boolean  true if successful
+     * @param   boolean  $set  true to set WP_CACHE constant, false to unset
      */
 
-    public static function record_advcache_settings( $settings ) {
+    private static function set_wp_cache_constant( $set = true ) {
 
-        // get settings file
-        $settings_file = self::_get_settings();
-
-        // create folder if neccessary
-        if ( ! wp_mkdir_p( dirname( $settings_file ) ) ) {
-            wp_die( 'Unable to create directory.' );
+        // get config file
+        if ( file_exists( ABSPATH . 'wp-config.php' ) ) {
+            // config file resides in ABSPATH
+            $wp_config_file = ABSPATH . 'wp-config.php';
+        } elseif ( @file_exists( dirname( ABSPATH ) . '/wp-config.php' ) && ! @file_exists( dirname( ABSPATH ) . '/wp-settings.php' ) ) {
+            // config file resides one level above ABSPATH but is not part of another installation
+            $wp_config_file = dirname( ABSPATH ) . '/wp-config.php';
         }
 
-        // merge with old settings
-        $settings = array_merge( self::_read_settings( $settings_file ), $settings );
-
-        // update settings file
-        self::_write_settings( $settings_file, $settings );
-
-        return true;
-    }
-
-
-    /**
-     * delete settings for advanced-cache.php
-     *
-     * @since   1.2.3
-     * @change  1.4.0
-     *
-     * @param   array    settings keys as array or empty for delete all
-     * @return  boolean  true if successful
-     */
-
-    public static function delete_advcache_settings( $settings_keys = array() ) {
-
-        // get settings file
-        $settings_file = self::_get_settings();
-
-        // check if settings file exists
-        if ( ! file_exists( $settings_file ) ) {
-            return true;
+        // check if config file can be written to
+        if ( ! is_writable( $wp_config_file ) ) {
+            return;
         }
 
-        $settings = self::_read_settings( $settings_file );
-        foreach ( $settings_keys as $key ) {
-            if ( array_key_exists( $key, $settings ) ) {
-                unset( $settings[ $key ] );
-            }
+        // get config file contents
+        $wp_config_file_contents = file_get_contents( $wp_config_file );
+
+        // validate config file
+        if ( ! is_string( $wp_config_file_contents ) ) {
+            return;
         }
 
-        if ( empty( $settings ) || empty( $settings_keys ) ) {
-            unlink( $settings_file );
-            return true;
+        // search for WP_CACHE constant
+        $found_wp_cache_constant = preg_match( '/define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,.+\);/', $wp_config_file_contents );
+
+        // if not found set WP_CACHE constant when config file is default (must be before WordPress sets up)
+        if ( $set && ! $found_wp_cache_constant ) {
+            $ce_wp_config_lines  = '/** Enables page caching for Cache Enabler. */' . PHP_EOL;
+            $ce_wp_config_lines .= "if ( ! defined( 'WP_CACHE' ) ) {" . PHP_EOL;
+            $ce_wp_config_lines .= "\tdefine( 'WP_CACHE', true );" . PHP_EOL;
+            $ce_wp_config_lines .= '}' . PHP_EOL;
+            $ce_wp_config_lines .= PHP_EOL;
+            $wp_config_file_contents = preg_replace( '/(\/\*\* Sets up WordPress vars and included files\. \*\/)/', $ce_wp_config_lines . '$1', $wp_config_file_contents );
         }
 
-        // update settings file
-        self::_write_settings( $settings_file, $settings );
+        // unset WP_CACHE constant if set by Cache Enabler
+        if ( ! $set ) {
+            $wp_config_file_contents = preg_replace( '/.+Added by Cache Enabler\r\n/', '', $wp_config_file_contents ); // < 1.5.0
+            $wp_config_file_contents = preg_replace( '/\/\*\* Enables page caching for Cache Enabler\. \*\/' . PHP_EOL . '.+' . PHP_EOL . '.+' . PHP_EOL . '\}' . PHP_EOL . PHP_EOL . '/', '', $wp_config_file_contents );
+        }
 
-        return true;
+        // update config file
+        file_put_contents( $wp_config_file, $wp_config_file_contents );
     }
 
 
@@ -696,7 +797,7 @@ final class Cache_Enabler_Disk {
      * @return  string  $image_path  path to image
      */
 
-    private static function _image_path( $image_url ) {
+    private static function image_path( $image_url ) {
 
         // in case image has intrinsic width or density descriptor
         $image_parts = explode( ' ', $image_url );
@@ -712,16 +813,16 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * convert image URL to WebP
+     * convert image URL(s) to WebP
      *
      * @since   1.0.1
      * @change  1.5.0
      *
-     * @param   array   $matches     pattern matches from parsed HTML file
+     * @param   array   $matches     pattern matches from parsed page contents
      * @return  string  $conversion  converted image URL(s) to WebP if applicable, default URL(s) otherwise
      */
 
-    private static function _convert_webp( $matches ) {
+    private static function convert_webp( $matches ) {
 
         $full_match = $matches[0];
         $image_extension_regex = '/(\.jpe?g|\.png)/i';
@@ -737,7 +838,7 @@ final class Cache_Enabler_Disk {
                 // append .webp extension
                 $image_url_webp = preg_replace( $image_extension_regex, '$1.webp', $image_url );
                 // get WebP image path
-                $image_path_webp = self::_image_path( $image_url_webp );
+                $image_path_webp = self::image_path( $image_url_webp );
 
                 // check if WebP image exists
                 if ( is_file( $image_path_webp ) ) {
@@ -746,7 +847,7 @@ final class Cache_Enabler_Disk {
                     // remove default extension
                     $image_url_webp = preg_replace( $image_extension_regex, '', $image_url_webp );
                     // get WebP image path
-                    $image_path_webp = self::_image_path( $image_url_webp );
+                    $image_path_webp = self::image_path( $image_url_webp );
 
                     // check if WebP image exists
                     if ( is_file( $image_path_webp ) ) {
@@ -759,5 +860,117 @@ final class Cache_Enabler_Disk {
 
             return $conversion;
         }
+    }
+
+
+    /**
+     * minify HTML
+     *
+     * @since   1.0.0
+     * @change  1.5.0
+     *
+     * @param   string  $page_contents                 content of a page from the output buffer
+     * @return  string  $minified_html|$page_contents  minified page contents if applicable, unchanged otherwise
+     *
+     * @hook    array   cache_minify_ignore_tags
+     */
+
+    private static function minify_html( $page_contents ) {
+
+        // check if disabled
+        if ( ! Cache_Enabler_Engine::$settings['minify_html'] ) {
+            return $page_contents;
+        }
+
+        // HTML character limit
+        if ( strlen( $page_contents ) > 700000) {
+            return $page_contents;
+        }
+
+        // HTML tags to ignore
+        $ignore_tags = (array) apply_filters( 'cache_minify_ignore_tags', array( 'textarea', 'pre', 'code' ) );
+
+        // if selected exclude inline CSS and JavaScript
+        if ( ! Cache_Enabler_Engine::$settings['minify_inline_css_js'] ) {
+            array_push( $ignore_tags, 'style', 'script' );
+        }
+
+        // check if there are ignore tags
+        if ( ! $ignore_tags ) {
+            return $page_contents;
+        }
+
+        // stringify
+        $ignore_regex = implode( '|', $ignore_tags );
+
+        // regex minification
+        $minified_html = preg_replace(
+            array(
+                '/<!--[^\[><](.*?)-->/s',
+                '#(?ix)(?>[^\S ]\s*|\s{2,})(?=(?:(?:[^<]++|<(?!/?(?:' . $ignore_regex . ')\b))*+)(?:<(?>' . $ignore_regex . ')\b|\z))#',
+            ),
+            array(
+                '',
+                ' ',
+            ),
+            $page_contents
+        );
+
+        // something went wrong
+        if ( strlen( $minified_html ) <= 1 ) {
+            return $page_contents;
+        }
+
+        return $minified_html;
+    }
+
+
+    /**
+     * delete settings file
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     */
+
+    private static function delete_settings_file() {
+
+        // get settings file
+        $settings_file = self::get_settings_file();
+
+        // delete settings file
+        @unlink( $settings_file );
+
+        // delete settings directory if empty
+        @rmdir( self::$settings_dir );
+    }
+
+
+    /**
+     * delete settings files
+     *
+     * @since   1.5.0
+     * @change  1.5.0
+     */
+
+    private static function delete_settings_files() {
+
+        // delete all settings files and settings directory
+        self::clear_dir( self::$settings_dir );
+    }
+
+
+    /**
+     * delete asset (deprecated)
+     *
+     * @deprecated  1.5.0
+     */
+
+    public static function delete_asset( $url ) {
+
+        if ( empty( $url ) ) {
+            wp_die( 'URL is empty.' );
+        }
+
+        self::clear_dir( self::cache_file_dir_path( $url ) );
     }
 }

@@ -78,13 +78,14 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * [KeyCDN](https://www.keycdn.com "KeyCDN")
 
 
-= Credits =
-* Inspired by [Cachify](https://wordpress.org/plugins/cachify/).
-
-
 == Changelog ==
 
 = 1.5.0 =
+* Update settings file type to PHP instead of JSON (#147)
+* Update settings file(s) storage location (#147)
+* Update plugin activation, deactivation, and uninstall handling (#147)
+* Update HTML minification to also include or exclude inline CSS (#147)
+* Update cache size handling for multisite networks (#147)
 * Update `WP_CACHE` constant handling (#140)
 * Update cache cleared admin notice (#139)
 * Update admin bar clear cache buttons (#139)
@@ -94,11 +95,14 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 * Update cache clearing setting for post actions to clear the page and/or associated cache by default (#142)
 * Update settings page layout (#129 and #142)
 * Update WebP URL conversion for images with density descriptors (#125)
+* Add cache engine to improve handling and performance (#147)
+* Add cache bypass method for Ajax, REST API, and XMLRPC requests (#147)
 * Add new cache clearing structure for post publish, update, and trash actions (#129)
 * Add post type, taxonomies, author, and date archives to the new associated cache (#129)
 * Add new cache exclusions setting for query strings (#129)
+* Fix cache size file status edge case (#147)
 * Fix `WP_CACHE` constant not being set edge case (#140)
-* Fix advanced cache settings from using unvalidated data (#129)
+* Fix settings file from using unvalidated data (#129)
 * Fix clear URL admin bar button for installations in a subdirectory (#127)
 * Fix WebP URL conversion for installations in a subdirectory (#125)
 * Remove cache clearing publishing action from post sidebar in favor of the new cache clearing structure for post actions (#129)
