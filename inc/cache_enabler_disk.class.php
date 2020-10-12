@@ -639,24 +639,25 @@ final class Cache_Enabler_Disk {
 
     private static function get_settings_file( $fallback = false ) {
 
-        // network with subdirectory configuration
-        if ( ! $fallback && is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
+        // single site not in subdirectory, any site of subdomain network, or main site of subdirectory network (fallback)
+        $blog_path = '';
+
+        // get URL path from home or request URL
+        if ( ! $fallback ) {
             if ( function_exists( 'home_url' ) ) {
                 $url_path = parse_url( home_url( '/' ), PHP_URL_PATH ); // trailing slash required
             } else {
                 $url_path = $_SERVER['REQUEST_URI'];
             }
 
+            // get subdirectory network blog path or subdirectory installation path
             $url_path_pieces = explode( '/', $url_path, 3 );
             $blog_path = $url_path_pieces[1];
 
-            // check if blog path is empty
+            // subdirectory network or installation
             if ( ! empty( $blog_path ) ) {
                 $blog_path = '.' . $blog_path;
             }
-        // single site, network subdirectory main site, any network subdomain site, or fallback
-        } else {
-            $blog_path = '';
         }
 
         // get settings file
