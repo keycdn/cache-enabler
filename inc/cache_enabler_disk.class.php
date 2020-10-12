@@ -71,20 +71,18 @@ final class Cache_Enabler_Disk {
      *
      * @since   1.5.0
      * @change  1.5.0
-     *
-     * @param   string  $network_wide  network activated or deactivated
-     * @param   string  $last_site     whether or not last site in multisite network without network activation
      */
 
-    public static function clean( $network_wide = null, $last_site = null ) {
+    public static function clean() {
 
         // delete settings file
         self::delete_settings_file();
 
-        $main_site   = ( is_multisite() && $network_wide && is_main_site() );
-        $single_site = ( ! is_multisite() );
+        // get settings directory data
+        $settings_dir_objects = self::get_dir_objects( self::$settings_dir );
 
-        if ( $main_site || $last_site || $single_site ) {
+        // check if the settings directory is empty
+        if ( empty( $settings_dir_objects ) ) {
             // delete old advanced cache settings file(s) (1.4.0)
             array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) );
             // delete incorrect advanced cache settings file(s) that may have been created in 1.4.0 (1.4.5)

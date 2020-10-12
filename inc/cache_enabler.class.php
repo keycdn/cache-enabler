@@ -155,7 +155,7 @@ final class Cache_Enabler {
         $plugin_update = true;
 
         // clean system files
-        self::each_site( $network_wide, 'Cache_Enabler_Disk::clean', array( $network_wide ) );
+        self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
 
         // configure system files
         Cache_Enabler_Disk::setup();
@@ -180,25 +180,13 @@ final class Cache_Enabler {
     public static function on_deactivation( $network_wide ) {
 
         // clean system files
-        self::each_site( $network_wide, 'Cache_Enabler_Disk::clean', array( $network_wide ) );
+        self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
 
-        // maybe clean remaining system files for multisite network without network activation
+        // clear complete cache of deactivated site
         if ( is_multisite() && ! $network_wide ) {
-            $network = true;
-            $active_sites = self::each_site( $network, 'is_plugin_active', array( CE_BASE ) );
-            $active_sites_count = array_count_values( $active_sites );
-
-            // check if this is the last site being deactivated
-            if ( $active_sites_count[1] === 1 ) {
-                $network_wide = false;
-                $last_site = true;
-                Cache_Enabler_Disk::clean( $network_wide, $last_site );
-            }
-
-            // clear complete cache of deactivated site
             self::clear_site_cache_by_blog_id( get_current_blog_id() );
+        // clear complete cache otherwise
         } else {
-            // clear complete cache
             self::clear_complete_cache();
         }
     }
