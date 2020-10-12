@@ -335,11 +335,13 @@ final class Cache_Enabler {
 
     public static function uninstall_later( $old_site ) {
 
+        $delete_cache_size_transient = false;
+
         // clean system files
         Cache_Enabler_Disk::clean();
 
         // clear site cache of deleted site
-        self::clear_site_cache_by_blog_id( (int) $old_site->blog_id );
+        self::clear_site_cache_by_blog_id( (int) $old_site->blog_id, $delete_cache_size_transient );
     }
 
 
@@ -1327,10 +1329,11 @@ final class Cache_Enabler {
      * @since   1.4.0
      * @change  1.5.0
      *
-     * @param   integer|string  $blog_id  blog ID
+     * @param   integer|string  $blog_id                      blog ID
+     * @param   boolean         $delete_cache_size_transient  whether or not the cache size transient should be deleted
      */
 
-    public static function clear_site_cache_by_blog_id( $blog_id ) {
+    public static function clear_site_cache_by_blog_id( $blog_id, $delete_cache_size_transient = true ) {
 
         // check if network
         if ( ! is_multisite() ) {
@@ -1391,7 +1394,9 @@ final class Cache_Enabler {
         }
 
         // delete cache size transient
-        delete_transient( self::get_cache_size_transient_name( $blog_id ) );
+        if ( $delete_cache_size_transient ) {
+            delete_transient( self::get_cache_size_transient_name( $blog_id ) );
+        }
     }
 
 
