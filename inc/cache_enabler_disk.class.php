@@ -78,11 +78,8 @@ final class Cache_Enabler_Disk {
         // delete settings file
         self::delete_settings_file();
 
-        // get settings directory data
-        $settings_dir_objects = self::get_dir_objects( self::$settings_dir );
-
-        // check if the settings directory is empty
-        if ( empty( $settings_dir_objects ) ) {
+        // check if settings directory exists
+        if ( ! is_dir( self::$settings_dir ) ) {
             // delete old advanced cache settings file(s) (1.4.0)
             array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) );
             // delete incorrect advanced cache settings file(s) that may have been created in 1.4.0 (1.4.5)
@@ -148,7 +145,7 @@ final class Cache_Enabler_Disk {
         }
 
         $now = time();
-        $expires_seconds = 60 * 60 * Cache_Enabler_Engine::$settings['cache_expiry_time'];
+        $expires_seconds = HOUR_IN_SECONDS * Cache_Enabler_Engine::$settings['cache_expiry_time'];
 
         // check if cached page has expired
         if ( ( filemtime( self::cache_file_html() ) + $expires_seconds ) <= $now ) {
@@ -297,7 +294,7 @@ final class Cache_Enabler_Disk {
             // delete empty directory
             @rmdir( $dir );
 
-            // clears file status cache
+            // clear file status cache
             clearstatcache();
 
             // get parent directory
@@ -330,7 +327,7 @@ final class Cache_Enabler_Disk {
         // delete directory
         @rmdir( $dir );
 
-        // clears file status cache
+        // clear file status cache
         clearstatcache();
     }
 
@@ -407,7 +404,7 @@ final class Cache_Enabler_Disk {
         // write page contents from output buffer to file
         file_put_contents( $file_path, $page_contents );
 
-        // clears file status cache
+        // clear file status cache
         clearstatcache();
 
         // set permissions
@@ -416,7 +413,7 @@ final class Cache_Enabler_Disk {
         $permissions = $permissions & 0000666;
         @chmod( $file_path, $permissions );
 
-        // clears file status cache
+        // clear file status cache
         clearstatcache();
     }
 
@@ -471,7 +468,7 @@ final class Cache_Enabler_Disk {
      * get cache file directory path
      *
      * @since   1.0.0
-     * @change  1.4.8
+     * @change  1.5.0
      *
      * @param   string  $url            full URL to potentially cached page
      * @return  string  $file_dir_path  file directory path to new or potentially cached page

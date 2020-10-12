@@ -15,7 +15,7 @@ final class Cache_Enabler {
      * initialize plugin
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.5.0
      */
 
     public static function init() {
@@ -182,7 +182,7 @@ final class Cache_Enabler {
         // clean system files
         self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
 
-        // clear complete cache of deactivated site
+        // clear site cache of deactivated site
         if ( is_multisite() && ! $network_wide ) {
             self::clear_site_cache_by_blog_id( get_current_blog_id() );
         // clear complete cache otherwise
@@ -338,7 +338,7 @@ final class Cache_Enabler {
         // clean system files
         Cache_Enabler_Disk::clean();
 
-        // clear complete cache of deleted site
+        // clear site cache of deleted site
         self::clear_site_cache_by_blog_id( (int) $old_site->blog_id );
     }
 
@@ -504,14 +504,14 @@ final class Cache_Enabler {
 
     public static function get_cache_size() {
 
-        $size = get_transient( self::get_cache_size_transient_name() );
+        $cache_size = get_transient( self::get_cache_size_transient_name() );
 
-        if ( ! $size ) {
-            $size = Cache_Enabler_Disk::cache_size();
-            set_transient( self::get_cache_size_transient_name(), $size, MINUTE_IN_SECONDS * 15 );
+        if ( ! $cache_size ) {
+            $cache_size = Cache_Enabler_Disk::cache_size();
+            set_transient( self::get_cache_size_transient_name(), $cache_size, MINUTE_IN_SECONDS * 15 );
         }
 
-        return $size;
+        return $cache_size;
     }
 
 
@@ -527,7 +527,7 @@ final class Cache_Enabler {
 
     private static function get_cache_size_transient_name( $blog_id = null ) {
 
-        // set blog ID if provided, get blog ID otherwise
+        // set blog ID if provided, get current blog ID otherwise
         $blog_id = ( $blog_id ) ? $blog_id : get_current_blog_id();
 
         $transient_name = 'cache_enabler_cache_size_' . $blog_id;
@@ -559,7 +559,8 @@ final class Cache_Enabler {
      * @since   1.0.0
      * @change  1.5.0
      *
-     * @return  array  $settings  default settings
+     * @param   string  $settings_type                              default `system` settings
+     * @return  array   $system_default_settings|$default_settings  system or all default settings
      */
 
     private static function get_default_settings( $settings_type = null ) {
@@ -771,7 +772,7 @@ final class Cache_Enabler {
         // get clear complete cache button title
         $title = ( is_multisite() && is_network_admin() ) ? esc_html__( 'Clear Network Cache', 'cache-enabler' ) : esc_html__( 'Clear Cache', 'cache-enabler' );
 
-        // add Clear Cache or Clear Network Cache button in admin bar
+        // add "Clear Network Cache" or "Clear Cache" button in admin bar
         $wp_admin_bar->add_menu(
             array(
                 'id'     => 'clear-cache',
@@ -785,7 +786,7 @@ final class Cache_Enabler {
             )
         );
 
-        // add Clear URL Cache button in admin bar
+        // add "Clear URL Cache" button in admin bar
         if ( ! is_admin() ) {
             $wp_admin_bar->add_menu(
                 array(
