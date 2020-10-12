@@ -132,7 +132,7 @@ final class Cache_Enabler_Disk {
      * check if cached page expired
      *
      * @since   1.0.1
-     * @change  1.5.0
+     * @change  1.5.1
      *
      * @return  boolean  true if cached page expired, false otherwise
      */
@@ -145,7 +145,7 @@ final class Cache_Enabler_Disk {
         }
 
         $now = time();
-        $expires_seconds = HOUR_IN_SECONDS * Cache_Enabler_Engine::$settings['cache_expiry_time'];
+        $expires_seconds = 60 * 60 * Cache_Enabler_Engine::$settings['cache_expiry_time'];
 
         // check if cached page has expired
         if ( ( filemtime( self::cache_file_html() ) + $expires_seconds ) <= $now ) {
@@ -631,30 +631,29 @@ final class Cache_Enabler_Disk {
      * get settings file
      *
      * @since   1.4.0
-     * @change  1.5.0
+     * @change  1.5.1
      *
-     * @param   boolean  $fallback       whether or not to provide fallback settings file path
-     * @return  string   $settings_file  settings file path
+     * @param   boolean  $fallback_for_sub_install  return fallback settings file path for subdirectory installations
+     * @param   boolean  $fallback_for_sub_network  return fallback settings file path for subdirectory networks
+     * @return  string   $settings_file             settings file path
      */
 
-    private static function get_settings_file( $fallback = false ) {
+    private static function get_settings_file( $fallback_for_sub_install = false, $fallback_for_sub_network = false ) {
 
-        // single site not in subdirectory, any site of subdomain network, or main site of subdirectory network (fallback)
+        // single site not in a subdirectory, any site of subdomain network, or main site of subdirectory network (fallback)
         $blog_path = '';
 
-        // get URL path from home or request URL
-        if ( ! $fallback ) {
+        // subdirectory network or subdirectory installation (fallback)
+        if ( $fallback_for_sub_install || is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $fallback_for_sub_network ) {
             if ( function_exists( 'home_url' ) ) {
                 $url_path = parse_url( home_url( '/' ), PHP_URL_PATH ); // trailing slash required
             } else {
                 $url_path = $_SERVER['REQUEST_URI'];
             }
 
-            // get subdirectory network blog path or subdirectory installation path
             $url_path_pieces = explode( '/', $url_path, 3 );
             $blog_path = $url_path_pieces[1];
 
-            // subdirectory network or installation
             if ( ! empty( $blog_path ) ) {
                 $blog_path = '.' . $blog_path;
             }
@@ -684,20 +683,24 @@ final class Cache_Enabler_Disk {
 
         // get settings file
         $settings_file = self::get_settings_file();
+        $settings = array();
 
         // include existing settings file
         if ( file_exists( $settings_file ) ) {
             $settings = include_once $settings_file;
-        // if settings file does not exist try to get fallback settings file when network with subdirectory configuration
-        } elseif ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
-            $fallback = true;
-            $fallback_settings_file = self::get_settings_file( $fallback );
+        // if settings file does not exist try to get fallback settings file
+        } else {
+            if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
+                $fallback_for_sub_network = true;
+                $fallback_settings_file = self::get_settings_file( $fallback_for_sub_network );
+            } else {
+                $fallback_for_sub_install = true;
+                $fallback_settings_file = self::get_settings_file( $fallback_for_sub_install );
+            }
             // include existing fallback settings file
             if ( file_exists( $fallback_settings_file ) ) {
                 $settings = include_once $fallback_settings_file;
             }
-        } else {
-            $settings = array();
         }
 
         return $settings;

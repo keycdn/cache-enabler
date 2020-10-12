@@ -80,6 +80,10 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.5.1 =
+
+* Fix getting settings file
+
 = 1.5.0 =
 * Update settings file type to PHP instead of JSON (#147)
 * Update settings file(s) storage location (#147)
