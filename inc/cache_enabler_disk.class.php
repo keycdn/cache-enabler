@@ -674,7 +674,7 @@ final class Cache_Enabler_Disk {
      * get settings from settings file
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.5.1
      *
      * @return  array  $settings  current settings from settings file
      */
