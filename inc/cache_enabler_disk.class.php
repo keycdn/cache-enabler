@@ -72,23 +72,23 @@ final class Cache_Enabler_Disk {
      * @since   1.5.0
      * @change  1.5.0
      *
-     * @param   string  $clean_type  `light` or `deep` clean system files
+     * @param   string  $network_wide  network activated or deactivated
+     * @param   string  $last_site     whether or not last site in multisite network without network activation
      */
 
-    public static function clean( $clean_type = 'light' ) {
+    public static function clean( $network_wide = null, $last_site = null ) {
 
-        // light clean system files
-        if ( $clean_type === 'light') {
-            // delete settings file
-            self::delete_settings_file();
-        // deep clean system files
-        } elseif ( $clean_type === 'deep' ) {
+        // delete settings file
+        self::delete_settings_file();
+
+        $main_site   = ( is_multisite() && $network_wide && is_main_site() );
+        $single_site = ( ! is_multisite() );
+
+        if ( $main_site || $last_site || $single_site ) {
             // delete old advanced cache settings file(s) (1.4.0)
             array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) );
             // delete incorrect advanced cache settings file(s) that may have been created in 1.4.0 (1.4.5)
             array_map( 'unlink', glob( ABSPATH . 'CE_SETTINGS_PATH-*.json' ) );
-            // delete settings files
-            self::delete_settings_files();
             // delete advanced-cache.php drop-in
             @unlink( WP_CONTENT_DIR . '/advanced-cache.php' );
             // unset WP_CACHE constant in config file if set by Cache Enabler
@@ -942,20 +942,6 @@ final class Cache_Enabler_Disk {
 
         // delete settings directory if empty
         @rmdir( self::$settings_dir );
-    }
-
-
-    /**
-     * delete settings files
-     *
-     * @since   1.5.0
-     * @change  1.5.0
-     */
-
-    private static function delete_settings_files() {
-
-        // delete all settings files and settings directory
-        self::clear_dir( self::$settings_dir );
     }
 
 

@@ -106,7 +106,7 @@ final class Cache_Enabler {
     public static function on_activation( $network_wide ) {
 
         // install backend requirements, triggering the settings file(s) to be created
-        self::each_site( 'self::install_backend', $network_wide );
+        self::each_site( $network_wide, 'self::install_backend' );
 
         // configure system files
         Cache_Enabler_Disk::setup();
@@ -151,14 +151,17 @@ final class Cache_Enabler {
 
     public static function on_ce_update() {
 
-        // deep clean system files
-        Cache_Enabler_Disk::clean( 'deep' );
+        $network_wide  = is_multisite();
+        $plugin_update = true;
+
+        // clean system files
+        self::each_site( $network_wide, 'Cache_Enabler_Disk::clean', array( $network_wide ) );
 
         // configure system files
         Cache_Enabler_Disk::setup();
 
         // update backend requirements, triggering new settings file(s) to be created
-        self::each_site( 'self::update_backend', ( is_multisite() && is_plugin_active_for_network( CE_BASE ) ) );
+        self::each_site( $network_wide, 'self::update_backend', array( $plugin_update ) );
 
         // clear complete cache
         self::clear_complete_cache();
@@ -176,16 +179,28 @@ final class Cache_Enabler {
 
     public static function on_deactivation( $network_wide ) {
 
-        // deep clean system files if network activated or single site
-        if ( is_multisite() && $network_wide || ! is_multisite() ) {
-            Cache_Enabler_Disk::clean( 'deep' );
-        // light clean system files if multisite network and not network activated
-        } else {
-            Cache_Enabler_Disk::clean();
-        }
+        // clean system files
+        self::each_site( $network_wide, 'Cache_Enabler_Disk::clean', array( $network_wide ) );
 
-        // clear complete cache
-        self::clear_complete_cache();
+        // maybe clean remaining system files for multisite network without network activation
+        if ( is_multisite() && ! $network_wide ) {
+            $network = true;
+            $active_sites = self::each_site( $network, 'is_plugin_active', array( CE_BASE ) );
+            $active_sites_count = array_count_values( $active_sites );
+
+            // check if this is the last site being deactivated
+            if ( $active_sites_count[1] === 1 ) {
+                $network_wide = false;
+                $last_site = true;
+                Cache_Enabler_Disk::clean( $network_wide, $last_site );
+            }
+
+            // clear complete cache of deactivated site
+            self::clear_site_cache_by_blog_id( get_current_blog_id() );
+        } else {
+            // clear complete cache
+            self::clear_complete_cache();
+        }
     }
 
 
@@ -198,11 +213,8 @@ final class Cache_Enabler {
 
     public static function on_uninstall() {
 
-        // deep clean system files just in case
-        Cache_Enabler_Disk::clean( 'deep' );
-
         // uninstall backend requirements
-        self::each_site( 'self::uninstall_backend', is_multisite() );
+        self::each_site( is_multisite(), 'self::uninstall_backend' );
 
         // clear complete cache
         self::clear_complete_cache();
@@ -266,10 +278,16 @@ final class Cache_Enabler {
      * @since   1.5.0
      * @change  1.5.0
      *
+     * @param   $plugin_update     whether or not an update is in progress
      * @return  $new_option_value  new or current database option value
      */
 
-    public static function update_backend() {
+    public static function update_backend( $plugin_update = false ) {
+
+        // check if backend should be updated
+        if ( $plugin_update && ! is_plugin_active( CE_BASE ) ) {
+            return;
+        }
 
         // delete user(s) meta key from deleted publishing action (1.5.0)
         delete_metadata( 'user', 0, '_clear_post_cache_on_update', '', true );
@@ -357,25 +375,29 @@ final class Cache_Enabler {
      * @since   1.5.0
      * @change  1.5.0
      *
-     * @param   string  $callback  callback function
-     * @param   string  $network   whether or not each site in network
+     * @param   boolean  $network          whether or not each site in network
+     * @param   string   $callback         callback function
+     * @param   array    $callback_params  callback function parameters
+     * @return  array    $callback_return  returned value(s) from callback function
      */
 
-    private static function each_site( $callback, $network ) {
+    private static function each_site( $network, $callback, $callback_params = array() ) {
 
-        // network
+        $callback_return = array();
+
         if ( $network ) {
             $blog_ids = self::get_blog_ids();
             // switch to each site in network
             foreach ( $blog_ids as $blog_id ) {
                 switch_to_blog( $blog_id );
-                call_user_func( $callback );
+                $callback_return[] = (int) call_user_func_array( $callback, $callback_params );
                 restore_current_blog();
             }
-        // single site
         } else {
-            call_user_func( $callback );
+            $callback_return[] = (int) call_user_func_array( $callback, $callback_params );
         }
+
+        return $callback_return;
     }
 
 
@@ -852,17 +874,12 @@ final class Cache_Enabler {
             return;
         }
 
-        // load requirements if network activated
-        if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
         // set clear URL without query string and check if installation is in a subdirectory
         $installation_dir = parse_url( home_url(), PHP_URL_PATH );
         $clear_url = str_replace( $installation_dir, '', home_url() ) . preg_replace( '/\?.*/', '', $_SERVER['REQUEST_URI'] );
 
         // network activated
-        if ( is_multisite() && is_plugin_active_for_network( CE_BASE ) ) {
+        if ( is_multisite() ) {
             // network admin
             if ( is_network_admin() && $_GET['_action'] === 'clear' ) {
                 // clear complete cache
