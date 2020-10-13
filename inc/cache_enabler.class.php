@@ -252,7 +252,8 @@ final class Cache_Enabler {
         } else {
             $default_settings = self::get_default_settings();
             add_option( 'cache_enabler', $default_settings );
-            // create settings file if action was not added, like when in activation hook
+
+            // create settings file if action was not fired, like when in activation hook
             if ( ! has_action( 'add_option_cache_enabler' ) ) {
                 self::on_update_backend( 'cache_enabler', $default_settings );
             }
@@ -264,7 +265,7 @@ final class Cache_Enabler {
      * update backend requirements
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.5.1
      *
      * @param   $plugin_update     whether or not an update is in progress
      * @return  $new_option_value  new or current database option value
@@ -299,8 +300,11 @@ final class Cache_Enabler {
         // merge defined settings into default settings
         $new_option_value = wp_parse_args( $old_option_value, self::get_default_settings() );
 
-        // if database did not need to be updated create settings file anyway
-        if ( ! update_option( 'cache_enabler', $new_option_value ) ) {
+        // update database option
+        update_option( 'cache_enabler', $new_option_value );
+
+        // create settings file if action was not fired, like when in upgrade hook or if a database update was unnecessary
+        if ( ! has_action( 'update_option_cache_enabler' ) ) {
             self::on_update_backend( $old_option_value, $new_option_value );
         }
 
