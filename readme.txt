@@ -261,5 +261,5 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Screenshots ==
 
-1. Display of the cache size in your dashboard
-2. Cache Enabler settings page and "Clear Cache" link in the dashboard
+1. Cache Enabler settings page
+2. Display of the cache size in your dashboard
