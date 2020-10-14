@@ -58,10 +58,10 @@ final class Cache_Enabler_Engine {
 
     public function __construct() {
 
-        // get settings from disk if cache exists
+        // get settings from disk in early start if cache exists
         if ( Cache_Enabler_Disk::cache_exists() ) {
             self::$settings = Cache_Enabler_Disk::get_settings();
-        // get settings from database otherwise
+        // get settings from database in late start otherwise
         } elseif ( class_exists( 'Cache_Enabler' ) ) {
             self::$settings = Cache_Enabler::get_settings();
             // set deprecated settings
@@ -80,7 +80,7 @@ final class Cache_Enabler_Engine {
      * check if engine should start
      *
      * @since   1.5.2
-     * @change  1.5.2
+     * @change  1.5.4
      *
      * @return  boolean  true if engine should start, false otherwise
      */
@@ -92,8 +92,8 @@ final class Cache_Enabler_Engine {
             return false;
         }
 
-        // check if Ajax request
-        if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        // check if Ajax request in early start
+        if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! class_exists( 'Cache_Enabler' ) ) {
             return false;
         }
 
@@ -109,6 +109,11 @@ final class Cache_Enabler_Engine {
 
         // check if Host request header is empty
         if ( empty( $_SERVER['HTTP_HOST'] ) ) {
+            return false;
+        }
+
+        // check request URI
+        if ( str_replace( array( '.ico', '.txt', '.xml', '.xsl' ), '', $_SERVER['REQUEST_URI'] ) !== $_SERVER['REQUEST_URI'] ) {
             return false;
         }
 
@@ -289,7 +294,7 @@ final class Cache_Enabler_Engine {
             if ( ! empty( self::$settings['excluded_query_strings'] ) ) {
                 $query_string_regex = self::$settings['excluded_query_strings'];
             } else {
-                $query_string_regex = '/^(?!(fbclid|ref|mc_(cid|eid)|utm_(source|medium|campaign|term|content|expid)|gclid|fb_(action_ids|action_types|source)|age-verified|ao_noptimize|usqp|cn-reloaded|_ga|_ke)).+$/';
+                $query_string_regex = '/^(?!(fbclid|ref|mc_(cid|eid)|utm_(source|medium|campaign|term|content|expid)|gclid|fb_(action_ids|action_types|source)|age-verified|usqp|cn-reloaded|_ga|_ke)).+$/';
             }
 
             $query_string = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY );
