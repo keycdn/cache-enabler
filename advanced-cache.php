@@ -3,7 +3,7 @@
  * Cache Enabler advanced cache
  *
  * @since   1.2.0
- * @change  1.5.0
+ * @change  1.5.2
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,5 +15,5 @@ $ce_dir = ( ( defined( 'WP_PLUGIN_DIR' ) ) ? WP_PLUGIN_DIR : WP_CONTENT_DIR . '/
 require_once $ce_dir . '/inc/cache_enabler_engine.class.php';
 require_once $ce_dir . '/inc/cache_enabler_disk.class.php';
 
-$cache_engine = new Cache_Enabler_Engine;
-$cache_engine->deliver_cache();
+Cache_Enabler_Engine::start();
+Cache_Enabler_Engine::deliver_cache();

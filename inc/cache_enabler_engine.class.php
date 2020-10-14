@@ -12,6 +12,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Cache_Enabler_Engine {
 
     /**
+     * start engine
+     *
+     * @since   1.5.2
+     * @change  1.5.2
+     */
+
+    public static function start() {
+
+        if ( self::should_start() ) {
+            new self();
+        }
+    }
+
+    /**
      * engine status
      *
      * @since   1.5.0
@@ -39,7 +53,7 @@ final class Cache_Enabler_Engine {
      * constructor
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.5.2
      */
 
     public function __construct() {
@@ -50,12 +64,55 @@ final class Cache_Enabler_Engine {
         // get settings from database otherwise
         } elseif ( class_exists( 'Cache_Enabler' ) ) {
             self::$settings = Cache_Enabler::get_settings();
+            // set deprecated settings
+            Cache_Enabler::$options = self::$settings;
+            Cache_Enabler::$options['webp'] = self::$settings['convert_image_urls_to_webp'];
         }
 
-        // check engine requirements
+        // check engine status
         if ( ! empty( self::$settings ) ) {
             self::$started = true;
         }
+    }
+
+
+    /**
+     * check if engine should start
+     *
+     * @since   1.5.2
+     * @change  1.5.2
+     *
+     * @return  boolean  true if engine should start, false otherwise
+     */
+
+    public static function should_start() {
+
+        // check if engine is running already
+        if ( self::$started ) {
+            return false;
+        }
+
+        // check if Ajax request
+        if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+            return false;
+        }
+
+        // check if REST API request
+        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+            return false;
+        }
+
+        // check if XMLRPC request
+        if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
+            return false;
+        }
+
+        // check if Host request header is empty
+        if ( empty( $_SERVER['HTTP_HOST'] ) ) {
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -274,7 +331,7 @@ final class Cache_Enabler_Engine {
      * check if cache should be bypassed
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.5.2
      *
      * @return  boolean  true if cache should be bypassed, false otherwise
      *
@@ -308,27 +365,12 @@ final class Cache_Enabler_Engine {
             return true;
         }
 
-        // check if Ajax request
-        if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-            return true;
-        }
-
-        // check if REST API request
-        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-            return true;
-        }
-
-        // check if XMLRPC request
-        if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
-            return true;
-        }
-
         // check conditional tags
         if ( self::is_wrong_permalink_structure() || self::is_excluded() ) {
             return true;
         }
 
-        // check conditional tags when output buffer has ended
+        // check conditional tags when output buffering has ended
         if ( class_exists( 'WP' ) ) {
             if ( is_admin() || is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() || self::is_mobile() ) {
                 return true;
@@ -343,12 +385,12 @@ final class Cache_Enabler_Engine {
      * deliver cache
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.5.2
      */
 
-    public function deliver_cache() {
+    public static function deliver_cache() {
 
-        if ( ! self::$started || Cache_Enabler_Disk::cache_expired() || self::bypass_cache() ) {
+        if ( ! self::$started || self::bypass_cache() ) {
             return;
         }
 
