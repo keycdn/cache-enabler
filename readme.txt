@@ -82,6 +82,9 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = 1.5.2 =
 
+* Update late cache engine start to be on the `init` hook instead of `plugins_loaded` (#153)
+* Add deprecated variable that was previously deleted to improve backwards compatibility (#153)
+* Fix WP-CLI notice errors (#153)
 * Fix creating settings file on plugin update
 
 = 1.5.1 =

@@ -16,7 +16,6 @@ final class Cache_Enabler_Disk {
      *
      * @since   1.5.0
      * @change  1.5.0
-     *
      */
 
     public static $cache_dir = WP_CONTENT_DIR . '/cache/cache-enabler';
@@ -27,7 +26,6 @@ final class Cache_Enabler_Disk {
      *
      * @since   1.5.0
      * @change  1.5.0
-     *
      */
 
     private static $settings_dir = WP_CONTENT_DIR . '/settings/cache-enabler';

@@ -25,20 +25,25 @@ final class Cache_Enabler {
 
 
     /**
+     * settings from database (deprecated)
+     *
+     * @deprecated  1.5.0
+     */
+
+    public static $options;
+
+
+    /**
      * constructor
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.5.2
      */
 
     public function __construct() {
 
-        // check if engine is running
-        if ( ! Cache_Enabler_Engine::$started ) {
-            new Cache_Enabler_Engine;
-        }
-
         // init hooks
+        add_action( 'init', array( 'Cache_Enabler_Engine', 'start' ) );
         add_action( 'init', array( 'Cache_Enabler_Engine', 'start_buffering' ) );
         add_action( 'init', array( __CLASS__, 'process_clear_cache_request' ) );
         add_action( 'init', array( __CLASS__, 'register_textdomain' ) );
@@ -265,7 +270,7 @@ final class Cache_Enabler {
      * update backend requirements
      *
      * @since   1.5.0
-     * @change  1.5.1
+     * @change  1.5.2
      *
      * @param   $plugin_update     whether or not an update is in progress
      * @return  $new_option_value  new or current database option value
