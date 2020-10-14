@@ -80,6 +80,10 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.5.3 =
+
+* Add default query string exclusion (#154)
+
 = 1.5.2 =
 
 * Update late cache engine start to be on the `init` hook instead of `plugins_loaded` (#153)

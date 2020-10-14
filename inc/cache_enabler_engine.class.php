@@ -260,7 +260,7 @@ final class Cache_Enabler_Engine {
      * check if page is excluded from cache
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.5.3
      *
      * @return  boolean  true if page is excluded from the cache, false otherwise
      */
@@ -284,10 +284,17 @@ final class Cache_Enabler_Engine {
         }
 
         // if query string excluded
-        if ( ! empty( self::$settings['excluded_query_strings'] ) ) {
+        if ( ! empty( $_GET ) ) {
+            // set regex matching query strings that should bypass the cache
+            if ( ! empty( self::$settings['excluded_query_strings'] ) ) {
+                $query_string_regex = self::$settings['excluded_query_strings'];
+            } else {
+                $query_string_regex = '/^(?!(fbclid|ref|mc_(cid|eid)|utm_(source|medium|campaign|term|content|expid)|gclid|fb_(action_ids|action_types|source)|age-verified|ao_noptimize|usqp|cn-reloaded|_ga|_ke)).+$/';
+            }
+
             $query_string = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY );
 
-            if ( preg_match( self::$settings['excluded_query_strings'], $query_string ) ) {
+            if ( preg_match( $query_string_regex, $query_string ) ) {
                 return true;
             }
         }

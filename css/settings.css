@@ -29,3 +29,7 @@
 .checkbox--form-control {
     height: 23px;
 }
+
+.code--form-control {
+    line-height: 1.8;
+}
