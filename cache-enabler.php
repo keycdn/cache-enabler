@@ -6,7 +6,7 @@ Description: Simple and fast WordPress caching plugin.
 Author: KeyCDN
 Author URI: https://www.keycdn.com
 License: GPLv2 or later
-Version: 1.5.2
+Version: 1.5.3
 */
 
 /*
@@ -32,7 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // constants
-define( 'CE_VERSION', '1.5.2' );
+define( 'CE_VERSION', '1.5.3' );
 define( 'CE_MIN_WP', '5.1' );
 define( 'CE_FILE', __FILE__ );
 define( 'CE_BASE', plugin_basename( __FILE__ ) );
