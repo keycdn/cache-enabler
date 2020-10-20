@@ -397,12 +397,12 @@ final class Cache_Enabler_Engine {
      * deliver cache
      *
      * @since   1.5.0
-     * @change  1.5.2
+     * @change  1.5.5
      */
 
     public static function deliver_cache() {
 
-        if ( ! self::$started || self::bypass_cache() ) {
+        if ( ! self::$started || Cache_Enabler_Disk::cache_expired() || self::bypass_cache() ) {
             return;
         }
 
