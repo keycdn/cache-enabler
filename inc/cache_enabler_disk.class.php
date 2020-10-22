@@ -629,39 +629,18 @@ final class Cache_Enabler_Disk {
      * get settings file
      *
      * @since   1.4.0
-     * @change  1.5.1
+     * @change  1.5.5
      *
-     * @param   boolean  $fallback_for_sub_install  return fallback settings file path for subdirectory installations
-     * @param   boolean  $fallback_for_sub_network  return fallback settings file path for subdirectory networks
-     * @return  string   $settings_file             settings file path
+     * @param   boolean  $fallback       whether or not fallback settings file should be returned
+     * @return  string   $settings_file  file path to settings file
      */
 
-    private static function get_settings_file( $fallback_for_sub_install = false, $fallback_for_sub_network = false ) {
+    private static function get_settings_file( $fallback = false ) {
 
-        // single site not in a subdirectory, any site of subdomain network, or main site of subdirectory network (fallback)
-        $blog_path = '';
-
-        // subdirectory network or subdirectory installation (fallback)
-        if ( $fallback_for_sub_install || is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $fallback_for_sub_network ) {
-            if ( function_exists( 'home_url' ) ) {
-                $url_path = parse_url( home_url( '/' ), PHP_URL_PATH ); // trailing slash required
-            } else {
-                $url_path = $_SERVER['REQUEST_URI'];
-            }
-
-            $url_path_pieces = explode( '/', $url_path, 3 );
-            $blog_path = $url_path_pieces[1];
-
-            if ( ! empty( $blog_path ) ) {
-                $blog_path = '.' . $blog_path;
-            }
-        }
-
-        // get settings file
         $settings_file = sprintf(
-            '%s/%s.php',
+            '%s/%s',
             self::$settings_dir,
-            parse_url( ( function_exists( 'home_url' ) ) ? home_url() : 'http://' . strtolower( $_SERVER['HTTP_HOST'] ), PHP_URL_HOST ) . $blog_path
+            self::get_settings_file_name( $fallback )
         );
 
         return $settings_file;
@@ -669,34 +648,124 @@ final class Cache_Enabler_Disk {
 
 
     /**
+     * get settings file name
+     *
+     * @since   1.5.5
+     * @change  1.5.5
+     *
+     * @param   boolean  $fallback            whether or not fallback settings file name should be returned
+     * @param   boolean  $skip_url_path       whether or not URL path should be included in settings file name
+     * @return  string   $settings_file_name  file name for settings file
+     */
+
+    private static function get_settings_file_name( $fallback = false, $skip_url_path = false ) {
+
+        $settings_file_name = '';
+
+        // if creating or deleting settings file
+        if ( function_exists( 'home_url' ) ) {
+            $settings_file_name = parse_url( home_url(), PHP_URL_HOST );
+
+            // subdirectory network
+            if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
+                $url_path = parse_url( home_url(), PHP_URL_PATH );
+                $url_path = rtrim( $url_path, '/' ); // remove trailing slash if there happens to be one
+                $url_path_pieces = explode( '/', $url_path );
+                $blog_path = ( ! empty( end( $url_path_pieces ) ) ) ? end( $url_path_pieces ) : ''; // get last piece in case installation is in a subdirectory
+                $settings_file_name .= ( ! empty( $blog_path ) ) ? '.' . $blog_path : '';
+            }
+
+            $settings_file_name .= '.php';
+        // if getting settings from settings file
+        } elseif ( is_dir( self::$settings_dir ) ) {
+            if ( $fallback ) {
+                $settings_files = self::get_dir_objects( self::$settings_dir );
+                $settings_file_regex = '/\.php$/';
+
+                if ( is_multisite() ) {
+                    $settings_file_regex = '/^' . parse_url( 'http://' . strtolower( $_SERVER['HTTP_HOST'] ), PHP_URL_HOST );
+                    $settings_file_regex = str_replace( '.', '\.', $settings_file_regex );
+
+                    // subdirectory network
+                    if ( defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_url_path ) {
+                        $url_path = $_SERVER['REQUEST_URI'];
+                        $url_path = trim( $url_path, '/'); // remove leading and trailing slash(es)
+
+                        if ( ! empty( $url_path ) ) {
+                            $url_path_regex = str_replace( '/', '|', $url_path );
+                            $url_path_regex = '\.(' . $url_path_regex . ')';
+                            $settings_file_regex .= $url_path_regex;
+                        }
+                    }
+
+                    $settings_file_regex .= '\.php$/';
+                }
+
+                $filtered_settings_files = preg_grep( $settings_file_regex, $settings_files );
+
+                if ( ! empty( $filtered_settings_files ) ) {
+                    $settings_file_name = current( $filtered_settings_files );
+                } elseif ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_url_path ) {
+                    $fallback = true;
+                    $skip_url_path = true;
+                    $settings_file_name = self::get_settings_file_name( $fallback, $skip_url_path );
+                }
+            } else {
+                $settings_file_name = parse_url( 'http://' . strtolower( $_SERVER['HTTP_HOST'] ), PHP_URL_HOST );
+
+                // subdirectory network
+                if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_url_path ) {
+                    $url_path = $_SERVER['REQUEST_URI'];
+                    $url_path_pieces = explode( '/', $url_path, 3 );
+                    $blog_path = $url_path_pieces[1];
+
+                    if ( ! empty( $blog_path ) ) {
+                        $settings_file_name .= '.' . $blog_path;
+                    }
+
+                    $settings_file_name .= '.php';
+
+                    // check if main site
+                    if ( ! is_file( self::$settings_dir . '/' . $settings_file_name ) ) {
+                        $fallback = false;
+                        $skip_url_path = true;
+                        $settings_file_name = self::get_settings_file_name( $fallback, $skip_url_path );
+                    }
+                }
+
+                $settings_file_name .= ( strpos( $settings_file_name, '.php' ) === false ) ? '.php' : '';
+            }
+        }
+
+        return $settings_file_name;
+    }
+
+
+    /**
      * get settings from settings file
      *
      * @since   1.5.0
-     * @change  1.5.1
+     * @change  1.5.5
      *
      * @return  array  $settings  current settings from settings file
      */
 
     public static function get_settings() {
 
-        // get settings file
-        $settings_file = self::get_settings_file();
         $settings = array();
 
-        // include existing settings file
-        if ( file_exists( $settings_file ) ) {
+        // get settings file
+        $settings_file = self::get_settings_file();
+
+        // include settings file if it exists
+        if ( is_file( $settings_file ) ) {
             $settings = include_once $settings_file;
-        // if settings file does not exist try to get fallback settings file
+        // try to get fallback settings file otherwise
         } else {
-            if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
-                $fallback_for_sub_network = true;
-                $fallback_settings_file = self::get_settings_file( $fallback_for_sub_network );
-            } else {
-                $fallback_for_sub_install = true;
-                $fallback_settings_file = self::get_settings_file( $fallback_for_sub_install );
-            }
-            // include existing fallback settings file
-            if ( file_exists( $fallback_settings_file ) ) {
+            $fallback = true;
+            $fallback_settings_file = self::get_settings_file( $fallback );
+
+            if ( is_file( $fallback_settings_file ) ) {
                 $settings = include_once $fallback_settings_file;
             }
         }
