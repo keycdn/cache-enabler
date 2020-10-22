@@ -82,6 +82,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = 1.5.5 =
 
+* Fix getting settings file edge cases (#158)
 * Fix cache expiry
 
 = 1.5.4 =
