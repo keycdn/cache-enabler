@@ -654,11 +654,11 @@ final class Cache_Enabler_Disk {
      * @change  1.5.5
      *
      * @param   boolean  $fallback            whether or not fallback settings file name should be returned
-     * @param   boolean  $skip_url_path       whether or not URL path should be included in settings file name
+     * @param   boolean  $skip_blog_path      whether or not blog path should be included in settings file name
      * @return  string   $settings_file_name  file name for settings file
      */
 
-    private static function get_settings_file_name( $fallback = false, $skip_url_path = false ) {
+    private static function get_settings_file_name( $fallback = false, $skip_blog_path = false ) {
 
         $settings_file_name = '';
 
@@ -687,7 +687,7 @@ final class Cache_Enabler_Disk {
                     $settings_file_regex = str_replace( '.', '\.', $settings_file_regex );
 
                     // subdirectory network
-                    if ( defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_url_path ) {
+                    if ( defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_blog_path ) {
                         $url_path = $_SERVER['REQUEST_URI'];
                         $url_path = trim( $url_path, '/'); // remove leading and trailing slash(es)
 
@@ -705,16 +705,16 @@ final class Cache_Enabler_Disk {
 
                 if ( ! empty( $filtered_settings_files ) ) {
                     $settings_file_name = current( $filtered_settings_files );
-                } elseif ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_url_path ) {
+                } elseif ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_blog_path ) {
                     $fallback = true;
-                    $skip_url_path = true;
-                    $settings_file_name = self::get_settings_file_name( $fallback, $skip_url_path );
+                    $skip_blog_path = true;
+                    $settings_file_name = self::get_settings_file_name( $fallback, $skip_blog_path );
                 }
             } else {
                 $settings_file_name = parse_url( 'http://' . strtolower( $_SERVER['HTTP_HOST'] ), PHP_URL_HOST );
 
                 // subdirectory network
-                if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_url_path ) {
+                if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_blog_path ) {
                     $url_path = $_SERVER['REQUEST_URI'];
                     $url_path_pieces = explode( '/', $url_path, 3 );
                     $blog_path = $url_path_pieces[1];
@@ -728,8 +728,8 @@ final class Cache_Enabler_Disk {
                     // check if main site
                     if ( ! is_file( self::$settings_dir . '/' . $settings_file_name ) ) {
                         $fallback = false;
-                        $skip_url_path = true;
-                        $settings_file_name = self::get_settings_file_name( $fallback, $skip_url_path );
+                        $skip_blog_path = true;
+                        $settings_file_name = self::get_settings_file_name( $fallback, $skip_blog_path );
                     }
                 }
 
@@ -768,6 +768,11 @@ final class Cache_Enabler_Disk {
             if ( is_file( $fallback_settings_file ) ) {
                 $settings = include_once $fallback_settings_file;
             }
+        }
+
+        // create settings file if cache exists but settings file does not
+        if ( empty( $settings ) && class_exists( 'Cache_Enabler' ) ) {
+            self::create_settings_file( Cache_Enabler::get_settings() );
         }
 
         return $settings;

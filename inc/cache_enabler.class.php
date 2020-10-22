@@ -532,8 +532,8 @@ final class Cache_Enabler {
      * @since   1.5.0
      * @change  1.5.0
      *
-     * @param   integer $blog_id         blog ID
-     * @return  string  $transient_name  transient name
+     * @param   integer  $blog_id         blog ID
+     * @return  string   $transient_name  transient name
      */
 
     private static function get_cache_size_transient_name( $blog_id = null ) {
