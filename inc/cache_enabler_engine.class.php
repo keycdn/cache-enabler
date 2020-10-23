@@ -58,10 +58,10 @@ final class Cache_Enabler_Engine {
 
     public function __construct() {
 
-        // get settings from disk in early start if cache exists
+        // get settings from disk if cache exists
         if ( Cache_Enabler_Disk::cache_exists() ) {
             self::$settings = Cache_Enabler_Disk::get_settings();
-        // get settings from database in late start otherwise
+        // get settings from database otherwise
         } elseif ( class_exists( 'Cache_Enabler' ) ) {
             self::$settings = Cache_Enabler::get_settings();
             // set deprecated settings
