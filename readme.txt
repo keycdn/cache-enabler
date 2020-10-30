@@ -80,6 +80,10 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.6.0 =
+
+* Fix clear cache request validation
+
 = 1.5.5 =
 
 * Update advanced cache to prevent potential errors (#161)

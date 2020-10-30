@@ -854,13 +854,13 @@ final class Cache_Enabler {
      * process clear cache request
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      */
 
     public static function process_clear_cache_request() {
 
         // check if clear cache request
-        if ( empty( $_GET['_cache'] ) || empty( $_GET['_action'] ) || $_GET['_cache'] !== 'cache-enabler' && ( $_GET['_action'] !== 'clear' || $_GET['_action'] !== 'clearurl' ) ) {
+        if ( empty( $_GET['_cache'] ) || empty( $_GET['_action'] ) || $_GET['_cache'] !== 'cache-enabler' || ( $_GET['_action'] !== 'clear' && $_GET['_action'] !== 'clearurl' ) ) {
             return;
         }
 
