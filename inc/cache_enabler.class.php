@@ -1691,7 +1691,6 @@ final class Cache_Enabler {
                                 <label for="clear_complete_cache_on_saved_post">
                                     <input name="cache_enabler[clear_complete_cache_on_saved_post]" type="checkbox" id="clear_complete_cache_on_saved_post" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_complete_cache_on_saved_post'] ); ?> />
                                     <?php esc_html_e( 'Clear the complete cache if any post type has been published, updated, or trashed (instead of only the page and/or associated cache).', 'cache-enabler' ); ?>
-                                    <span class="badge badge--success"><?php esc_html_e( 'Updated', 'cache-enabler' ); ?></span>
                                 </label>
 
                                 <br />
@@ -1752,7 +1751,6 @@ final class Cache_Enabler {
                                         $minify_inline_css_js
                                     );
                                     ?>
-                                    <span class="badge badge--success"><?php esc_html_e( 'Updated', 'cache-enabler' ); ?></span>
                                 </label>
                             </fieldset>
                         </td>
@@ -1787,7 +1785,7 @@ final class Cache_Enabler {
 
                                 <br />
 
-                                <p class="subheading"><?php esc_html_e( 'Query Strings', 'cache-enabler' ); ?><span class="badge badge--success"><?php esc_html_e( 'New', 'cache-enabler' ); ?></span></p>
+                                <p class="subheading"><?php esc_html_e( 'Query Strings', 'cache-enabler' ); ?></p>
                                 <label for="excluded_query_strings">
                                     <input name="cache_enabler[excluded_query_strings]" type="text" id="excluded_query_strings" value="<?php echo esc_attr( Cache_Enabler_Engine::$settings['excluded_query_strings'] ) ?>" class="regular-text code" />
                                     <p class="description"><?php esc_html_e( 'A regex matching query strings that should bypass the cache.', 'cache-enabler' ); ?></p>
