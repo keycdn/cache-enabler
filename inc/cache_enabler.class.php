@@ -443,16 +443,43 @@ final class Cache_Enabler {
      * get blog IDs
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.6.0
      *
-     * @return  array  blog IDs array
+     * @return  array  $blog_ids  blog IDs
      */
 
     private static function get_blog_ids() {
 
-        global $wpdb;
+        $blog_ids = array( '1' );
 
-        return $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" );
+        if ( is_multisite() ) {
+            global $wpdb;
+            $blog_ids = $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" );
+        }
+
+        return $blog_ids;
+    }
+
+
+    /**
+     * get blog path
+     *
+     * @since   1.6.0
+     * @change  1.6.0
+     *
+     * @return  string  $blog_path  blog path from site address URL, empty otherwise
+     */
+
+    public static function get_blog_path() {
+
+        $site_url_path = parse_url( home_url(), PHP_URL_PATH );
+        $site_url_path = rtrim( $site_url_path, '/' );
+        $site_url_path_pieces = explode( '/', $site_url_path );
+
+        // get last piece in case installation is in a subdirectory
+        $blog_path = ( ! empty( end( $site_url_path_pieces ) ) ) ? '/' . end( $site_url_path_pieces ) . '/' : '';
+
+        return $blog_path;
     }
 
 
@@ -460,16 +487,21 @@ final class Cache_Enabler {
      * get blog paths
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.6.0
      *
-     * @return  array  blog paths array
+     * @return  array  $blog_paths  blog paths
      */
 
-    private static function get_blog_paths() {
+    public static function get_blog_paths() {
 
-        global $wpdb;
+        $blog_paths = array( '/' );
 
-        return $wpdb->get_col( "SELECT path FROM $wpdb->blogs" );
+        if ( is_multisite() ) {
+            global $wpdb;
+            $blog_paths = $wpdb->get_col( "SELECT path FROM $wpdb->blogs" );
+        }
+
+        return $blog_paths;
     }
 
 
@@ -510,7 +542,7 @@ final class Cache_Enabler {
      * @since   1.0.0
      * @change  1.5.0
      *
-     * @return  integer  $size  cache size (bytes)
+     * @return  integer  $cache_size  cache size in bytes
      */
 
     public static function get_cache_size() {
@@ -530,18 +562,14 @@ final class Cache_Enabler {
      * get the cache size transient name
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
-     * @param   integer  $blog_id         blog ID
      * @return  string   $transient_name  transient name
      */
 
-    private static function get_cache_size_transient_name( $blog_id = null ) {
+    private static function get_cache_size_transient_name() {
 
-        // set blog ID if provided, get current blog ID otherwise
-        $blog_id = ( $blog_id ) ? $blog_id : get_current_blog_id();
-
-        $transient_name = 'cache_enabler_cache_size_' . $blog_id;
+        $transient_name = 'cache_enabler_cache_size';
 
         return $transient_name;
     }
@@ -745,7 +773,7 @@ final class Cache_Enabler {
         }
 
         // get cache size
-        $size = self::get_cache_size();
+        $cache_size = self::get_cache_size();
 
         // display items
         $items = array(
@@ -753,7 +781,7 @@ final class Cache_Enabler {
                 '<a href="%s" title="%s">%s %s</a>',
                 admin_url( 'options-general.php?page=cache-enabler' ),
                 esc_html__( 'Refreshes every 15 minutes', 'cache-enabler' ),
-                ( empty( $size ) ) ? esc_html__( 'Empty', 'cache-enabler' ) : size_format( $size ),
+                ( empty( $cache_size ) ) ? esc_html__( 'Empty', 'cache-enabler' ) : size_format( $cache_size ),
                 esc_html__( 'Cache Size', 'cache-enabler' )
             )
         );
@@ -1125,7 +1153,7 @@ final class Cache_Enabler {
      * clear complete cache
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      */
 
     public static function clear_complete_cache() {
@@ -1134,7 +1162,7 @@ final class Cache_Enabler {
         Cache_Enabler_Disk::clear_cache();
 
         // delete cache size transient
-        delete_transient( self::get_cache_size_transient_name() );
+        self::each_site( is_multisite(), 'delete_transient', array( self::get_cache_size_transient_name() ) );
 
         // clear cache post hook
         do_action( 'ce_action_cache_cleared' );
@@ -1336,18 +1364,13 @@ final class Cache_Enabler {
      * clear site cache by blog ID
      *
      * @since   1.4.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   integer|string  $blog_id                      blog ID
      * @param   boolean         $delete_cache_size_transient  whether or not the cache size transient should be deleted
      */
 
     public static function clear_site_cache_by_blog_id( $blog_id, $delete_cache_size_transient = true ) {
-
-        // check if network
-        if ( ! is_multisite() ) {
-            return;
-        }
 
         // validate integer
         if ( ! is_int( $blog_id ) ) {
@@ -1364,47 +1387,29 @@ final class Cache_Enabler {
             return;
         }
 
-        // get clear URL
-        $clear_url = get_home_url( $blog_id );
+        // get site URL
+        $site_url = get_home_url( $blog_id );
 
-        // network with subdomain configuration
-        if ( is_subdomain_install() ) {
-            // clear main site or subsite cache
-            self::clear_page_cache_by_url( $clear_url, 'dir' );
-        // network with subdirectory configuration
-        } else {
-            // get blog path
-            $blog_path = get_blog_details( $blog_id )->path;
+        // get site objects
+        $site_objects = Cache_Enabler_Disk::get_site_objects( $site_url );
 
-            // main site
-            if ( $blog_path === '/' ) {
-                $blog_paths  = self::get_blog_paths();
-                $blog_domain = parse_url( $clear_url, PHP_URL_HOST );
-                $glob_path   = Cache_Enabler_Disk::$cache_dir . '/' . $blog_domain;
-
-                // get cached page paths
-                $page_paths = glob( $glob_path . '/*', GLOB_MARK | GLOB_ONLYDIR );
-                foreach ( $page_paths as $page_path ) {
-                    $page_path = str_replace( $glob_path, '', $page_path );
-                    // if cached page belongs to main site
-                    if ( ! in_array( $page_path, $blog_paths ) ) {
-                        // clear page cache
-                        self::clear_page_cache_by_url( $clear_url . $page_path, 'dir' );
-                    }
-                }
-
-                // clear home page cache
-                self::clear_page_cache_by_url( $clear_url );
-            // subsite
-            } else {
-                // clear subsite cache
-                self::clear_page_cache_by_url( $clear_url, 'dir' );
-            }
+        // clear page(s) cache
+        foreach ( $site_objects as $site_object ) {
+            self::clear_page_cache_by_url( trailingslashit( $site_url ) . $site_object, 'dir' );
         }
+
+        // clear home page cache
+        self::clear_page_cache_by_url( $site_url );
 
         // delete cache size transient
         if ( $delete_cache_size_transient ) {
-            delete_transient( self::get_cache_size_transient_name( $blog_id ) );
+            if ( is_multisite() ) {
+                switch_to_blog( $blog_id );
+                delete_transient( self::get_cache_size_transient_name() );
+                restore_current_blog();
+            } else {
+                delete_transient( self::get_cache_size_transient_name() );
+            }
         }
     }
 

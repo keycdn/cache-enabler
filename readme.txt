@@ -81,34 +81,31 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 == Changelog ==
 
 = 1.6.0 =
-
+* Fix getting cache size for main site in subdirectory network (#164)
+* Fix deleting cache size transient (#164)
+* Fix cache clearing edge case (#164)
 * Fix clear cache request validation
 
 = 1.5.5 =
-
 * Update advanced cache to prevent potential errors (#161)
 * Update getting settings to create settings file if cache exists but settings file does not (#159)
 * Fix getting settings file edge cases (#158)
 * Fix cache expiry
 
 = 1.5.4 =
-
 * Update default query string exclusion (#155)
 * Update cache engine start check (#155)
 
 = 1.5.3 =
-
 * Add default query string exclusion (#154)
 
 = 1.5.2 =
-
 * Update late cache engine start to be on the `init` hook instead of `plugins_loaded` (#153)
 * Add deprecated variable that was previously deleted to improve backwards compatibility (#153)
 * Fix WP-CLI notice errors (#153)
 * Fix creating settings file on plugin update
 
 = 1.5.1 =
-
 * Fix getting settings file
 
 = 1.5.0 =

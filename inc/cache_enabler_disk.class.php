@@ -177,46 +177,43 @@ final class Cache_Enabler_Disk {
      * get cache size
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
-     * @param   string   $dir   file system directory
-     * @return  integer  $size  size in bytes
+     * @param   string   $dir         file system directory
+     * @return  integer  $cache_size  cache size in bytes
      */
 
     public static function cache_size( $dir = null ) {
 
-        // set directory if provided, get directory otherwise
-        $dir = ( $dir ) ? $dir : self::cache_file_dir_path( home_url() );
+        $cache_size = 0;
 
-        // validate directory
-        if ( ! is_dir( $dir ) ) {
-            return;
+        // get directory objects if directory exists
+        if ( is_dir( $dir ) ) {
+            $dir_objects = self::get_dir_objects( $dir );
+        // get site objects otherwise
+        } else {
+            $dir_objects = self::get_site_objects( home_url() );
         }
 
-        // get directory data
-        $dir_objects = self::get_dir_objects( $dir );
-
-        // check if empty
+        // check if directory is empty
         if ( empty( $dir_objects ) ) {
-            return;
+            return $cache_size;
         }
-
-        $size = 0;
 
         foreach ( $dir_objects as $dir_object ) {
             // get full path
-            $dir_object = $dir . '/' . $dir_object;
+            $dir_object = trailingslashit( ( $dir ) ? $dir : ( self::$cache_dir . '/' . parse_url( home_url(), PHP_URL_HOST ) . parse_url( home_url(), PHP_URL_PATH ) ) ) . $dir_object;
 
             // check if directory
             if ( is_dir( $dir_object ) ) {
-                $size += self::cache_size( $dir_object );
+                $cache_size += self::cache_size( $dir_object );
             // check if file otherwise
             } elseif ( is_file( $dir_object ) ) {
-                $size += filesize( $dir_object );
+                $cache_size += filesize( $dir_object );
             }
         }
 
-        return $size;
+        return $cache_size;
     }
 
 
@@ -224,7 +221,7 @@ final class Cache_Enabler_Disk {
      * clear cached page(s)
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   string  $clear_url   full URL to potentially cached page
      * @param   string  $clear_type  clear the `pagination` or the entire `dir` instead of only the cached `page`
@@ -241,10 +238,15 @@ final class Cache_Enabler_Disk {
         // get directory
         $dir = self::cache_file_dir_path( $clear_url );
 
-        // delete all cached variants in directory
+        // check if directory exists
+        if ( ! is_dir( $dir ) ) {
+            return;
+        }
+
+        // clear all cached page variants
         array_map( 'unlink', glob( $dir . self::CACHE_FILE_GLOB ) );
 
-        // check if pagination needs to be cleared
+        // check if pagination also needs to be cleared
         if ( $clear_type === 'pagination' ) {
             // get pagination base
             $pagination_base = $GLOBALS['wp_rewrite']->pagination_base;
@@ -255,10 +257,10 @@ final class Cache_Enabler_Disk {
             }
         }
 
-        // get directory data
+        // get directory objects
         $dir_objects = self::get_dir_objects( $dir );
 
-        // check if directory is now empty or if it needs to be cleared anyways
+        // check if directory is now empty or if it needs to be cleared anyway
         if ( empty( $dir_objects ) || $clear_type === 'dir' ) {
             self::clear_dir( $dir );
         }
@@ -279,12 +281,12 @@ final class Cache_Enabler_Disk {
         // remove trailing slash
         $dir = untrailingslashit( $dir );
 
-        // validate directory
+        // check if directory exists
         if ( ! is_dir( $dir ) ) {
             return;
         }
 
-        // get directory data
+        // get directory objects
         $dir_objects = self::get_dir_objects( $dir );
 
         // check if directory is empty
@@ -298,7 +300,7 @@ final class Cache_Enabler_Disk {
             // get parent directory
             $parent_dir = preg_replace( '/\/[^\/]+$/', '', $dir );
 
-            // get parent directory data
+            // get parent directory objects
             $parent_dir_objects = self::get_dir_objects( $parent_dir );
 
             // check if parent directory is also empty
@@ -466,7 +468,7 @@ final class Cache_Enabler_Disk {
      * get cache file directory path
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   string  $url            full URL to potentially cached page
      * @return  string  $file_dir_path  file directory path to new or potentially cached page
@@ -486,11 +488,6 @@ final class Cache_Enabler_Disk {
                 PHP_URL_PATH
             )
         );
-
-        if ( is_file( $file_dir_path ) ) {
-            header( $_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found', true, 404 );
-            exit;
-        }
 
         // add trailing slash
         $file_dir_path = rtrim( $file_dir_path, '/\\' ) . '/';
@@ -651,7 +648,7 @@ final class Cache_Enabler_Disk {
      * get settings file name
      *
      * @since   1.5.5
-     * @change  1.5.5
+     * @change  1.6.0
      *
      * @param   boolean  $fallback            whether or not fallback settings file name should be returned
      * @param   boolean  $skip_blog_path      whether or not blog path should be included in settings file name
@@ -667,12 +664,9 @@ final class Cache_Enabler_Disk {
             $settings_file_name = parse_url( home_url(), PHP_URL_HOST );
 
             // subdirectory network
-            if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
-                $url_path = parse_url( home_url(), PHP_URL_PATH );
-                $url_path = rtrim( $url_path, '/' ); // remove trailing slash if there happens to be one
-                $url_path_pieces = explode( '/', $url_path );
-                $blog_path = ( ! empty( end( $url_path_pieces ) ) ) ? end( $url_path_pieces ) : ''; // get last piece in case installation is in a subdirectory
-                $settings_file_name .= ( ! empty( $blog_path ) ) ? '.' . $blog_path : '';
+            if ( is_multisite() && ! is_subdomain_install() ) {
+                $blog_path = Cache_Enabler::get_blog_path();
+                $settings_file_name .= ( ! empty( $blog_path ) ) ? '.' . trim( $blog_path, '/' ) : '';
             }
 
             $settings_file_name .= '.php';
@@ -689,7 +683,7 @@ final class Cache_Enabler_Disk {
                     // subdirectory network
                     if ( defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_blog_path ) {
                         $url_path = $_SERVER['REQUEST_URI'];
-                        $url_path = trim( $url_path, '/'); // remove leading and trailing slash(es)
+                        $url_path = trim( $url_path, '/');
 
                         if ( ! empty( $url_path ) ) {
                             $url_path_regex = str_replace( '/', '|', $url_path );
@@ -783,7 +777,7 @@ final class Cache_Enabler_Disk {
      * get directory file system objects
      *
      * @since   1.4.7
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   string  $dir          directory path
      * @return  array   $dir_objects  directory objects
@@ -791,13 +785,61 @@ final class Cache_Enabler_Disk {
 
     private static function get_dir_objects( $dir ) {
 
+        $dir_objects = array();
+
         // scan directory
         $dir_data = @scandir( $dir );
 
         if ( is_array( $dir_data ) ) {
             $dir_objects = array_diff( $dir_data, array( '..', '.' ) );
-            return $dir_objects;
         }
+
+        return $dir_objects;
+    }
+
+
+    /**
+     * get site file system objects
+     *
+     * @since   1.6.0
+     * @change  1.6.0
+     *
+     * @param   string  $site_url      site URL
+     * @return  array   $site_objects  site objects
+     */
+
+    public static function get_site_objects( $site_url ) {
+
+        $site_objects = array();
+
+        // get directory
+        $dir = self::cache_file_dir_path( $site_url );
+
+        // check if directory exists
+        if ( ! is_dir( $dir ) ) {
+            return $site_objects;
+        }
+
+        // get site objects
+        $site_objects = self::get_dir_objects( $dir );
+
+        // maybe filter subdirectory network site objects
+        if ( is_multisite() && ! is_subdomain_install() ) {
+            $blog_path  = Cache_Enabler::get_blog_path();
+            $blog_paths = Cache_Enabler::get_blog_paths();
+
+            // check if main site in subdirectory network
+            if ( ! in_array( $blog_path, $blog_paths ) ) {
+                foreach ( $site_objects as $key => $site_object ) {
+                    // delete site object if it does not belong to main site
+                    if ( in_array( '/' . $site_object . '/', $blog_paths ) ) {
+                        unset( $site_objects[ $key ] );
+                    }
+                }
+            }
+        }
+
+        return $site_objects;
     }
 
 
