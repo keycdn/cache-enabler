@@ -103,15 +103,15 @@ final class Cache_Enabler {
      * activation hook
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   boolean  $network_wide  network activated
      */
 
     public static function on_activation( $network_wide ) {
 
-        // install backend requirements, triggering the settings file(s) to be created
-        self::each_site( $network_wide, 'self::install_backend' );
+        // add backend requirements, triggering the settings file(s) to be created
+        self::each_site( $network_wide, 'self::update_backend' );
 
         // configure system files
         Cache_Enabler_Disk::setup();
@@ -135,10 +135,9 @@ final class Cache_Enabler {
             self::clear_complete_cache();
         }
 
-        // check updated plugins
+        // check if Cache Enabler has been updated
         if ( $data['action'] === 'update' && $data['type'] === 'plugin' && array_key_exists( 'plugins', $data ) ) {
             foreach ( (array) $data['plugins'] as $plugin_file ) {
-                // check if Cache Enabler has been updated
                 if ( $plugin_file === CE_BASE ) {
                     self::on_ce_update();
                 }
@@ -151,22 +150,16 @@ final class Cache_Enabler {
      * Cache Enabler update actions
      *
      * @since   1.4.0
-     * @change  1.5.0
+     * @change  1.6.0
      */
 
     public static function on_ce_update() {
 
-        $network_wide  = is_multisite();
-        $plugin_update = true;
-
         // clean system files
-        self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
+        self::each_site( is_multisite(), 'Cache_Enabler_Disk::clean' );
 
         // configure system files
         Cache_Enabler_Disk::setup();
-
-        // update backend requirements, triggering new settings file(s) to be created
-        self::each_site( $network_wide, 'self::update_backend', array( $plugin_update ) );
 
         // clear complete cache
         self::clear_complete_cache();
@@ -218,7 +211,7 @@ final class Cache_Enabler {
      * install on new site in multisite network
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.6.0
      *
      * @param   WP_Site  $new_site  new site instance
      */
@@ -233,8 +226,8 @@ final class Cache_Enabler {
         // switch to blog
         switch_to_blog( (int) $new_site->blog_id );
 
-        // install backend requirements, triggering the settings file to be created
-        self::install_backend();
+        // add backend requirements, triggering the settings file to be created
+        self::update_backend();
 
         // restore blog
         restore_current_blog();
@@ -242,51 +235,20 @@ final class Cache_Enabler {
 
 
     /**
-     * install backend requirements
-     *
-     * @since   1.0.0
-     * @change  1.5.0
-     */
-
-    private static function install_backend() {
-
-        // if old or current database option exists update backend requirements
-        if ( get_option( 'cache-enabler' ) || get_option( 'cache_enabler' ) ) {
-            self::update_backend();
-        // add default database option otherwise
-        } else {
-            $default_settings = self::get_default_settings();
-            add_option( 'cache_enabler', $default_settings );
-
-            // create settings file if action was not fired, like when in activation hook
-            if ( ! has_action( 'add_option_cache_enabler' ) ) {
-                self::on_update_backend( 'cache_enabler', $default_settings );
-            }
-        }
-    }
-
-
-    /**
-     * update backend requirements
+     * add or update backend requirements
      *
      * @since   1.5.0
-     * @change  1.5.2
+     * @change  1.6.0
      *
-     * @param   $plugin_update     whether or not an update is in progress
      * @return  $new_option_value  new or current database option value
      */
 
-    public static function update_backend( $plugin_update = false ) {
-
-        // check if backend should be updated
-        if ( $plugin_update && ! is_plugin_active( CE_BASE ) ) {
-            return;
-        }
+    public static function update_backend() {
 
         // delete user(s) meta key from deleted publishing action (1.5.0)
         delete_metadata( 'user', 0, '_clear_post_cache_on_update', '', true );
 
-        // rename database option (1.5.0)
+        // maybe rename old database option (1.5.0)
         $old_option_value = get_option( 'cache-enabler' );
         if ( $old_option_value !== false ) {
             delete_option( 'cache-enabler' );
@@ -305,12 +267,12 @@ final class Cache_Enabler {
         // merge defined settings into default settings
         $new_option_value = wp_parse_args( $old_option_value, self::get_default_settings() );
 
-        // update database option
+        // add or update database option
         update_option( 'cache_enabler', $new_option_value );
 
-        // create settings file if action was not fired, like when in upgrade hook or if a database update was unnecessary
-        if ( ! has_action( 'update_option_cache_enabler' ) ) {
-            self::on_update_backend( $old_option_value, $new_option_value );
+        // create settings file if action has not been registered for hook yet, like when in activation hook
+        if ( has_action( 'update_option_cache_enabler', array( __CLASS__, 'on_update_backend' ) ) === false ) {
+            Cache_Enabler_Disk::create_settings_file( $new_option_value );
         }
 
         return $new_option_value;
