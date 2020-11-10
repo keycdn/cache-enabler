@@ -187,7 +187,7 @@ final class Cache_Enabler_Disk {
 
         $cache_size = 0;
 
-        // get directory objects if directory exists
+        // get directory objects if provided directory exists
         if ( is_dir( $dir ) ) {
             $dir_objects = self::get_dir_objects( $dir );
         // get site objects otherwise
@@ -204,10 +204,8 @@ final class Cache_Enabler_Disk {
             // get full path
             $dir_object = trailingslashit( ( $dir ) ? $dir : ( self::$cache_dir . '/' . parse_url( home_url(), PHP_URL_HOST ) . parse_url( home_url(), PHP_URL_PATH ) ) ) . $dir_object;
 
-            // check if directory
             if ( is_dir( $dir_object ) ) {
                 $cache_size += self::cache_size( $dir_object );
-            // check if file otherwise
             } elseif ( is_file( $dir_object ) ) {
                 $cache_size += filesize( $dir_object );
             }
@@ -227,11 +225,10 @@ final class Cache_Enabler_Disk {
      * @param   string  $clear_type  clear the `pagination` or the entire `dir` instead of only the cached `page`
      */
 
-    public static function clear_cache( $clear_url = null, $clear_type = null ) {
+    public static function clear_cache( $clear_url = null, $clear_type = 'page' ) {
 
-        // check if complete cache should be cleared
-        if ( empty( $clear_url ) || empty( $clear_type ) ) {
-            self::clear_dir( self::$cache_dir );
+        // check if cache should be cleared
+        if ( empty( $clear_url ) ) {
             return;
         }
 
@@ -243,26 +240,32 @@ final class Cache_Enabler_Disk {
             return;
         }
 
-        // clear all cached page variants
-        array_map( 'unlink', glob( $dir . self::CACHE_FILE_GLOB ) );
-
-        // check if pagination also needs to be cleared
-        if ( $clear_type === 'pagination' ) {
-            // get pagination base
-            $pagination_base = $GLOBALS['wp_rewrite']->pagination_base;
-            if ( strlen( $pagination_base ) > 0 ) {
-                $pagination_dir = $dir . $pagination_base;
-                // clear pagination page(s) cache
-                self::clear_dir( $pagination_dir );
-            }
-        }
-
-        // get directory objects
-        $dir_objects = self::get_dir_objects( $dir );
-
-        // check if directory is now empty or if it needs to be cleared anyway
-        if ( empty( $dir_objects ) || $clear_type === 'dir' ) {
+        // check if entire directory should be cleared
+        if ( $clear_type === 'dir' ) {
             self::clear_dir( $dir );
+        // clear page and/or pagination otherwise
+        } else {
+            // clear all cached page variants
+            array_map( 'unlink', glob( $dir . self::CACHE_FILE_GLOB ) );
+
+            // check if pagination should also be cleared
+            if ( $clear_type === 'pagination' ) {
+                // get pagination base
+                $pagination_base = $GLOBALS['wp_rewrite']->pagination_base;
+                if ( strlen( $pagination_base ) > 0 ) {
+                    $pagination_dir = $dir . $pagination_base;
+                    // clear pagination page(s) cache
+                    self::clear_dir( $pagination_dir );
+                }
+            }
+
+            // get directory objects
+            $dir_objects = self::get_dir_objects( $dir );
+
+            // delete directory if empty along with any empty parent directories
+            if ( empty( $dir_objects ) ) {
+                self::clear_dir( $dir );
+            }
         }
     }
 
@@ -315,16 +318,15 @@ final class Cache_Enabler_Disk {
             // get full path
             $dir_object = $dir . '/' . $dir_object;
 
-            // check if directory
             if ( is_dir( $dir_object ) ) {
                 self::clear_dir( $dir_object );
-            // check if file otherwise
             } elseif ( is_file( $dir_object ) ) {
+                // clear cached page variant
                 unlink( $dir_object );
             }
         }
 
-        // delete directory
+        // delete directory after clearing cached page variant(s)
         @rmdir( $dir );
 
         // clear file status cache
@@ -785,13 +787,12 @@ final class Cache_Enabler_Disk {
 
     private static function get_dir_objects( $dir ) {
 
-        $dir_objects = array();
+        $dir_objects = scandir( $dir );
 
-        // scan directory
-        $dir_data = @scandir( $dir );
-
-        if ( is_array( $dir_data ) ) {
-            $dir_objects = array_diff( $dir_data, array( '..', '.' ) );
+        if ( is_array( $dir_objects ) ) {
+            $dir_objects = array_diff( $dir_objects, array( '..', '.' ) );
+        } else {
+            $dir_objects = array();
         }
 
         return $dir_objects;
@@ -946,20 +947,15 @@ final class Cache_Enabler_Disk {
             $image_urls = explode( ',', $full_match );
 
             foreach ( $image_urls as &$image_url ) {
-                // remove spaces if there are any
                 $image_url = trim( $image_url, ' ' );
-                // append .webp extension
-                $image_url_webp = preg_replace( $image_extension_regex, '$1.webp', $image_url );
-                // get WebP image path
+                $image_url_webp = preg_replace( $image_extension_regex, '$1.webp', $image_url ); // append .webp extension
                 $image_path_webp = self::image_path( $image_url_webp );
 
                 // check if WebP image exists
                 if ( is_file( $image_path_webp ) ) {
                     $image_url = $image_url_webp;
                 } else {
-                    // remove default extension
-                    $image_url_webp = preg_replace( $image_extension_regex, '', $image_url_webp );
-                    // get WebP image path
+                    $image_url_webp = preg_replace( $image_extension_regex, '', $image_url_webp ); // remove default extension
                     $image_path_webp = self::image_path( $image_url_webp );
 
                     // check if WebP image exists

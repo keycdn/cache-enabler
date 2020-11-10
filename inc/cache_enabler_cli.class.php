@@ -61,7 +61,7 @@ class Cache_Enabler_CLI {
         if ( empty( $assoc_args['ids'] ) && empty( $assoc_args['urls'] ) && empty( $assoc_args['sites'] ) ) {
             Cache_Enabler::clear_complete_cache();
 
-            return WP_CLI::success( ( is_multisite() ) ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Cache cleared.', 'cache-enabler' ) );
+            return WP_CLI::success( ( is_multisite() ) ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Site cache cleared.', 'cache-enabler' ) );
         }
 
         // clear page(s) cache by post ID(s) and/or URL(s)

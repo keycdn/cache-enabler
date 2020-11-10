@@ -70,7 +70,6 @@ final class Cache_Enabler {
         add_action( 'add_option_cache_enabler', array( __CLASS__, 'on_update_backend' ), 10, 2 );
         add_action( 'update_option_cache_enabler', array( __CLASS__, 'on_update_backend' ), 10, 2 );
 
-
         // admin bar hook
         add_action( 'admin_bar_menu', array( __CLASS__, 'add_admin_links' ), 90 );
 
@@ -122,7 +121,7 @@ final class Cache_Enabler {
      * upgrade hook
      *
      * @since   1.2.3
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   WP_Upgrader  $obj   upgrade instance
      * @param   array        $data  update data
@@ -130,9 +129,9 @@ final class Cache_Enabler {
 
     public static function on_upgrade( $obj, $data ) {
 
-        // if setting enabled clear complete cache on any plugin update
-        if ( Cache_Enabler_Engine::$settings['clear_complete_cache_on_changed_plugin'] ) {
-            self::clear_complete_cache();
+        // if setting enabled clear site cache on any plugin update
+        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_changed_plugin'] ) {
+            self::clear_site_cache();
         }
 
         // check if Cache Enabler has been updated
@@ -170,7 +169,7 @@ final class Cache_Enabler {
      * deactivation hook
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   boolean  $network_wide  network deactivated
      */
@@ -180,13 +179,8 @@ final class Cache_Enabler {
         // clean system files
         self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
 
-        // clear site cache of deactivated site
-        if ( is_multisite() && ! $network_wide ) {
-            self::clear_site_cache_by_blog_id( get_current_blog_id() );
-        // clear complete cache otherwise
-        } else {
-            self::clear_complete_cache();
-        }
+        // clear site(s) cache
+        self::each_site( $network_wide, 'self::clear_site_cache' );
     }
 
 
@@ -194,16 +188,13 @@ final class Cache_Enabler {
      * uninstall hook
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      */
 
     public static function on_uninstall() {
 
         // uninstall backend requirements
         self::each_site( is_multisite(), 'self::uninstall_backend' );
-
-        // clear complete cache
-        self::clear_complete_cache();
     }
 
 
@@ -366,14 +357,14 @@ final class Cache_Enabler {
      * plugin activation and deactivation hooks
      *
      * @since   1.4.0
-     * @change  1.4.0
+     * @change  1.6.0
      */
 
     public static function on_plugin_activation_deactivation() {
 
-        // if setting enabled clear complete cache on any plugin activation or deactivation
-        if ( Cache_Enabler_Engine::$settings['clear_complete_cache_on_changed_plugin'] ) {
-            self::clear_complete_cache();
+        // if setting enabled clear site cache on any plugin activation or deactivation
+        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_changed_plugin'] ) {
+            self::clear_site_cache();
         }
     }
 
@@ -558,7 +549,7 @@ final class Cache_Enabler {
      * get default settings
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   string  $settings_type                              default `system` settings
      * @return  array   $system_default_settings|$default_settings  system or all default settings
@@ -576,19 +567,19 @@ final class Cache_Enabler {
         }
 
         $user_default_settings = array(
-            'cache_expires'                          => 0,
-            'cache_expiry_time'                      => 0,
-            'clear_complete_cache_on_saved_post'     => 0,
-            'clear_complete_cache_on_new_comment'    => 0,
-            'clear_complete_cache_on_changed_plugin' => 0,
-            'compress_cache'                         => 0,
-            'convert_image_urls_to_webp'             => 0,
-            'excluded_post_ids'                      => '',
-            'excluded_page_paths'                    => '',
-            'excluded_query_strings'                 => '',
-            'excluded_cookies'                       => '',
-            'minify_html'                            => 0,
-            'minify_inline_css_js'                   => 0,
+            'cache_expires'                      => 0,
+            'cache_expiry_time'                  => 0,
+            'clear_site_cache_on_saved_post'     => 0,
+            'clear_site_cache_on_new_comment'    => 0,
+            'clear_site_cache_on_changed_plugin' => 0,
+            'compress_cache'                     => 0,
+            'convert_image_urls_to_webp'         => 0,
+            'excluded_post_ids'                  => '',
+            'excluded_page_paths'                => '',
+            'excluded_query_strings'             => '',
+            'excluded_cookies'                   => '',
+            'minify_html'                        => 0,
+            'minify_inline_css_js'               => 0,
         );
 
         // merge default settings
@@ -627,18 +618,26 @@ final class Cache_Enabler {
 
         // renamed or removed settings
         $settings_names = array(
-            'expires'              => 'cache_expiry_time',
-            'new_post'             => 'clear_complete_cache_on_saved_post',
-            'update_product_stock' => '', // deprecated in 1.5.0
-            'new_comment'          => 'clear_complete_cache_on_new_comment',
-            'clear_on_upgrade'     => 'clear_complete_cache_on_changed_plugin',
-            'compress'             => 'compress_cache',
-            'webp'                 => 'convert_image_urls_to_webp',
-            'excl_ids'             => 'excluded_post_ids',
-            'excl_regexp'          => 'excluded_page_paths', // < 1.4.0
-            'excl_paths'           => 'excluded_page_paths',
-            'excl_cookies'         => 'excluded_cookies',
-            'incl_parameters'      => '', // deprecated in 1.5.0
+            // 1.4.0
+            'excl_regexp'                            => 'excluded_page_paths',
+
+            // 1.5.0
+            'expires'                                => 'cache_expiry_time',
+            'new_post'                               => 'clear_site_cache_on_saved_post',
+            'update_product_stock'                   => '', // deprecated
+            'new_comment'                            => 'clear_site_cache_on_new_comment',
+            'clear_on_upgrade'                       => 'clear_site_cache_on_changed_plugin',
+            'compress'                               => 'compress_cache',
+            'webp'                                   => 'convert_image_urls_to_webp',
+            'excl_ids'                               => 'excluded_post_ids',
+            'excl_paths'                             => 'excluded_page_paths',
+            'excl_cookies'                           => 'excluded_cookies',
+            'incl_parameters'                        => '', // deprecated
+
+            // 1.6.0
+            'clear_complete_cache_on_saved_post'     => 'clear_site_cache_on_saved_post',
+            'clear_complete_cache_on_new_comment'    => 'clear_site_cache_on_new_comment',
+            'clear_complete_cache_on_changed_plugin' => 'clear_site_cache_on_changed_plugin',
         );
 
         foreach ( $settings_names as $old_name => $new_name ) {
@@ -756,7 +755,7 @@ final class Cache_Enabler {
      * add admin links
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   object  menu properties
      *
@@ -770,10 +769,10 @@ final class Cache_Enabler {
             return;
         }
 
-        // get clear complete cache button title
-        $title = ( is_multisite() && is_network_admin() ) ? esc_html__( 'Clear Network Cache', 'cache-enabler' ) : esc_html__( 'Clear Cache', 'cache-enabler' );
+        // set clear cache button title
+        $title = ( is_multisite() && is_network_admin() ) ? esc_html__( 'Clear Network Cache', 'cache-enabler' ) : esc_html__( 'Clear Site Cache', 'cache-enabler' );
 
-        // add "Clear Network Cache" or "Clear Cache" button in admin bar
+        // add "Clear Network Cache" or "Clear Site Cache" button in admin bar
         $wp_admin_bar->add_menu(
             array(
                 'id'     => 'clear-cache',
@@ -787,7 +786,7 @@ final class Cache_Enabler {
             )
         );
 
-        // add "Clear URL Cache" button in admin bar
+        // add "Clear Page Cache" button in admin bar
         if ( ! is_admin() ) {
             $wp_admin_bar->add_menu(
                 array(
@@ -797,8 +796,8 @@ final class Cache_Enabler {
                                     '_action' => 'clearurl',
                                 ) ), 'cache_enabler_clear_cache_nonce' ),
                     'parent' => 'top-secondary',
-                    'title'  => '<span class="ab-item">' . esc_html__( 'Clear URL Cache', 'cache-enabler' ) . '</span>',
-                    'meta'   => array( 'title' => esc_html__( 'Clear URL Cache', 'cache-enabler' ) ),
+                    'title'  => '<span class="ab-item">' . esc_html__( 'Clear Page Cache', 'cache-enabler' ) . '</span>',
+                    'meta'   => array( 'title' => esc_html__( 'Clear Page Cache', 'cache-enabler' ) ),
                 )
             );
         }
@@ -864,35 +863,15 @@ final class Cache_Enabler {
             return;
         }
 
-        // set clear URL without query string and check if installation is in a subdirectory
-        $installation_dir = parse_url( home_url(), PHP_URL_PATH );
-        $clear_url = str_replace( $installation_dir, '', home_url() ) . preg_replace( '/\?.*/', '', $_SERVER['REQUEST_URI'] );
-
-        // network activated
-        if ( is_multisite() ) {
-            // network admin
-            if ( is_network_admin() && $_GET['_action'] === 'clear' ) {
-                // clear complete cache
-                self::clear_complete_cache();
-            // site admin
-            } else {
-                if ( $_GET['_action'] === 'clearurl' ) {
-                    // clear specific site URL cache
-                    self::clear_page_cache_by_url( $clear_url );
-                } elseif ( $_GET['_action'] === 'clear' ) {
-                    // clear specific site complete cache
-                    self::clear_site_cache_by_blog_id( get_current_blog_id() );
-                }
-            }
-        // site activated
-        } else {
-            if ( $_GET['_action'] === 'clearurl' ) {
-                // clear URL cache
-                self::clear_page_cache_by_url( $clear_url );
-            } elseif ( $_GET['_action'] === 'clear' ) {
-                // clear complete cache
-                self::clear_complete_cache();
-            }
+        // clear page cache
+        if ( $_GET['_action'] === 'clearurl' ) {
+            // set clear URL without installation directory or query string
+            $installation_dir = parse_url( home_url(), PHP_URL_PATH );
+            $clear_url = str_replace( $installation_dir, '', home_url() ) . preg_replace( '/\?.*/', '', $_SERVER['REQUEST_URI'] );
+            self::clear_page_cache_by_url( $clear_url );
+        // clear site(s) cache
+        } elseif ( $_GET['_action'] === 'clear' ) {
+            self::each_site( ( is_multisite() && is_network_admin() ), 'self::clear_site_cache' );
         }
 
         // redirect to same page
@@ -927,7 +906,7 @@ final class Cache_Enabler {
         if ( get_transient( self::get_cache_cleared_transient_name() ) ) {
             echo sprintf(
                 '<div class="notice notice-success is-dismissible"><p><strong>%s</strong></p></div>',
-                ( is_multisite() && is_network_admin() ) ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Cache cleared.', 'cache-enabler' )
+                ( is_multisite() && is_network_admin() ) ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Site cache cleared.', 'cache-enabler' )
             );
 
             delete_transient( self::get_cache_cleared_transient_name() );
@@ -968,7 +947,7 @@ final class Cache_Enabler {
 
         // if setting disabled and any published post type author changes
         if ( $post_before->post_author !== $post_after->post_author ) {
-            if ( ! Cache_Enabler_Engine::$settings['clear_complete_cache_on_saved_post'] ) {
+            if ( ! Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_post'] ) {
                 // clear before the update author archives
                 self::clear_author_archives_cache_by_user_id( $post_before->post_author );
             }
@@ -1019,7 +998,7 @@ final class Cache_Enabler {
      * clear cache if post comment
      *
      * @since   1.2.0
-     * @change  1.4.0
+     * @change  1.6.0
      *
      * @param   integer  $comment_id  comment ID
      * @param   mixed    $approved    approval status
@@ -1029,9 +1008,10 @@ final class Cache_Enabler {
 
         // check if comment is approved
         if ( $approved === 1 ) {
-            // if setting enabled clear complete cache on new comment
-            if ( Cache_Enabler_Engine::$settings['clear_complete_cache_on_new_comment'] ) {
-                self::clear_complete_cache();
+            // if setting enabled clear site cache on new comment
+            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
+                self::clear_site_cache();
+            // clear page cache otherwise
             } else {
                 self::clear_page_cache_by_post_id( get_comment( $comment_id )->comment_post_ID );
             }
@@ -1043,16 +1023,17 @@ final class Cache_Enabler {
      * clear cache if edit comment
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.6.0
      *
      * @param   integer  $comment_id  comment ID
      */
 
     public static function edit_comment( $comment_id ) {
 
-        // if setting enabled clear complete cache on new comment
-        if ( Cache_Enabler_Engine::$settings['clear_complete_cache_on_new_comment'] ) {
-            self::clear_complete_cache();
+        // if setting enabled clear site cache on new comment
+        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
+            self::clear_site_cache();
+        // clear page cache otherwise
         } else {
             self::clear_page_cache_by_post_id( get_comment( $comment_id )->comment_post_ID );
         }
@@ -1063,7 +1044,7 @@ final class Cache_Enabler {
      * clear cache if new comment
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.6.0
      *
      * @param   mixed  $approved  approval status
      * @param   array  $comment
@@ -1074,9 +1055,10 @@ final class Cache_Enabler {
 
         // check if comment is approved
         if ( $approved === 1 ) {
-            // if setting enabled clear complete cache on new comment
-            if ( Cache_Enabler_Engine::$settings['clear_complete_cache_on_new_comment'] ) {
-                self::clear_complete_cache();
+            // if setting enabled clear site cache on new comment
+            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
+                self::clear_site_cache();
+            // clear page cache otherwise
             } else {
                 self::clear_page_cache_by_post_id( $comment['comment_post_ID'] );
             }
@@ -1090,7 +1072,7 @@ final class Cache_Enabler {
      * clear cache if comment status changes
      *
      * @since   1.0.0
-     * @change  1.0.0
+     * @change  1.6.0
      *
      * @param   string  $after_status
      * @param   string  $before_status
@@ -1101,9 +1083,10 @@ final class Cache_Enabler {
 
         // check if changes occured
         if ( $after_status !== $before_status ) {
-            // if setting enabled clear complete cache on new comment
-            if ( Cache_Enabler_Engine::$settings['clear_complete_cache_on_new_comment'] ) {
-                self::clear_complete_cache();
+            // if setting enabled clear site cache on new comment
+            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
+                self::clear_site_cache();
+            // clear page cache otherwise
             } else {
                 self::clear_page_cache_by_post_id( $comment->comment_post_ID );
             }
@@ -1120,10 +1103,10 @@ final class Cache_Enabler {
 
     public static function clear_complete_cache() {
 
-        // clear complete cache
-        Cache_Enabler_Disk::clear_cache();
+        // clear site(s) cache
+        self::each_site( is_multisite(), 'self::clear_site_cache' );
 
-        // delete cache size transient
+        // delete cache size transient(s)
         self::each_site( is_multisite(), 'delete_transient', array( self::get_cache_size_transient_name() ) );
 
         // clear cache post hook
@@ -1140,6 +1123,19 @@ final class Cache_Enabler {
     public static function clear_total_cache() {
 
         self::clear_complete_cache();
+    }
+
+
+    /**
+     * clear site cache
+     *
+     * @since   1.6.0
+     * @change  1.6.0
+     */
+
+    public static function clear_site_cache() {
+
+        self::clear_site_cache_by_blog_id( get_current_blog_id() );
     }
 
 
@@ -1391,16 +1387,16 @@ final class Cache_Enabler {
         // get post data
         $post = get_post( $post_id );
 
-        // if setting enabled clear complete cache
-        if ( Cache_Enabler_Engine::$settings['clear_complete_cache_on_saved_post'] ) {
-            self::clear_complete_cache();
+        // if setting enabled clear site cache
+        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_post'] ) {
+            self::clear_site_cache();
         // clear page and/or associated cache otherwise
         } else {
-            // if updated or trashed
+            // if updated or trashed clear page cache
             if ( strtotime( $post->post_modified_gmt ) > strtotime( $post->post_date_gmt ) || $trashed ) {
-                // clear page cache
                 self::clear_page_cache_by_post_id( $post_id );
             }
+
             // clear associated cache
             self::clear_associated_cache( $post );
         }
@@ -1545,7 +1541,7 @@ final class Cache_Enabler {
      * validate settings
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.6.0
      *
      * @param   array  $settings            user defined settings
      * @return  array  $validated_settings  validated settings
@@ -1559,27 +1555,27 @@ final class Cache_Enabler {
         }
 
         $validated_settings = array(
-            'cache_expires'                          => (int) ( ! empty( $settings['cache_expires'] ) ),
-            'cache_expiry_time'                      => (int) @$settings['cache_expiry_time'],
-            'clear_complete_cache_on_saved_post'     => (int) ( ! empty( $settings['clear_complete_cache_on_saved_post'] ) ),
-            'clear_complete_cache_on_new_comment'    => (int) ( ! empty( $settings['clear_complete_cache_on_new_comment'] ) ),
-            'clear_complete_cache_on_changed_plugin' => (int) ( ! empty( $settings['clear_complete_cache_on_changed_plugin'] ) ),
-            'compress_cache'                         => (int) ( ! empty( $settings['compress_cache'] ) ),
-            'convert_image_urls_to_webp'             => (int) ( ! empty( $settings['convert_image_urls_to_webp'] ) ),
-            'excluded_post_ids'                      => (string) sanitize_text_field( @$settings['excluded_post_ids'] ),
-            'excluded_page_paths'                    => (string) self::validate_regex( @$settings['excluded_page_paths'] ),
-            'excluded_query_strings'                 => (string) self::validate_regex( @$settings['excluded_query_strings'] ),
-            'excluded_cookies'                       => (string) self::validate_regex( @$settings['excluded_cookies'] ),
-            'minify_html'                            => (int) ( ! empty( $settings['minify_html'] ) ),
-            'minify_inline_css_js'                   => (int) ( ! empty( $settings['minify_inline_css_js'] ) ),
+            'cache_expires'                      => (int) ( ! empty( $settings['cache_expires'] ) ),
+            'cache_expiry_time'                  => (int) @$settings['cache_expiry_time'],
+            'clear_site_cache_on_saved_post'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_post'] ) ),
+            'clear_site_cache_on_new_comment'    => (int) ( ! empty( $settings['clear_site_cache_on_new_comment'] ) ),
+            'clear_site_cache_on_changed_plugin' => (int) ( ! empty( $settings['clear_site_cache_on_changed_plugin'] ) ),
+            'compress_cache'                     => (int) ( ! empty( $settings['compress_cache'] ) ),
+            'convert_image_urls_to_webp'         => (int) ( ! empty( $settings['convert_image_urls_to_webp'] ) ),
+            'excluded_post_ids'                  => (string) sanitize_text_field( @$settings['excluded_post_ids'] ),
+            'excluded_page_paths'                => (string) self::validate_regex( @$settings['excluded_page_paths'] ),
+            'excluded_query_strings'             => (string) self::validate_regex( @$settings['excluded_query_strings'] ),
+            'excluded_cookies'                   => (string) self::validate_regex( @$settings['excluded_cookies'] ),
+            'minify_html'                        => (int) ( ! empty( $settings['minify_html'] ) ),
+            'minify_inline_css_js'               => (int) ( ! empty( $settings['minify_inline_css_js'] ) ),
         );
 
         // add default system settings
         $validated_settings = wp_parse_args( $validated_settings, self::get_default_settings( 'system' ) );
 
-        // check if cache should be cleared
-        if ( ! empty( $settings['clear_complete_cache_on_saved_settings'] ) ) {
-            self::clear_complete_cache();
+        // check if site cache should be cleared
+        if ( ! empty( $settings['clear_site_cache_on_saved_settings'] ) ) {
+            self::clear_site_cache();
             set_transient( self::get_cache_cleared_transient_name(), 1 );
         }
 
@@ -1591,7 +1587,7 @@ final class Cache_Enabler {
      * settings page
      *
      * @since   1.0.0
-     * @change  1.5.3
+     * @change  1.6.0
      */
 
     public static function settings_page() {
@@ -1655,23 +1651,23 @@ final class Cache_Enabler {
                                 <br />
 
                                 <p class="subheading"><?php esc_html_e( 'Clearing', 'cache-enabler' ); ?></p>
-                                <label for="clear_complete_cache_on_saved_post">
-                                    <input name="cache_enabler[clear_complete_cache_on_saved_post]" type="checkbox" id="clear_complete_cache_on_saved_post" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_complete_cache_on_saved_post'] ); ?> />
-                                    <?php esc_html_e( 'Clear the complete cache if any post type has been published, updated, or trashed (instead of only the page and/or associated cache).', 'cache-enabler' ); ?>
+                                <label for="clear_site_cache_on_saved_post">
+                                    <input name="cache_enabler[clear_site_cache_on_saved_post]" type="checkbox" id="clear_site_cache_on_saved_post" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_post'] ); ?> />
+                                    <?php esc_html_e( 'Clear the site cache if any post type has been published, updated, or trashed (instead of only the page and/or associated cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
 
-                                <label for="clear_complete_cache_on_new_comment">
-                                    <input name="cache_enabler[clear_complete_cache_on_new_comment]" type="checkbox" id="clear_complete_cache_on_new_comment" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_complete_cache_on_new_comment'] ); ?> />
-                                    <?php esc_html_e( 'Clear the complete cache if a new comment has been posted (instead of only the page cache).', 'cache-enabler' ); ?>
+                                <label for="clear_site_cache_on_new_comment">
+                                    <input name="cache_enabler[clear_site_cache_on_new_comment]" type="checkbox" id="clear_site_cache_on_new_comment" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ); ?> />
+                                    <?php esc_html_e( 'Clear the site cache if a new comment has been posted (instead of only the page cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
 
-                                <label for="clear_complete_cache_on_changed_plugin">
-                                    <input name="cache_enabler[clear_complete_cache_on_changed_plugin]" type="checkbox" id="clear_complete_cache_on_changed_plugin" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_complete_cache_on_changed_plugin'] ); ?> />
-                                    <?php esc_html_e( 'Clear the complete cache if any plugin has been activated, updated, or deactivated.', 'cache-enabler' ); ?>
+                                <label for="clear_site_cache_on_changed_plugin">
+                                    <input name="cache_enabler[clear_site_cache_on_changed_plugin]" type="checkbox" id="clear_site_cache_on_changed_plugin" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_changed_plugin'] ); ?> />
+                                    <?php esc_html_e( 'Clear the site cache if any plugin has been activated, updated, or deactivated.', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
@@ -1776,7 +1772,7 @@ final class Cache_Enabler {
 
                 <p class="submit">
                 <input type="submit" class="button-secondary" value="<?php esc_html_e( 'Save Changes', 'cache-enabler' ); ?>" />
-                <input name="cache_enabler[clear_complete_cache_on_saved_settings]" type="submit" class="button-primary" value="<?php esc_html_e( 'Save Changes and Clear Cache', 'cache-enabler' ); ?>" />
+                <input name="cache_enabler[clear_site_cache_on_saved_settings]" type="submit" class="button-primary" value="<?php esc_html_e( 'Save Changes and Clear Site Cache', 'cache-enabler' ); ?>" />
                 </p>
             </form>
         </div>
