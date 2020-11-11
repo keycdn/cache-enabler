@@ -3,7 +3,7 @@
  * Cache Enabler advanced cache
  *
  * @since   1.2.0
- * @change  1.5.5
+ * @change  1.6.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -20,6 +20,13 @@ if ( file_exists( $ce_engine_file ) && file_exists( $ce_disk_file ) ) {
 }
 
 if ( class_exists( 'Cache_Enabler_Engine' ) ) {
-    Cache_Enabler_Engine::start();
-    Cache_Enabler_Engine::deliver_cache();
+    $ce_engine_started = Cache_Enabler_Engine::start();
+
+    if ( $ce_engine_started ) {
+        $ce_cache_delivered = Cache_Enabler_Engine::deliver_cache();
+
+        if ( ! $ce_cache_delivered ) {
+            Cache_Enabler_Engine::start_buffering();
+        }
+    }
 }
