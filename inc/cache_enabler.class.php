@@ -60,7 +60,9 @@ final class Cache_Enabler {
         add_action( 'post_updated', array( __CLASS__, 'on_post_updated' ), 10, 3 );
         add_action( 'wp_trash_post', array( __CLASS__, 'on_trash_post' ) );
         add_action( 'transition_post_status', array( __CLASS__, 'on_transition_post_status' ), 10, 3 );
-        add_action( 'pre_comment_approved', array( __CLASS__, 'new_comment' ), 99, 2 );
+        add_action( 'comment_post', array( __CLASS__, 'on_comment_post' ), 99, 2 );
+        add_action( 'edit_comment', array( __CLASS__, 'on_edit_comment' ), 10, 2 );
+        add_action( 'transition_comment_status', array( __CLASS__, 'on_transition_comment_status' ), 10, 3 );
         add_action( 'permalink_structure_changed', array( __CLASS__, 'clear_complete_cache' ) );
         // third party
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_complete_cache' ) );
@@ -83,10 +85,6 @@ final class Cache_Enabler {
             add_action( 'admin_menu', array( __CLASS__, 'add_settings_page' ) );
             add_action( 'admin_enqueue_scripts', array( __CLASS__, 'add_admin_resources' ) );
             add_filter( 'plugin_row_meta', array( __CLASS__, 'add_plugin_row_meta' ), 10, 2 );
-            // comments
-            add_action( 'transition_comment_status', array( __CLASS__, 'change_comment' ), 10, 3 );
-            add_action( 'comment_post', array( __CLASS__, 'comment_post' ), 99, 2 );
-            add_action( 'edit_comment', array( __CLASS__, 'edit_comment' ) );
             // dashboard
             add_filter( 'dashboard_glance_items', array( __CLASS__, 'add_dashboard_cache_size' ) );
             add_filter( 'plugin_action_links_' . CE_BASE, array( __CLASS__, 'add_plugin_action_links' ) );
@@ -988,26 +986,25 @@ final class Cache_Enabler {
     public static function on_transition_post_status( $new_status, $old_status, $post ) {
 
         // if any published post type status has changed
-        if ( $old_status === 'publish' && in_array( $new_status, array( 'future', 'draft', 'pending', 'private') ) ) {
+        if ( $old_status === 'publish' && in_array( $new_status, array( 'future', 'draft', 'pending', 'private' ) ) ) {
             self::clear_cache_on_post_save( $post->ID );
         }
     }
 
 
     /**
-     * clear cache if post comment
+     * comment post hook
      *
      * @since   1.2.0
      * @change  1.6.0
      *
-     * @param   integer  $comment_id  comment ID
-     * @param   mixed    $approved    approval status
+     * @param   integer         $comment_id        comment ID
+     * @param   integer|string  $comment_approved  comment approval status
      */
 
-    public static function comment_post( $comment_id, $approved ) {
+    public static function on_comment_post( $comment_id, $comment_approved ) {
 
-        // check if comment is approved
-        if ( $approved === 1 ) {
+        if ( $comment_approved === 1 ) {
             // if setting enabled clear site cache on new comment
             if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
                 self::clear_site_cache();
@@ -1020,76 +1017,41 @@ final class Cache_Enabler {
 
 
     /**
-     * clear cache if edit comment
+     * edit comment hook
      *
      * @since   1.0.0
      * @change  1.6.0
      *
-     * @param   integer  $comment_id  comment ID
+     * @param   integer  $comment_id    comment ID
+     * @param   array    $comment_data  comment data
      */
 
-    public static function edit_comment( $comment_id ) {
+    public static function on_edit_comment( $comment_id, $comment_data ) {
 
-        // if setting enabled clear site cache on new comment
-        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
-            self::clear_site_cache();
-        // clear page cache otherwise
-        } else {
+        $comment_approved = (int) $comment_data['comment_approved'];
+
+        if ( $comment_approved === 1 ) {
             self::clear_page_cache_by_post_id( get_comment( $comment_id )->comment_post_ID );
         }
     }
 
 
     /**
-     * clear cache if new comment
+     * transition comment status hook
      *
      * @since   1.0.0
      * @change  1.6.0
      *
-     * @param   mixed  $approved  approval status
-     * @param   array  $comment
-     * @return  mixed  $approved  approval status
+     * @param   integer|string  $new_status  new comment status
+     * @param   integer|string  $old_status  old comment status
+     * @param   WP_Comment      $comment     comment instance
      */
 
-    public static function new_comment( $approved, $comment ) {
+    public static function on_transition_comment_status( $new_status, $old_status, $comment ) {
 
-        // check if comment is approved
-        if ( $approved === 1 ) {
-            // if setting enabled clear site cache on new comment
-            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
-                self::clear_site_cache();
-            // clear page cache otherwise
-            } else {
-                self::clear_page_cache_by_post_id( $comment['comment_post_ID'] );
-            }
-        }
-
-        return $approved;
-    }
-
-
-    /**
-     * clear cache if comment status changes
-     *
-     * @since   1.0.0
-     * @change  1.6.0
-     *
-     * @param   string  $after_status
-     * @param   string  $before_status
-     * @param   object  $comment
-     */
-
-    public static function change_comment( $after_status, $before_status, $comment ) {
-
-        // check if changes occured
-        if ( $after_status !== $before_status ) {
-            // if setting enabled clear site cache on new comment
-            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
-                self::clear_site_cache();
-            // clear page cache otherwise
-            } else {
-                self::clear_page_cache_by_post_id( $comment->comment_post_ID );
-            }
+        // if comment status has changed from or to approved
+        if ( $old_status === 'approved' || $new_status === 'approved' ) {
+            self::clear_page_cache_by_post_id( $comment->comment_post_ID );
         }
     }
 
