@@ -766,7 +766,7 @@ final class Cache_Enabler_Disk {
             }
         }
 
-        // create settings file if cache exists but settings file does not
+        // create settings file if it does not exist and in late engine start
         if ( empty( $settings ) && class_exists( 'Cache_Enabler' ) ) {
             self::create_settings_file( Cache_Enabler::get_settings() );
         }

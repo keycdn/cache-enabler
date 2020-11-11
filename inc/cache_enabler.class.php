@@ -44,7 +44,6 @@ final class Cache_Enabler {
 
         // init hooks
         add_action( 'init', array( 'Cache_Enabler_Engine', 'start' ) );
-        add_action( 'init', array( 'Cache_Enabler_Engine', 'start_buffering' ) );
         add_action( 'init', array( __CLASS__, 'process_clear_cache_request' ) );
         add_action( 'init', array( __CLASS__, 'register_textdomain' ) );
 

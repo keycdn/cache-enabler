@@ -82,6 +82,7 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 = 1.6.0 =
 * Update cache clearing behavior for comment actions to prevent unnecessary cache clearing (#169)
+* Update output buffer timing to start earlier on the `advanced-cache.php` drop-in instead of the `init` hook (#168)
 * Add site cache clearing behavior (#167)
 * Fix getting cache size for main site in subdirectory network (#164)
 * Fix deleting cache size transient (#164)
