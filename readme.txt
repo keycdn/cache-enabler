@@ -81,13 +81,21 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 == Changelog ==
 
 = 1.6.0 =
+* Update cache clearing behavior for multisite networks when permalink structure has changed to prevent unnecessary cache clearing (#170)
 * Update cache clearing behavior for comment actions to prevent unnecessary cache clearing (#169)
 * Update output buffer timing to start earlier on the `advanced-cache.php` drop-in instead of the `init` hook (#168)
+* Update plugin upgrade handling (#166)
+* Add `cache_enabler_clear_complete_cache`, `cache_enabler_clear_site_cache`, `cache_enabler_clear_site_cache_by_blog_id`, `cache_enabler_clear_page_cache_by_post_id`, `cache_enabler_clear_page_cache_by_url`, `cache_enabler_complete_cache_cleared`, `cache_enabler_site_cache_cleared`, and `cache_enabler_page_cache_cleared` action hooks (#170)
+* Add `cache_enabler_user_can_clear_cache`, `cache_enabler_exclude_search`, `cache_enabler_bypass_cache`, `cache_enabler_page_contents_before_store`, `cache_enabler_page_contents_after_webp_conversion`, `cache_enabler_minify_html_ignore_tags` filter hooks (#170)
 * Add site cache clearing behavior (#167)
+* Fix requirement notices being shown to all users (#170)
+* Fix setting up new site in multisite network when new site is added outside of the admin interface (#170)
 * Fix getting cache size for main site in subdirectory network (#164)
 * Fix deleting cache size transient (#164)
 * Fix cache clearing (#164 and #167)
 * Fix clear cache request validation
+* Deprecate `ce_clear_cache`, `ce_clear_post_cache`, `ce_action_cache_cleared`, and `ce_action_cache_by_url_cleared` action hooks in favor of replacements (#170)
+* Deprecate `user_can_clear_cache`, `bypass_cache`, `cache_enabler_before_store`, `cache_enabler_disk_webp_converted_data`, and `cache_minify_ignore_tags` filter hooks in favor of replacements (#170)
 
 = 1.5.5 =
 * Update advanced cache to prevent potential errors (#161)
