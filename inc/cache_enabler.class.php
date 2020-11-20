@@ -407,7 +407,7 @@ final class Cache_Enabler {
             $settings = self::update_backend();
         }
 
-        return $settings;
+        return apply_filters( 'cache_enabler_settings', $settings );
     }
 
 
@@ -585,7 +585,7 @@ final class Cache_Enabler {
             return $system_default_settings;
         }
 
-        $user_default_settings = array(
+        $user_default_settings = apply_filters( 'cache_enabler_default_settings', array(
             'cache_expires'                      => 0,
             'cache_expiry_time'                  => 0,
             'clear_site_cache_on_saved_post'     => 0,
@@ -599,7 +599,7 @@ final class Cache_Enabler {
             'excluded_cookies'                   => '',
             'minify_html'                        => 0,
             'minify_inline_css_js'               => 0,
-        );
+        ) );
 
         // merge default settings
         $default_settings = wp_parse_args( $user_default_settings, $system_default_settings );
