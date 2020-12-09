@@ -80,6 +80,9 @@ When combined with Optimus, the WordPress Cache Enabler allows you to easily del
 
 == Changelog ==
 
+= 1.6.1 =
+* Fix cache clearing on WooCommerce stock update (#179)
+
 = 1.6.0 =
 * Update cache clearing behavior for multisite networks when permalink structure has changed to prevent unnecessary cache clearing (#170)
 * Update cache clearing behavior for comment actions to prevent unnecessary cache clearing (#169)

@@ -50,7 +50,7 @@ final class Cache_Enabler {
      * constructor
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.6.1
      */
 
     public function __construct() {
@@ -86,6 +86,10 @@ final class Cache_Enabler {
 
         // third party clear cache hooks
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_complete_cache' ) );
+        add_action( 'woocommerce_product_set_stock', array( __CLASS__, 'on_woocommerce_stock_update' ) );
+        add_action( 'woocommerce_variation_set_stock', array( __CLASS__, 'on_woocommerce_stock_update' ) );
+        add_action( 'woocommerce_product_set_stock_status', array( __CLASS__, 'on_woocommerce_stock_update' ) );
+        add_action( 'woocommerce_variation_set_stock_status', array( __CLASS__, 'on_woocommerce_stock_update' ) );
 
         // multisite hooks
         add_action( 'wp_initialize_site', array( __CLASS__, 'install_later' ) );
@@ -1094,6 +1098,28 @@ final class Cache_Enabler {
         if ( $old_status === 'approved' || $new_status === 'approved' ) {
             self::clear_page_cache_by_post_id( $comment->comment_post_ID );
         }
+    }
+
+
+    /**
+     * WooCommerce stock hooks
+     *
+     * @since   1.3.0
+     * @change  1.6.1
+     *
+     * @param   integer|WC_Product  $product  product ID or product instance
+     */
+
+    public static function on_woocommerce_stock_update( $product ) {
+
+        // get product ID
+        if ( is_int( $product ) ) {
+            $product_id = $product;
+        } else {
+            $product_id = $product->get_id();
+        }
+
+        self::clear_cache_on_post_save( $product_id );
     }
 
 
