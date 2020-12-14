@@ -1,81 +1,62 @@
-=== Cache Enabler - WordPress Cache ===
+=== Cache Enabler ===
 Contributors: keycdn
-Tags: cache, caching, wordpress cache, wp cache, performance, gzip, webp, http2
+Tags: cache, caching, performance, gzip, webp, speed
 Requires at least: 5.1
-Tested up to: 5.5
+Tested up to: 5.6
+Requires PHP: 5.6
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 
-
-A lightweight caching plugin for WordPress that makes your website faster by generating static HTML files plus WebP support.
-
+A lightweight caching plugin for WordPress that makes your website faster by generating static HTML files. WebP and Gzip support included.
 
 
 == Description ==
 
-= WordPress Cache Engine =
-The Cache Enabler plugin creates static HTML files and stores them on the servers disk. The web server will deliver the static HTML file and avoids the resource intensive backend processes (core, plugins and database). This WordPress cache engine will improve the performance of your website.
+Cache Enabler is a simple, yet powerful WordPress plugin that is easy to use, needs minimal configuration, and best of all helps improve site performance for a faster load time. It creates static HTML files and stores them on the server's disk. This allows the web server to deliver the static HTML files avoiding resource intensive backend processes from the WordPress core, plugins, and database lookups.
 
 
 = Features =
-* Efficient and fast disk cache engine
-* Automated and/or manual clearing of the cache
-* Manually clear the cache of specific pages
+* Fast and efficient cache engine
+* Automatic smart cache clearing
+* Manual cache clearing
 * WP-CLI cache clearing
-* Display of the actual cache size in your dashboard
-* Minification of HTML and inline JavaScript
-* WordPress multisite support
-* Custom Post Type support
-* Expiry Directive
-* Support of *304 Not Modified* if the page has not modified since last cached
-* WebP Support (when combined with [Optimus](https://optimus.io "Optimus"))
-* Supports responsive images via srcset since WP 4.4
-* Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/)
-
-> Cache Enabler is the first WP plugin to allow you to serve WebP images without JavaScript and also fully supports srcset since WP 4.4. WebP is a new image format that provides lossless and lossy compression for images on the web. WebP lossless images are [26% smaller](https://developers.google.com/speed/webp/docs/webp_lossless_alpha_study#results "webp lossless alpha study") in size compared to PNGs.
+* Cache expiry
+* Cache size display in the WordPress dashboard
+* Minification of HTML excluding or including inline CSS and JavaScript
+* WordPress multisite network support
+* WebP support (convert images to WebP with [Optimus](https://optimus.io "Optimus"))
+* Gzip pre-compression support
+* Custom post type support
+* `304 Not Modified` support
+* Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/) and the majority of third party plugins
 
 
 = How does the caching work? =
-This plugin requires minimal setup time and allows you to easily take advantage of the benefits that come from using WordPress caching.
-
-The WordPress Cache Enabler has the ability to create 2 cached files. One is plain HTML and the other version is gzipped (gzip level 9). These static files are then used to deliver content faster to your users without any database lookups or gzipping as the files are already pre-compressed.
-
-When combined with Optimus, the WordPress Cache Enabler allows you to easily deliver WebP images. The plugin will check your upload directory for any JPG or PNG images that have an equivalent WebP file. If there is, the URI of these image will be cached in a WebP static file by Cache Enabler. It is not required for all images to be converted to WebP when the "Create an additional cached version for WebP image support" option is enabled. This will not break any images that are not in WebP format. The plugin will deliver images that do have a WebP equivalent and will fall back to the JPG or PNG format for images that don't.
+Cache Enabler captures page contents and saves it as a static HTML file on the server’s disk. Converting inline image URLs to WebP as a separate static HTML file and pre-compressing both static HTML files with Gzip is possible. The accepted static HTML file is then delivered to users without any database lookups or on the fly compression for a faster site load time.
 
 
-= WP-CLI =
-
-* Clear all pages cache.
-    `wp cache-enabler clear`
-
-* Clear the page cache for post IDs 1, 2, and 3.
-    `wp cache-enabler clear --ids=1,2,3`
-
-* Clear the page cache for a particular URL.
-    `wp cache-enabler clear --urls=https://example.com/about-us`
-
-* Clear all pages cache for sites with blog IDs 1, 2, and 3.
-    `wp cache-enabler clear --sites=1,2,3`
-
-
-= Website =
-* [WordPress Cache Enabler - Documentation](https://www.keycdn.com/support/wordpress-cache-enabler-plugin "WordPress Cache Enabler - Documentation")
+= Documentation =
+* [Installation](https://www.keycdn.com/support/wordpress-cache-enabler-plugin#installation)
+* [Settings](https://www.keycdn.com/support/wordpress-cache-enabler-plugin#settings)
+* [Hooks](https://www.keycdn.com/support/wordpress-cache-enabler-plugin#hooks)
+* [WP-CLI](https://www.keycdn.com/support/wordpress-cache-enabler-plugin#wp-cli)
+* [Advanced configuration](https://www.keycdn.com/support/wordpress-cache-enabler-plugin#advanced-configuration)
+* [FAQ](https://www.keycdn.com/support/wordpress-cache-enabler-plugin#faq)
 
 
 = System Requirements =
-* PHP >=5.6
-* WordPress >=5.1
+* WordPress >= 5.1
+* PHP >= 5.6
 
 
-= Contribute =
-* Anyone is welcome to contribute to the plugin on [GitHub](https://github.com/keycdn/cache-enabler).
-* Please merge (squash) all your changes into a single commit before you open a pull request.
+= Want to help? =
+* Want to file a bug, contribute some code, or improve translations? Excellent! Check out our [GitHub issues](https://github.com/keycdn/cache-enabler) or [translations](https://translate.wordpress.org/projects/wp-plugins/cache-enabler/).
 
 
 = Maintainer =
-* [KeyCDN](https://www.keycdn.com "KeyCDN")
+* [KeyCDN](https://www.keycdn.com)
 
 
 == Changelog ==
