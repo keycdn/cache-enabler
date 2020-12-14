@@ -1340,7 +1340,7 @@ final class Cache_Enabler {
      * clear site cache by blog ID
      *
      * @since   1.4.0
-     * @change  1.6.0
+     * @change  1.6.1
      *
      * @param   integer|string  $blog_id                      blog ID
      * @param   boolean         $delete_cache_size_transient  whether or not the cache size transient should be deleted
@@ -1363,11 +1363,16 @@ final class Cache_Enabler {
             return;
         }
 
+        // ensure site cache being cleared is current blog
+        if ( is_multisite() ) {
+            switch_to_blog( $blog_id );
+        }
+
         // disable page cache cleared hook
         self::$fire_page_cache_cleared_hook = false;
 
         // get site URL
-        $site_url = get_home_url( $blog_id );
+        $site_url = home_url();
 
         // get site objects
         $site_objects = Cache_Enabler_Disk::get_site_objects( $site_url );
@@ -1382,13 +1387,12 @@ final class Cache_Enabler {
 
         // delete cache size transient
         if ( $delete_cache_size_transient ) {
-            if ( is_multisite() ) {
-                switch_to_blog( $blog_id );
-                delete_transient( self::get_cache_size_transient_name() );
-                restore_current_blog();
-            } else {
-                delete_transient( self::get_cache_size_transient_name() );
-            }
+            delete_transient( self::get_cache_size_transient_name() );
+        }
+
+        // restore current blog from before site cache being cleared
+        if ( is_multisite() ) {
+            restore_current_blog();
         }
     }
 
