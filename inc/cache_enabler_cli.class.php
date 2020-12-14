@@ -29,14 +29,14 @@ class Cache_Enabler_CLI {
      *
      *    # Clear all pages cache.
      *    $ wp cache-enabler clear
-     *    Success: Cache cleared.
+     *    Success: Site cache cleared.
      *
      *    # Clear the page cache for post IDs 1, 2, and 3.
      *    $ wp cache-enabler clear --ids=1,2,3
      *    Success: Pages cache cleared.
      *
      *    # Clear the page cache for a particular URL.
-     *    $ wp cache-enabler clear --urls=https://example.com/about-us
+     *    $ wp cache-enabler clear --urls=https://www.example.com/about-us/
      *    Success: Page cache cleared.
      *
      *    # Clear all pages cache for sites with blog IDs 1, 2, and 3.

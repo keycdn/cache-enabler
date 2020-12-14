@@ -144,9 +144,9 @@ final class Cache_Enabler_Engine {
      * @since   1.0.0
      * @change  1.6.0
      *
-     * @param   string   $page_contents  content of a page from the output buffer
+     * @param   string   $page_contents  contents of a page from the output buffer
      * @param   integer  $phase          bitmask of PHP_OUTPUT_HANDLER_* constants
-     * @return  string   $page_contents  content of a page from the output buffer
+     * @return  string   $page_contents  contents of a page from the output buffer
      */
 
     private static function end_buffering( $page_contents, $phase ) {
@@ -192,7 +192,7 @@ final class Cache_Enabler_Engine {
      * @since   1.5.0
      * @change  1.5.0
      *
-     * @param   string   $page_contents  content of a page from the output buffer
+     * @param   string   $page_contents  contents of a page from the output buffer
      * @return  boolean                  true if page contents are cacheable, false otherwise
      */
 

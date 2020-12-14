@@ -111,7 +111,7 @@ final class Cache_Enabler_Disk {
      * @since   1.0.0
      * @change  1.5.0
      *
-     * @param   string  $page_contents  content of a page from the output buffer
+     * @param   string  $page_contents  contents of a page from the output buffer
      */
 
     public static function cache_page( $page_contents ) {
@@ -363,7 +363,7 @@ final class Cache_Enabler_Disk {
      * @since   1.0.0
      * @change  1.6.0
      *
-     * @param   string  $page_contents  content of a page from the output buffer
+     * @param   string  $page_contents  contents of a page from the output buffer
      */
 
     private static function create_cache_files( $page_contents ) {
@@ -424,7 +424,7 @@ final class Cache_Enabler_Disk {
      * @change  1.5.0
      *
      * @param   string  $file_path      file path
-     * @param   string  $page_contents  content of a page from the output buffer
+     * @param   string  $page_contents  contents of a page from the output buffer
      */
 
     private static function create_cache_file( $file_path, $page_contents ) {
@@ -1018,7 +1018,7 @@ final class Cache_Enabler_Disk {
      * @since   1.0.0
      * @change  1.6.0
      *
-     * @param   string  $page_contents                 content of a page from the output buffer
+     * @param   string  $page_contents                 contents of a page from the output buffer
      * @return  string  $minified_html|$page_contents  minified page contents if applicable, unchanged otherwise
      */
 

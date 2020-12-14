@@ -237,13 +237,13 @@ final class Cache_Enabler {
             return;
         }
 
-        // switch to blog
+        // switch to new site
         switch_to_blog( (int) $new_site->blog_id );
 
         // add backend requirements, triggering the settings file to be created
         self::update_backend();
 
-        // restore blog
+        // restore current blog from before new site
         restore_current_blog();
     }
 
@@ -1186,7 +1186,7 @@ final class Cache_Enabler {
         if ( $post->post_type === 'post' ) {
             // clear author archives
             self::clear_author_archives_cache_by_user_id( $post->post_author );
-            // date archives
+            // clear date archives
             self::clear_date_archives_cache_by_post_id( $post->ID );
         }
     }
