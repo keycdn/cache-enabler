@@ -13,7 +13,6 @@ A lightweight caching plugin for WordPress that makes your website faster by gen
 
 
 == Description ==
-
 Cache Enabler is a simple, yet powerful WordPress plugin that is easy to use, needs minimal configuration, and best of all helps improve site performance for a faster load time. It creates static HTML files and stores them on the server's disk. This allows the web server to deliver the static HTML files avoiding resource intensive backend processes from the WordPress core, plugins, and database lookups.
 
 
@@ -46,11 +45,6 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 * [FAQ](https://www.keycdn.com/support/wordpress-cache-enabler-plugin#faq)
 
 
-= System Requirements =
-* WordPress >= 5.1
-* PHP >= 5.6
-
-
 = Want to help? =
 * Want to file a bug, contribute some code, or improve translations? Excellent! Check out our [GitHub issues](https://github.com/keycdn/cache-enabler) or [translations](https://translate.wordpress.org/projects/wp-plugins/cache-enabler/).
 
@@ -63,6 +57,7 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 = 1.6.1 =
 * Update site cache clearing behavior for multisite networks to ensure cache cleared action hooks are fired when using WP-CLI or clear cache action hooks (#180)
+* Add `cache_enabler_convert_webp_attributes` and `cache_enabler_convert_webp_ignore_query_strings` filter hooks (#183)
 * Fix cache clearing behavior on WooCommerce stock update (#179)
 
 = 1.6.0 =
@@ -282,4 +277,4 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 == Screenshots ==
 
 1. Cache Enabler settings page
-2. Display of the cache size in your dashboard
+2. Cache Enabler cache size in the WordPress dashboard

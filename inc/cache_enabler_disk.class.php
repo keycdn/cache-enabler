@@ -361,7 +361,7 @@ final class Cache_Enabler_Disk {
      * create files for cache
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.6.1
      *
      * @param   string  $page_contents  contents of a page from the output buffer
      */
@@ -393,8 +393,19 @@ final class Cache_Enabler_Disk {
 
         // create WebP supported files
         if ( Cache_Enabler_Engine::$settings['convert_image_urls_to_webp'] ) {
+            // attributes to convert during WebP conversion hook
+            $attributes = (array) apply_filters( 'cache_enabler_convert_webp_attributes', array( 'src', 'srcset', 'data-[^=]+' ) );
+
+            // stringify
+            $attributes_regex = implode( '|', $attributes );
+
             // magic regex rule
-            $image_urls_regex = '#(?:(?:(src|srcset|data-[^=]+)\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
+            $image_urls_regex = '#(?:(?:(' . $attributes_regex . ')\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
+
+            // ignore query strings during WebP conversion hook
+            if ( ! apply_filters( 'cache_enabler_convert_webp_ignore_query_strings', true ) ) {
+                $image_urls_regex = '#(?:(?:(' . $attributes_regex . ')\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\?\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
+            }
 
             // page contents after WebP conversion hook
             $converted_page_contents = apply_filters( 'cache_enabler_page_contents_after_webp_conversion', preg_replace_callback( $image_urls_regex, 'self::convert_webp', $page_contents ) );
