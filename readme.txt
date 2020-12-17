@@ -56,6 +56,7 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 == Changelog ==
 
 = 1.6.1 =
+* Update cache clearing behavior for comment actions (#185)
 * Update HTML minification to remove CSS and JavaScript comments (#184)
 * Update site cache clearing behavior for multisite networks to ensure cache cleared action hooks are fired when using WP-CLI or clear cache action hooks (#180)
 * Add `cache_enabler_convert_webp_attributes` and `cache_enabler_convert_webp_ignore_query_strings` filter hooks (#183)
