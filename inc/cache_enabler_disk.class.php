@@ -1027,7 +1027,7 @@ final class Cache_Enabler_Disk {
      * minify HTML
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.6.1
      *
      * @param   string  $page_contents                 contents of a page from the output buffer
      * @return  string  $minified_html|$page_contents  minified page contents if applicable, unchanged otherwise
@@ -1035,7 +1035,7 @@ final class Cache_Enabler_Disk {
 
     private static function minify_html( $page_contents ) {
 
-        // check if disabled
+        // check if setting is enabled
         if ( ! Cache_Enabler_Engine::$settings['minify_html'] ) {
             return $page_contents;
         }
@@ -1051,7 +1051,7 @@ final class Cache_Enabler_Disk {
         // deprecated HTML tags to ignore hook
         $ignore_tags = (array) apply_filters_deprecated( 'cache_minify_ignore_tags', array( $ignore_tags ), '1.6.0', 'cache_enabler_minify_html_ignore_tags' );
 
-        // if selected exclude inline CSS and JavaScript
+        // if setting selected exclude inline CSS and JavaScript
         if ( ! Cache_Enabler_Engine::$settings['minify_inline_css_js'] ) {
             array_push( $ignore_tags, 'style', 'script' );
         }
@@ -1062,19 +1062,25 @@ final class Cache_Enabler_Disk {
         }
 
         // stringify
-        $ignore_regex = implode( '|', $ignore_tags );
+        $ignore_tags_regex = implode( '|', $ignore_tags );
 
-        // regex minification
+        // remove HTML comments
+        $minified_html = preg_replace( '#<!--[^\[><].*?-->#s', '', $page_contents );
+
+        // if setting selected remove CSS and JavaScript comments
+        if ( Cache_Enabler_Engine::$settings['minify_inline_css_js'] ) {
+            $minified_html = preg_replace(
+                '#/\*+[^\*]+\*+/|([^\'\"\\:]|^)//.*$#m',
+                '$1',
+                $minified_html
+            );
+        }
+
+        // minify HTML
         $minified_html = preg_replace(
-            array(
-                '/<!--[^\[><](.*?)-->/s',
-                '#(?ix)(?>[^\S ]\s*|\s{2,})(?=(?:(?:[^<]++|<(?!/?(?:' . $ignore_regex . ')\b))*+)(?:<(?>' . $ignore_regex . ')\b|\z))#',
-            ),
-            array(
-                '',
-                ' ',
-            ),
-            $page_contents
+            '#(?>[^\S ]\s*|\s{2,})(?=[^<]*+(?:<(?!/?(?:' . $ignore_tags_regex . ')\b)[^<]*+)*+(?:<(?>' . $ignore_tags_regex . ')\b|\z))#ix',
+            ' ',
+            $minified_html
         );
 
         // something went wrong
