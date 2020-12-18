@@ -572,7 +572,7 @@ final class Cache_Enabler {
      * get default settings
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.6.1
      *
      * @param   string  $settings_type                              default `system` settings
      * @return  array   $system_default_settings|$default_settings  only default system settings or all default settings
@@ -593,7 +593,7 @@ final class Cache_Enabler {
             'cache_expires'                      => 0,
             'cache_expiry_time'                  => 0,
             'clear_site_cache_on_saved_post'     => 0,
-            'clear_site_cache_on_new_comment'    => 0,
+            'clear_site_cache_on_saved_comment'  => 0,
             'clear_site_cache_on_changed_plugin' => 0,
             'compress_cache'                     => 0,
             'convert_image_urls_to_webp'         => 0,
@@ -616,7 +616,7 @@ final class Cache_Enabler {
      * convert settings to new structure
      *
      * @since   1.5.0
-     * @change  1.6.0
+     * @change  1.6.1
      *
      * @param   array  $settings  settings
      * @return  array  $settings  converted settings if applicable, unchanged otherwise
@@ -648,7 +648,7 @@ final class Cache_Enabler {
             'expires'                                => 'cache_expiry_time',
             'new_post'                               => 'clear_site_cache_on_saved_post',
             'update_product_stock'                   => '', // deprecated
-            'new_comment'                            => 'clear_site_cache_on_new_comment',
+            'new_comment'                            => 'clear_site_cache_on_saved_comment',
             'clear_on_upgrade'                       => 'clear_site_cache_on_changed_plugin',
             'compress'                               => 'compress_cache',
             'webp'                                   => 'convert_image_urls_to_webp',
@@ -659,8 +659,11 @@ final class Cache_Enabler {
 
             // 1.6.0
             'clear_complete_cache_on_saved_post'     => 'clear_site_cache_on_saved_post',
-            'clear_complete_cache_on_new_comment'    => 'clear_site_cache_on_new_comment',
+            'clear_complete_cache_on_new_comment'    => 'clear_site_cache_on_saved_comment',
             'clear_complete_cache_on_changed_plugin' => 'clear_site_cache_on_changed_plugin',
+
+            // 1.6.1
+            'clear_site_cache_on_new_comment'        => 'clear_site_cache_on_saved_comment',
         );
 
         foreach ( $settings_names as $old_name => $new_name ) {
@@ -1050,7 +1053,7 @@ final class Cache_Enabler {
         // if new approved comment is posted
         if ( $comment_approved === 1 ) {
             // if setting enabled clear site cache
-            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ) {
+            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
                 self::clear_site_cache();
             // clear page cache otherwise
             } else {
@@ -1064,7 +1067,7 @@ final class Cache_Enabler {
      * edit comment hook
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.6.1
      *
      * @param   integer  $comment_id    comment ID
      * @param   array    $comment_data  comment data
@@ -1076,7 +1079,13 @@ final class Cache_Enabler {
 
         // if approved comment is edited
         if ( $comment_approved === 1 ) {
-            self::clear_page_cache_by_post_id( get_comment( $comment_id )->comment_post_ID );
+            // if setting enabled clear site cache
+            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
+                self::clear_site_cache();
+            // clear page cache otherwise
+            } else {
+                self::clear_page_cache_by_post_id( get_comment( $comment_id )->comment_post_ID );
+            }
         }
     }
 
@@ -1085,7 +1094,7 @@ final class Cache_Enabler {
      * transition comment status hook
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.6.1
      *
      * @param   integer|string  $new_status  new comment status
      * @param   integer|string  $old_status  old comment status
@@ -1096,7 +1105,13 @@ final class Cache_Enabler {
 
         // if comment status has changed from or to approved
         if ( $old_status === 'approved' || $new_status === 'approved' ) {
-            self::clear_page_cache_by_post_id( $comment->comment_post_ID );
+            // if setting enabled clear site cache
+            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
+                self::clear_site_cache();
+            // clear page cache otherwise
+            } else {
+                self::clear_page_cache_by_post_id( $comment->comment_post_ID );
+            }
         }
     }
 
@@ -1571,7 +1586,7 @@ final class Cache_Enabler {
      * validate settings
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.6.1
      *
      * @param   array  $settings            user defined settings
      * @return  array  $validated_settings  validated settings
@@ -1588,7 +1603,7 @@ final class Cache_Enabler {
             'cache_expires'                      => (int) ( ! empty( $settings['cache_expires'] ) ),
             'cache_expiry_time'                  => (int) @$settings['cache_expiry_time'],
             'clear_site_cache_on_saved_post'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_post'] ) ),
-            'clear_site_cache_on_new_comment'    => (int) ( ! empty( $settings['clear_site_cache_on_new_comment'] ) ),
+            'clear_site_cache_on_saved_comment'  => (int) ( ! empty( $settings['clear_site_cache_on_saved_comment'] ) ),
             'clear_site_cache_on_changed_plugin' => (int) ( ! empty( $settings['clear_site_cache_on_changed_plugin'] ) ),
             'compress_cache'                     => (int) ( ! empty( $settings['compress_cache'] ) ),
             'convert_image_urls_to_webp'         => (int) ( ! empty( $settings['convert_image_urls_to_webp'] ) ),
@@ -1617,7 +1632,7 @@ final class Cache_Enabler {
      * settings page
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.6.1
      */
 
     public static function settings_page() {
@@ -1688,16 +1703,16 @@ final class Cache_Enabler {
 
                                 <br />
 
-                                <label for="clear_site_cache_on_new_comment">
-                                    <input name="cache_enabler[clear_site_cache_on_new_comment]" type="checkbox" id="clear_site_cache_on_new_comment" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_new_comment'] ); ?> />
-                                    <?php esc_html_e( 'Clear the site cache if a new comment has been posted (instead of only the page cache).', 'cache-enabler' ); ?>
+                                <label for="clear_site_cache_on_saved_comment">
+                                    <input name="cache_enabler[clear_site_cache_on_saved_comment]" type="checkbox" id="clear_site_cache_on_saved_comment" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ); ?> />
+                                    <?php esc_html_e( 'Clear the site cache if a comment has been posted, updated, spammed, or trashed (instead of only the page cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
 
                                 <label for="clear_site_cache_on_changed_plugin">
                                     <input name="cache_enabler[clear_site_cache_on_changed_plugin]" type="checkbox" id="clear_site_cache_on_changed_plugin" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_changed_plugin'] ); ?> />
-                                    <?php esc_html_e( 'Clear the site cache if any plugin has been activated, updated, or deactivated.', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Clear the site cache if a plugin has been activated, updated, or deactivated.', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
