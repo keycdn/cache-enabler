@@ -33,6 +33,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // constants
 define( 'CE_VERSION', '1.6.0' );
+define( 'CE_MIN_PHP', '5.6' );
 define( 'CE_MIN_WP', '5.1' );
 define( 'CE_FILE', __FILE__ );
 define( 'CE_BASE', plugin_basename( __FILE__ ) );

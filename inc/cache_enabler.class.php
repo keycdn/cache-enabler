@@ -1447,7 +1447,7 @@ final class Cache_Enabler {
      * check plugin requirements
      *
      * @since   1.1.0
-     * @change  1.6.0
+     * @change  1.6.1
      */
 
     public static function requirements_check() {
@@ -1457,15 +1457,43 @@ final class Cache_Enabler {
             return;
         }
 
+        // check PHP version
+        if ( version_compare( PHP_VERSION, CE_MIN_PHP, '<' ) ) {
+            echo sprintf(
+                '<div class="notice notice-error"><p>%s</p></div>',
+                sprintf(
+                    // translators: 1. Cache Enabler 2. PHP version (e.g. 5.6)
+                    esc_html__( '%1$s requires PHP %2$s or higher to function properly. Please update PHP or disable the plugin.', 'cache-enabler' ),
+                    '<strong>Cache Enabler</strong>',
+                    CE_MIN_PHP
+                )
+            );
+        }
+
         // check WordPress version
         if ( version_compare( $GLOBALS['wp_version'], CE_MIN_WP . 'alpha', '<' ) ) {
             echo sprintf(
                 '<div class="notice notice-error"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Cache Enabler 2. WordPress version (e.g. 5.1)
-                    esc_html__( 'The %1$s plugin is optimized for WordPress %2$s. Please disable the plugin or upgrade your WordPress installation (recommended).', 'cache-enabler' ),
+                    esc_html__( '%1$s requires WordPress %2$s or higher to function properly. Please update WordPress or disable the plugin.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
                     CE_MIN_WP
+                )
+            );
+        }
+
+        // check advanced-cache.php drop-in
+        if ( ! file_exists( WP_CONTENT_DIR . '/advanced-cache.php' ) ) {
+            echo sprintf(
+                '<div class="notice notice-warning"><p>%s</p></div>',
+                sprintf(
+                    // translators: 1. Cache Enabler 2. advanced-cache.php 3. wp-content/plugins/cache-enabler 4. wp-content
+                    esc_html__( '%1$s requires the %2$s drop-in. Please deactivate and then activate the plugin to automatically copy this file or manually copy it from the %3$s directory to the %4$s directory.', 'cache-enabler' ),
+                    '<strong>Cache Enabler</strong>',
+                    '<code>advanced-cache.php</code>',
+                    '<code>wp-content/plugins/cache-enabler</code>',
+                    '<code>wp-content</code>'
                 )
             );
         }
@@ -1473,10 +1501,10 @@ final class Cache_Enabler {
         // check permalink structure
         if ( Cache_Enabler_Engine::$settings['permalink_structure'] === 'plain' && current_user_can( 'manage_options' ) ) {
             echo sprintf(
-                '<div class="notice notice-error"><p>%s</p></div>',
+                '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Cache Enabler 2. Permalink Settings
-                    esc_html__( 'The %1$s plugin requires a custom permalink structure to start caching properly. Please enable a custom structure in the %2$s.', 'cache-enabler' ),
+                    esc_html__( '%1$s requires a custom permalink structure. Please enable a custom structure in the %2$s.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
                     sprintf(
                         '<a href="%s">%s</a>',
@@ -1487,13 +1515,13 @@ final class Cache_Enabler {
             );
         }
 
-        // check permissions
-        if ( file_exists( Cache_Enabler_Disk::$cache_dir ) && ! is_writable( Cache_Enabler_Disk::$cache_dir ) ) {
+        // check file permissions
+        if ( file_exists( dirname( Cache_Enabler_Disk::$cache_dir ) ) && ! is_writable( dirname( Cache_Enabler_Disk::$cache_dir ) ) ) {
             echo sprintf(
-                '<div class="notice notice-error"><p>%s</p></div>',
+                '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Cache Enabler 2. 755 3. wp-content/cache 4. file permissions
-                    esc_html__( 'The %1$s plugin requires write permissions %2$s in %3$s. Please change the %4$s.', 'cache-enabler' ),
+                    esc_html__( '%1$s requires write permissions %2$s in the %3$s directory. Please change the %4$s.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
                     '<code>755</code>',
                     '<code>wp-content/cache</code>',
@@ -1509,10 +1537,10 @@ final class Cache_Enabler {
         // check Autoptimize HTML optimization
         if ( defined( 'AUTOPTIMIZE_PLUGIN_DIR' ) && Cache_Enabler_Engine::$settings['minify_html'] && get_option( 'autoptimize_html', '' ) !== '' ) {
             echo sprintf(
-                '<div class="notice notice-error"><p>%s</p></div>',
+                '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Autoptimize 2. Cache Enabler Settings
-                    esc_html__( 'The %1$s plugin HTML optimization is enabled. Please disable HTML minification in the %2$s.', 'cache-enabler' ),
+                    esc_html__( '%1$s HTML optimization is enabled. Please disable HTML minification in the %2$s.', 'cache-enabler' ),
                     '<strong>Autoptimize</strong>',
                     sprintf(
                         '<a href="%s">%s</a>',
@@ -1649,10 +1677,12 @@ final class Cache_Enabler {
                 printf(
                     '<div class="notice notice-warning"><p>%s</p></div>',
                     sprintf(
-                        // translators: 1. define( 'WP_CACHE', true ); 2. wp-config.php
-                        esc_html__( 'Caching is disabled because %1$s is not set in the %2$s file.', 'cache-enabler' ),
+                        // translators: 1. Cache Enabler 2. define( 'WP_CACHE', true ); 3. wp-config.php 4. require_once ABSPATH . 'wp-settings.php';
+                        esc_html__( '%1$s requires %2$s to be set. Please set this in the %3$s file (must be before %4$s).', 'cache-enabler' ),
+                        '<strong>Cache Enabler</strong>',
                         "<code>define( 'WP_CACHE', true );</code>",
-                        '<code>wp-config.php</code>'
+                        '<code>wp-config.php</code>',
+                        "<code>require_once ABSPATH . 'wp-settings.php';</code>"
                     )
                 );
             }
