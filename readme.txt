@@ -13,7 +13,7 @@ A lightweight caching plugin for WordPress that makes your website faster by gen
 
 
 == Description ==
-Cache Enabler is a simple, yet powerful WordPress plugin that is easy to use, needs minimal configuration, and best of all helps improve site performance for a faster load time. It creates static HTML files and stores them on the server's disk. This allows the web server to deliver the static HTML files avoiding resource intensive backend processes from the WordPress core, plugins, and database lookups.
+Cache Enabler is a simple, yet powerful WordPress caching plugin that is easy to use, needs minimal configuration, and best of all helps improve site performance for a faster load time. It creates static HTML files and stores them on the server's disk. This allows the web server to deliver the static HTML files avoiding resource intensive backend processes from the WordPress core, plugins, and database lookups.
 
 
 = Features =
@@ -55,8 +55,11 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.6.2 =
+* Fix removing CSS and JavaScript comments during HTML minification (#188)
+
 = 1.6.1 =
-* Update requirement checks (#186)
+* Update requirements check (#186)
 * Update cache clearing behavior for comment actions (#185)
 * Update HTML minification to remove CSS and JavaScript comments (#184)
 * Update site cache clearing behavior for multisite networks to ensure cache cleared action hooks are fired when using WP-CLI or clear cache action hooks (#180)
