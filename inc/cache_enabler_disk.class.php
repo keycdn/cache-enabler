@@ -1027,7 +1027,7 @@ final class Cache_Enabler_Disk {
      * minify HTML
      *
      * @since   1.0.0
-     * @change  1.6.1
+     * @change  1.6.2
      *
      * @param   string  $page_contents                 contents of a page from the output buffer
      * @return  string  $minified_html|$page_contents  minified page contents if applicable, unchanged otherwise
@@ -1070,7 +1070,7 @@ final class Cache_Enabler_Disk {
         // if setting selected remove CSS and JavaScript comments
         if ( Cache_Enabler_Engine::$settings['minify_inline_css_js'] ) {
             $minified_html = preg_replace(
-                '#/\*+[^\*]+\*+/|([^\'\"\\:]|^)//.*$#m',
+                '#/\*[\s\S]*?\*/|([^\'\"\\:\w]|^)//.*$#m',
                 '$1',
                 $minified_html
             );
