@@ -483,7 +483,7 @@ final class Cache_Enabler_Disk {
         $new_settings_file = self::get_settings_file();
 
         // make directory if necessary
-        if ( ! self::mkdir_p( dirname( self::get_settings_file() ) ) ) {
+        if ( ! self::mkdir_p( dirname( $new_settings_file ) ) ) {
             wp_die( 'Unable to create directory.' );
         }
 
