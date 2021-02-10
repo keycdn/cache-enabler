@@ -441,7 +441,7 @@ final class Cache_Enabler_Disk {
     private static function create_cache_file( $file_path, $page_contents ) {
 
         // write page contents from output buffer to file
-        file_put_contents( $file_path, $page_contents );
+        file_put_contents( $file_path, $page_contents, LOCK_EX );
 
         // clear file status cache
         clearstatcache();
@@ -500,7 +500,7 @@ final class Cache_Enabler_Disk {
         $new_settings_file_contents .= PHP_EOL;
         $new_settings_file_contents .= 'return ' . var_export( $settings, true ) . ';';
 
-        file_put_contents( $new_settings_file, $new_settings_file_contents );
+        file_put_contents( $new_settings_file, $new_settings_file_contents, LOCK_EX );
 
         return $new_settings_file;
     }
@@ -948,7 +948,7 @@ final class Cache_Enabler_Disk {
         }
 
         // update config file
-        file_put_contents( $wp_config_file, $wp_config_file_contents );
+        file_put_contents( $wp_config_file, $wp_config_file_contents, LOCK_EX );
     }
 
 
