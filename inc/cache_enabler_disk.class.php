@@ -1149,6 +1149,7 @@ final class Cache_Enabler_Disk {
      *
      * @return \WP_Filesystem_Base
      */
+
     public static function get_filesystem() {
         global $wp_filesystem;
 
@@ -1162,11 +1163,11 @@ final class Cache_Enabler_Disk {
 
             $filesystem = WP_Filesystem();
 
-            if ( null === $filesystem ) {
+            if ( $filesystem === null ) {
                 throw new \RuntimeException( 'The provided filesystem method is unavailable.' );
             }
 
-            if ( false === $filesystem ) {
+            if ( $filesystem === false ) {
                 if ( is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
                     throw new \RuntimeException(
                         $wp_filesystem->get_error_message,
@@ -1202,12 +1203,13 @@ final class Cache_Enabler_Disk {
      * @return bool True if the directory either already exists or was created *and* has the
      *              correct permissions, false otherwise.
      */
+
     private static function mkdir_p( $path ) {
         $parent = dirname( $path );
         $fs     = self::get_filesystem();
 
         // Everything is as it should be.
-        if ( $fs->is_dir( $path ) && '755' === $fs->getchmod( $path ) && '755' === $fs->getchmod( $parent ) ) {
+        if ( $fs->is_dir( $path ) && $fs->getchmod( $path ) === '755' && $fs->getchmod( $parent ) === '755' ) {
             return true;
         }
 
@@ -1216,11 +1218,11 @@ final class Cache_Enabler_Disk {
             return false;
         }
 
-        if ( '755' !== $fs->getchmod( $parent ) ) {
+        if ( $fs->getchmod( $parent ) === '755' ) {
             return $fs->chmod( $parent, 0755, true );
         }
 
-        if ( '755' !== $fs->getchmod( $path ) ) {
+        if ( $fs->getchmod( $path ) === '755' ) {
             return $fs->chmod( $path, 0755 );
         }
 
