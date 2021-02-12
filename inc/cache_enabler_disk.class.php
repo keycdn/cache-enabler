@@ -372,7 +372,7 @@ final class Cache_Enabler_Disk {
         $cache_signature = self::cache_signature();
 
         // make directory if necessary
-        if ( ! wp_mkdir_p( self::cache_file_dir_path() ) ) {
+        if ( ! self::mkdir_p( self::cache_file_dir_path() ) ) {
             wp_die( 'Unable to create directory.' );
         }
 
@@ -483,7 +483,7 @@ final class Cache_Enabler_Disk {
         $new_settings_file = self::get_settings_file();
 
         // make directory if necessary
-        if ( ! wp_mkdir_p( dirname( $new_settings_file ) ) ) {
+        if ( ! self::mkdir_p( dirname( $new_settings_file ) ) ) {
             wp_die( 'Unable to create directory.' );
         }
 
@@ -1138,6 +1138,96 @@ final class Cache_Enabler_Disk {
         @rmdir( self::$settings_dir );
     }
 
+    /**
+     * Get the current WP Filesystem instance.
+     *
+     * If it has not yet been initialized, do so and cache the result.
+     *
+     * @throws \RuntimeException if the filesystem could not be initialized.
+     *
+     * @global $wp_filesystem
+     *
+     * @return \WP_Filesystem_Base
+     */
+
+    public static function get_filesystem() {
+        global $wp_filesystem;
+
+        // We already have an instance, so return early.
+        if ( $wp_filesystem instanceof WP_Filesystem_Base ) {
+            return $wp_filesystem;
+        }
+
+        try {
+            require_once ABSPATH . '/wp-admin/includes/file.php';
+
+            $filesystem = WP_Filesystem();
+
+            if ( $filesystem === null ) {
+                throw new \RuntimeException( 'The provided filesystem method is unavailable.' );
+            }
+
+            if ( $filesystem === false ) {
+                if ( is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
+                    throw new \RuntimeException(
+                        $wp_filesystem->get_error_message,
+                        is_numeric( $wp_error->get_error_code() ) ? (int) $wp_error->get_error_code() : 0
+                    );
+                }
+
+                throw new \RuntimeException( 'Unspecified failure.' );
+            }
+
+            if ( ! is_object( $wp_filesystem ) || ! $wp_filesystem instanceof WP_Filesystem_Base ) {
+                throw new \RuntimeException( '$wp_filesystem is not an instance of WP_Filesystem_Base' );
+            }
+        } catch ( \Exception $e ) {
+            throw new \RuntimeException(
+                sprintf( 'There was an error initializing the WP_Filesystem class: %1$s', $e->getMessage() ),
+                $e->getCode(),
+                $e
+            );
+        }
+
+        return $wp_filesystem;
+    }
+
+    /**
+     * Create a directory to be used by the plugin.
+     *
+     * This method assumes that the directory (and its parent) should have 755 permissions, and
+     * will attempt to update any existing directories accordingly.
+     *
+     * @param string $path The path to construct.
+     *
+     * @return bool True if the directory either already exists or was created *and* has the
+     *              correct permissions, false otherwise.
+     */
+
+    private static function mkdir_p( $path ) {
+        $parent = dirname( $path );
+        $fs     = self::get_filesystem();
+
+        // Everything is as it should be.
+        if ( $fs->is_dir( $path ) && $fs->getchmod( $path ) === '755' && $fs->getchmod( $parent ) === '755' ) {
+            return true;
+        }
+
+        // Create any directories that don't yet exist.
+        if ( ! wp_mkdir_p( $path ) ) {
+            return false;
+        }
+
+        if ( $fs->getchmod( $parent ) === '755' ) {
+            return $fs->chmod( $parent, 0755, true );
+        }
+
+        if ( $fs->getchmod( $path ) === '755' ) {
+            return $fs->chmod( $path, 0755 );
+        }
+
+        return true;
+    }
 
     /**
      * delete asset (deprecated)
