@@ -10,7 +10,16 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-$ce_dir = ( ( defined( 'WP_PLUGIN_DIR' ) ) ? WP_PLUGIN_DIR : WP_CONTENT_DIR . '/plugins' ) . '/cache-enabler';
+/*
+ * Set the CACHE_ENABLER_DIR constant in your wp-config.php file if the plugin resides
+ * somewhere other than wp-content/plugins/cache-enabler/.
+ */
+if ( defined( 'CACHE_ENABLER_DIR' ) ) {
+    $ce_dir = CACHE_ENABLER_DIR;
+} else {
+    $ce_dir = ( ( defined( 'WP_PLUGIN_DIR' ) ) ? WP_PLUGIN_DIR : WP_CONTENT_DIR . '/plugins' ) . '/cache-enabler';
+}
+
 $ce_engine_file = $ce_dir . '/inc/cache_enabler_engine.class.php';
 $ce_disk_file   = $ce_dir . '/inc/cache_enabler_disk.class.php';
 
