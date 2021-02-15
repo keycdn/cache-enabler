@@ -32,12 +32,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // constants
-define( 'CE_VERSION', '1.6.2' );
-define( 'CE_MIN_PHP', '5.6' );
-define( 'CE_MIN_WP', '5.1' );
-define( 'CE_FILE', __FILE__ );
-define( 'CE_BASE', plugin_basename( __FILE__ ) );
-define( 'CE_DIR', __DIR__ );
+define( 'CACHE_ENABLER_VERSION', '1.6.2' );
+define( 'CACHE_ENABLER_MIN_PHP', '5.6' );
+define( 'CACHE_ENABLER_MIN_WP', '5.1' );
+define( 'CACHE_ENABLER_FILE', __FILE__ );
+define( 'CACHE_ENABLER_BASE', plugin_basename( __FILE__ ) );
+
+if ( ! defined( 'CACHE_ENABLER_DIR' ) ) {
+    define( 'CACHE_ENABLER_DIR', __DIR__ );
+}
+
+// deprecated constants (1.7.0)
+define( 'CE_VERSION', CACHE_ENABLER_VERSION );
+define( 'CE_MIN_PHP', CACHE_ENABLER_MIN_PHP );
+define( 'CE_MIN_WP', CACHE_ENABLER_MIN_WP );
+define( 'CE_FILE', CACHE_ENABLER_FILE );
+define( 'CE_BASE', CACHE_ENABLER_BASE );
+define( 'CE_DIR', CACHE_ENABLER_DIR );
 
 // hooks
 add_action( 'plugins_loaded', array( 'Cache_Enabler', 'init' ) );
@@ -54,7 +65,7 @@ function cache_enabler_autoload( $class_name ) {
     if ( in_array( $class_name, array( 'Cache_Enabler', 'Cache_Enabler_Engine', 'Cache_Enabler_Disk' ) ) && ! class_exists( $class_name ) ) {
         require_once sprintf(
             '%s/inc/%s.class.php',
-            CE_DIR,
+            CACHE_ENABLER_DIR,
             strtolower( $class_name )
         );
     }
@@ -62,5 +73,5 @@ function cache_enabler_autoload( $class_name ) {
 
 // load WP-CLI command
 if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
-    require_once CE_DIR . '/inc/cache_enabler_cli.class.php';
+    require_once CACHE_ENABLER_DIR . '/inc/cache_enabler_cli.class.php';
 }

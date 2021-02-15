@@ -66,13 +66,13 @@ final class Cache_Enabler_Disk {
      * configure system files
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.7.0
      */
 
     public static function setup() {
 
         // add advanced-cache.php drop-in
-        copy( CE_DIR . '/advanced-cache.php', WP_CONTENT_DIR . '/advanced-cache.php' );
+        copy( CACHE_ENABLER_DIR . '/advanced-cache.php', WP_CONTENT_DIR . '/advanced-cache.php' );
 
         // set WP_CACHE constant in config file if not already set
         self::set_wp_cache_constant();

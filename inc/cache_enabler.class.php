@@ -50,7 +50,7 @@ final class Cache_Enabler {
      * constructor
      *
      * @since   1.0.0
-     * @change  1.6.1
+     * @change  1.7.0
      */
 
     public function __construct() {
@@ -111,7 +111,7 @@ final class Cache_Enabler {
             add_action( 'admin_enqueue_scripts', array( __CLASS__, 'add_admin_resources' ) );
             // dashboard
             add_filter( 'dashboard_glance_items', array( __CLASS__, 'add_dashboard_cache_size' ) );
-            add_filter( 'plugin_action_links_' . CE_BASE, array( __CLASS__, 'add_plugin_action_links' ) );
+            add_filter( 'plugin_action_links_' . CACHE_ENABLER_BASE, array( __CLASS__, 'add_plugin_action_links' ) );
             add_filter( 'plugin_row_meta', array( __CLASS__, 'add_plugin_row_meta' ), 10, 2 );
             // notices
             add_action( 'admin_notices', array( __CLASS__, 'requirements_check' ) );
@@ -144,7 +144,7 @@ final class Cache_Enabler {
      * upgrade hook
      *
      * @since   1.2.3
-     * @change  1.6.0
+     * @change  1.7.0
      *
      * @param   WP_Upgrader  $obj   upgrade instance
      * @param   array        $data  update data
@@ -160,8 +160,8 @@ final class Cache_Enabler {
         // check if Cache Enabler has been updated
         if ( $data['action'] === 'update' && $data['type'] === 'plugin' && array_key_exists( 'plugins', $data ) ) {
             foreach ( (array) $data['plugins'] as $plugin_file ) {
-                if ( $plugin_file === CE_BASE ) {
-                    self::on_ce_update();
+                if ( $plugin_file === CACHE_ENABLER_BASE ) {
+                    self::on_cache_enabler_update();
                 }
             }
         }
@@ -172,10 +172,10 @@ final class Cache_Enabler {
      * Cache Enabler update actions
      *
      * @since   1.4.0
-     * @change  1.6.0
+     * @change  1.7.0
      */
 
-    public static function on_ce_update() {
+    public static function on_cache_enabler_update() {
 
         // clean system files
         self::each_site( is_multisite(), 'Cache_Enabler_Disk::clean' );
@@ -225,7 +225,7 @@ final class Cache_Enabler {
      * install on new site in multisite network
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.7.0
      *
      * @param   WP_Site  $new_site  new site instance
      */
@@ -233,7 +233,7 @@ final class Cache_Enabler {
     public static function install_later( $new_site ) {
 
         // check if network activated
-        if ( ! is_plugin_active_for_network( CE_BASE ) ) {
+        if ( ! is_plugin_active_for_network( CACHE_ENABLER_BASE ) ) {
             return;
         }
 
@@ -396,7 +396,7 @@ final class Cache_Enabler {
      * get settings from database
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.7.0
      *
      * @return  array  $settings  current settings from database
      */
@@ -407,7 +407,7 @@ final class Cache_Enabler {
         $settings = get_option( 'cache_enabler' );
 
         // if database option does not exist or settings are outdated
-        if ( $settings === false || isset( $settings['version'] ) && $settings['version'] !== CE_VERSION ) {
+        if ( $settings === false || isset( $settings['version'] ) && $settings['version'] !== CACHE_ENABLER_VERSION ) {
             $settings = self::update_backend();
         }
 
@@ -572,7 +572,7 @@ final class Cache_Enabler {
      * get default settings
      *
      * @since   1.0.0
-     * @change  1.6.1
+     * @change  1.7.0
      *
      * @param   string  $settings_type                              default `system` settings
      * @return  array   $system_default_settings|$default_settings  only default system settings or all default settings
@@ -581,7 +581,7 @@ final class Cache_Enabler {
     private static function get_default_settings( $settings_type = null ) {
 
         $system_default_settings = array(
-            'version'             => (string) CE_VERSION,
+            'version'             => (string) CACHE_ENABLER_VERSION,
             'permalink_structure' => (string) self::get_permalink_structure(),
         );
 
@@ -716,7 +716,7 @@ final class Cache_Enabler {
      * add plugin metadata in the plugins list table
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.7.0
      *
      * @param   array   $plugin_meta  plugin metadata, including the version, author, author URI, and plugin URI
      * @param   string  $plugin_file  path to the plugin file relative to the plugins directory
@@ -726,7 +726,7 @@ final class Cache_Enabler {
     public static function add_plugin_row_meta( $plugin_meta, $plugin_file ) {
 
         // check if Cache Enabler row
-        if ( $plugin_file !== CE_BASE ) {
+        if ( $plugin_file !== CACHE_ENABLER_BASE ) {
             return $plugin_meta;
         }
 
@@ -832,14 +832,14 @@ final class Cache_Enabler {
      * enqueue styles and scripts
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.7.0
      */
 
     public static function add_admin_resources( $hook ) {
 
         // settings page
         if ( $hook === 'settings_page_cache-enabler' ) {
-            wp_enqueue_style( 'cache-enabler-settings', plugins_url( 'css/settings.min.css', CE_FILE ), array(), CE_VERSION );
+            wp_enqueue_style( 'cache-enabler-settings', plugins_url( 'css/settings.min.css', CACHE_ENABLER_FILE ), array(), CACHE_ENABLER_VERSION );
         }
     }
 
@@ -1447,7 +1447,7 @@ final class Cache_Enabler {
      * check plugin requirements
      *
      * @since   1.1.0
-     * @change  1.6.1
+     * @change  1.7.0
      */
 
     public static function requirements_check() {
@@ -1458,27 +1458,27 @@ final class Cache_Enabler {
         }
 
         // check PHP version
-        if ( version_compare( PHP_VERSION, CE_MIN_PHP, '<' ) ) {
+        if ( version_compare( PHP_VERSION, CACHE_ENABLER_MIN_PHP, '<' ) ) {
             echo sprintf(
                 '<div class="notice notice-error"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Cache Enabler 2. PHP version (e.g. 5.6)
                     esc_html__( '%1$s requires PHP %2$s or higher to function properly. Please update PHP or disable the plugin.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
-                    CE_MIN_PHP
+                    CACHE_ENABLER_MIN_PHP
                 )
             );
         }
 
         // check WordPress version
-        if ( version_compare( $GLOBALS['wp_version'], CE_MIN_WP . 'alpha', '<' ) ) {
+        if ( version_compare( $GLOBALS['wp_version'], CACHE_ENABLER_MIN_WP . 'alpha', '<' ) ) {
             echo sprintf(
                 '<div class="notice notice-error"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Cache Enabler 2. WordPress version (e.g. 5.1)
                     esc_html__( '%1$s requires WordPress %2$s or higher to function properly. Please update WordPress or disable the plugin.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
-                    CE_MIN_WP
+                    CACHE_ENABLER_MIN_WP
                 )
             );
         }
