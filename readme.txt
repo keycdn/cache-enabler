@@ -13,7 +13,7 @@ A lightweight caching plugin for WordPress that makes your website faster by gen
 
 
 == Description ==
-Cache Enabler is a simple, yet powerful WordPress caching plugin that is easy to use, needs minimal configuration, and best of all helps improve site performance for a faster load time. It creates static HTML files and stores them on the server's disk. This allows the web server to deliver the static HTML files avoiding resource intensive backend processes from the WordPress core, plugins, and database lookups.
+Cache Enabler is a simple, yet powerful WordPress caching plugin that is easy to use, needs minimal configuration, and best of all helps improve site performance for a faster load time. It creates static HTML files and stores them on the server's disk. This allows the web server to deliver the static HTML files avoiding resource intensive backend processes from the WordPress core, plugins, and database.
 
 
 = Features =
@@ -25,15 +25,15 @@ Cache Enabler is a simple, yet powerful WordPress caching plugin that is easy to
 * Cache size display in the WordPress dashboard
 * Minification of HTML excluding or including inline CSS and JavaScript
 * WordPress multisite network support
-* WebP support (convert images to WebP with [Optimus](https://optimus.io "Optimus"))
+* WebP support (convert images to WebP with [Optimus](https://optimus.io))
 * Gzip pre-compression support
 * Custom post type support
 * `304 Not Modified` support
-* Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/) and the majority of third party plugins
+* Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/) and the majority of other third party plugins
 
 
 = How does the caching work? =
-Cache Enabler captures page contents and saves it as a static HTML file on the server’s disk. Converting inline image URLs to WebP as a separate static HTML file and pre-compressing both static HTML files with Gzip is possible. The accepted static HTML file is then delivered to users without any database lookups or on the fly compression for a faster site load time.
+Cache Enabler captures page contents and saves it as a static HTML file on the server’s disk. Converting inline image URLs to WebP as a separate static HTML file and pre-compressing both static HTML files with Gzip is possible. The accepted static HTML file is then delivered to users without any database queries or on the fly compression for a faster site load time.
 
 
 = Documentation =
@@ -46,7 +46,7 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 
 = Want to help? =
-* Want to file a bug, contribute some code, or improve translations? Excellent! Check out our [GitHub issues](https://github.com/keycdn/cache-enabler) or [translations](https://translate.wordpress.org/projects/wp-plugins/cache-enabler/).
+* Want to file a bug, contribute some code, or improve translations? Excellent! Check out our [GitHub issues](https://github.com/keycdn/cache-enabler/issues) or [translations](https://translate.wordpress.org/projects/wp-plugins/cache-enabler/).
 
 
 = Maintainer =
