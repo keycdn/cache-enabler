@@ -29,6 +29,7 @@ final class Cache_Enabler_Engine {
         return self::$started;
     }
 
+
     /**
      * engine status
      *

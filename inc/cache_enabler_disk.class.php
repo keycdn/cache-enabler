@@ -432,7 +432,7 @@ final class Cache_Enabler_Disk {
      * create file for cache
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.7.0
      *
      * @param   string  $file_path      file path
      * @param   string  $page_contents  contents of a page from the output buffer
@@ -461,7 +461,7 @@ final class Cache_Enabler_Disk {
      * create settings file
      *
      * @since   1.2.3
-     * @change  1.6.0
+     * @change  1.7.0
      *
      * @param   array   $settings           settings from database
      * @return  string  $new_settings_file  new settings file
@@ -896,10 +896,129 @@ final class Cache_Enabler_Disk {
 
 
     /**
+     * get image path
+     *
+     * @since   1.4.8
+     * @change  1.7.0
+     *
+     * @param   string  $image_url   full or relative URL with or without intrinsic width or density descriptor
+     * @return  string  $image_path  file path to image
+     */
+
+    private static function get_image_path( $image_url ) {
+
+        // in case image has intrinsic width or density descriptor
+        $image_parts = explode( ' ', $image_url );
+        $image_url = $image_parts[0];
+
+        // in case installation is in a subdirectory
+        $image_url_path = ltrim( parse_url( $image_url, PHP_URL_PATH ), '/' );
+        $installation_dir = preg_replace( '/^[^\/]+\/\K.+/', '', $image_url_path );
+        $image_path = str_replace( $installation_dir, '', ABSPATH ) . $image_url_path;
+
+        return $image_path;
+    }
+
+
+    /**
+     * get current WP Filesystem instance
+     *
+     * @since   1.7.0
+     * @change  1.7.0
+     *
+     * @throws  \RuntimeException                   if filesystem could not be initialized
+     * @return  WP_Filesystem_Base  $wp_filesystem  filesystem instance
+     */
+
+    public static function get_filesystem() {
+
+        global $wp_filesystem;
+
+        // check if we already have a filesystem instance
+        if ( $wp_filesystem instanceof WP_Filesystem_Base ) {
+            return $wp_filesystem;
+        }
+
+        // try initializing filesystem instance and cache the result
+        try {
+            require_once ABSPATH . '/wp-admin/includes/file.php';
+
+            $filesystem = WP_Filesystem();
+
+            if ( $filesystem === null ) {
+                throw new \RuntimeException( 'The provided filesystem method is unavailable.' );
+            }
+
+            if ( $filesystem === false ) {
+                if ( is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
+                    throw new \RuntimeException(
+                        $wp_filesystem->get_error_message,
+                        is_numeric( $wp_error->get_error_code() ) ? (int) $wp_error->get_error_code() : 0
+                    );
+                }
+
+                throw new \RuntimeException( 'Unspecified failure.' );
+            }
+
+            if ( ! is_object( $wp_filesystem ) || ! $wp_filesystem instanceof WP_Filesystem_Base ) {
+                throw new \RuntimeException( '$wp_filesystem is not an instance of WP_Filesystem_Base.' );
+            }
+        } catch ( \Exception $e ) {
+            throw new \RuntimeException(
+                sprintf( 'There was an error initializing the WP_Filesystem class: %1$s', $e->getMessage() ),
+                $e->getCode(),
+                $e
+            );
+        }
+
+        return $wp_filesystem;
+    }
+
+
+    /**
+     * make directory recursively based on directory path
+     *
+     * @since   1.7.0
+     * @change  1.7.0
+     *
+     * @param   string   $dir  directory path
+     * @return  boolean        true if the directory either already exists or was created and has the correct permissions, false otherwise
+     */
+
+    private static function mkdir_p( $dir ) {
+
+        $parent_dir = dirname( $dir );
+        $fs = self::get_filesystem();
+
+        // check if directory and its parent have 755 permissions
+        if ( $fs->is_dir( $dir ) && $fs->getchmod( $dir ) === '755' && $fs->getchmod( $parent_dir ) === '755' ) {
+            return true;
+        }
+
+        // make any directories that do not exist yet
+        if ( ! wp_mkdir_p( $dir ) ) {
+            return false;
+        }
+
+        // check parent directory permissions
+        if ( $fs->getchmod( $parent_dir ) === '755' ) {
+            return $fs->chmod( $parent_dir, 0755, true );
+        }
+
+        // check directory permissions
+        if ( $fs->getchmod( $dir ) === '755' ) {
+            return $fs->chmod( $dir, 0755 );
+        }
+
+        return true;
+    }
+
+
+    /**
      * set or unset WP_CACHE constant in wp-config.php
      *
      * @since   1.1.1
-     * @change  1.5.0
+     * @change  1.7.0
      *
      * @param   boolean  $set  true to set WP_CACHE constant, false to unset
      */
@@ -953,31 +1072,6 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * get image path
-     *
-     * @since   1.4.8
-     * @change  1.5.0
-     *
-     * @param   string  $image_url   full or relative URL with or without intrinsic width or density descriptor
-     * @return  string  $image_path  path to image
-     */
-
-    private static function image_path( $image_url ) {
-
-        // in case image has intrinsic width or density descriptor
-        $image_parts = explode( ' ', $image_url );
-        $image_url = $image_parts[0];
-
-        // in case installation is in a subdirectory
-        $image_url_path = ltrim( parse_url( $image_url, PHP_URL_PATH ), '/' );
-        $installation_dir = preg_replace( '/^[^\/]+\/\K.+/', '', $image_url_path );
-        $image_path = str_replace( $installation_dir, '', ABSPATH ) . $image_url_path;
-
-        return $image_path;
-    }
-
-
-    /**
      * convert image URL(s) to WebP
      *
      * @since   1.0.1
@@ -1000,14 +1094,14 @@ final class Cache_Enabler_Disk {
             foreach ( $image_urls as &$image_url ) {
                 $image_url = trim( $image_url, ' ' );
                 $image_url_webp = preg_replace( $image_extension_regex, '$1.webp', $image_url ); // append .webp extension
-                $image_path_webp = self::image_path( $image_url_webp );
+                $image_path_webp = self::get_image_path( $image_url_webp );
 
                 // check if WebP image exists
                 if ( is_file( $image_path_webp ) ) {
                     $image_url = $image_url_webp;
                 } else {
                     $image_url_webp = preg_replace( $image_extension_regex, '', $image_url_webp ); // remove default extension
-                    $image_path_webp = self::image_path( $image_url_webp );
+                    $image_path_webp = self::get_image_path( $image_url_webp );
 
                     // check if WebP image exists
                     if ( is_file( $image_path_webp ) ) {
@@ -1030,7 +1124,7 @@ final class Cache_Enabler_Disk {
      * @change  1.6.2
      *
      * @param   string  $page_contents                 contents of a page from the output buffer
-     * @return  string  $minified_html|$page_contents  minified page contents if applicable, unchanged otherwise
+     * @return  string  $page_contents|$minified_html  minified page contents if applicable, unchanged otherwise
      */
 
     private static function minify_html( $page_contents ) {
@@ -1138,96 +1232,6 @@ final class Cache_Enabler_Disk {
         @rmdir( self::$settings_dir );
     }
 
-    /**
-     * Get the current WP Filesystem instance.
-     *
-     * If it has not yet been initialized, do so and cache the result.
-     *
-     * @throws \RuntimeException if the filesystem could not be initialized.
-     *
-     * @global $wp_filesystem
-     *
-     * @return \WP_Filesystem_Base
-     */
-
-    public static function get_filesystem() {
-        global $wp_filesystem;
-
-        // We already have an instance, so return early.
-        if ( $wp_filesystem instanceof WP_Filesystem_Base ) {
-            return $wp_filesystem;
-        }
-
-        try {
-            require_once ABSPATH . '/wp-admin/includes/file.php';
-
-            $filesystem = WP_Filesystem();
-
-            if ( $filesystem === null ) {
-                throw new \RuntimeException( 'The provided filesystem method is unavailable.' );
-            }
-
-            if ( $filesystem === false ) {
-                if ( is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
-                    throw new \RuntimeException(
-                        $wp_filesystem->get_error_message,
-                        is_numeric( $wp_error->get_error_code() ) ? (int) $wp_error->get_error_code() : 0
-                    );
-                }
-
-                throw new \RuntimeException( 'Unspecified failure.' );
-            }
-
-            if ( ! is_object( $wp_filesystem ) || ! $wp_filesystem instanceof WP_Filesystem_Base ) {
-                throw new \RuntimeException( '$wp_filesystem is not an instance of WP_Filesystem_Base' );
-            }
-        } catch ( \Exception $e ) {
-            throw new \RuntimeException(
-                sprintf( 'There was an error initializing the WP_Filesystem class: %1$s', $e->getMessage() ),
-                $e->getCode(),
-                $e
-            );
-        }
-
-        return $wp_filesystem;
-    }
-
-    /**
-     * Create a directory to be used by the plugin.
-     *
-     * This method assumes that the directory (and its parent) should have 755 permissions, and
-     * will attempt to update any existing directories accordingly.
-     *
-     * @param string $path The path to construct.
-     *
-     * @return bool True if the directory either already exists or was created *and* has the
-     *              correct permissions, false otherwise.
-     */
-
-    private static function mkdir_p( $path ) {
-        $parent = dirname( $path );
-        $fs     = self::get_filesystem();
-
-        // Everything is as it should be.
-        if ( $fs->is_dir( $path ) && $fs->getchmod( $path ) === '755' && $fs->getchmod( $parent ) === '755' ) {
-            return true;
-        }
-
-        // Create any directories that don't yet exist.
-        if ( ! wp_mkdir_p( $path ) ) {
-            return false;
-        }
-
-        if ( $fs->getchmod( $parent ) === '755' ) {
-            return $fs->chmod( $parent, 0755, true );
-        }
-
-        if ( $fs->getchmod( $path ) === '755' ) {
-            return $fs->chmod( $path, 0755 );
-        }
-
-        return true;
-    }
 
     /**
      * delete asset (deprecated)
