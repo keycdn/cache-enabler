@@ -913,7 +913,7 @@ final class Cache_Enabler_Disk {
 
         // in case installation is in a subdirectory
         $image_url_path = ltrim( parse_url( $image_url, PHP_URL_PATH ), '/' );
-        $installation_dir = preg_replace( '/^[^\/]+\/\K.+/', '', $image_url_path );
+        $installation_dir = ltrim( parse_url( site_url( '/' ), PHP_URL_PATH ), '/' );
         $image_path = str_replace( $installation_dir, '', ABSPATH ) . $image_url_path;
 
         return $image_path;
