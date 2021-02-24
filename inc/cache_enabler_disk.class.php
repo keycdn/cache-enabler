@@ -941,7 +941,7 @@ final class Cache_Enabler_Disk {
 
         // try initializing filesystem instance and cache the result
         try {
-            require_once ABSPATH . '/wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
 
             $filesystem = WP_Filesystem();
 
