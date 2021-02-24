@@ -48,21 +48,6 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * base cache file names
-     *
-     * @since   1.0.7
-     * @change  1.6.0
-     *
-     * @var     string
-     */
-
-    const CACHE_FILE_HTML      = 'index.html';
-    const CACHE_FILE_GZIP      = 'index.html.gz';
-    const CACHE_FILE_WEBP_HTML = 'index-webp.html';
-    const CACHE_FILE_WEBP_GZIP = 'index-webp.html.gz';
-
-
-    /**
      * configure system files
      *
      * @since   1.5.0
@@ -564,14 +549,14 @@ final class Cache_Enabler_Disk {
      * get complete cache file path (HTML)
      *
      * @since   1.0.0
-     * @change  1.4.0
+     * @change  1.7.0
      *
      * @return  string  file path to new or potentially cached page
      */
 
     private static function cache_file_html() {
 
-        return self::cache_file_dir_path() . self::cache_file_scheme() . '-' . self::CACHE_FILE_HTML;
+        return self::cache_file_dir_path() . self::cache_file_scheme() . '-index.html';
     }
 
 
@@ -579,14 +564,14 @@ final class Cache_Enabler_Disk {
      * get complete cache file path (Gzip)
      *
      * @since   1.0.1
-     * @change  1.4.0
+     * @change  1.7.0
      *
      * @return  string  file path to new or potentially cached page
      */
 
     private static function cache_file_gzip() {
 
-        return self::cache_file_dir_path() . self::cache_file_scheme() . '-' . self::CACHE_FILE_GZIP;
+        return self::cache_file_dir_path() . self::cache_file_scheme() . '-index.html.gz';
     }
 
 
@@ -594,14 +579,14 @@ final class Cache_Enabler_Disk {
      * get complete cache file path (WebP HTML)
      *
      * @since   1.0.7
-     * @change  1.4.0
+     * @change  1.7.0
      *
      * @return  string  file path to new or potentially cached page
      */
 
     private static function cache_file_webp_html() {
 
-        return self::cache_file_dir_path() . self::cache_file_scheme() . '-' . self::CACHE_FILE_WEBP_HTML;
+        return self::cache_file_dir_path() . self::cache_file_scheme() . '-index-webp.html';
     }
 
 
@@ -609,14 +594,14 @@ final class Cache_Enabler_Disk {
      * get complete cache file path (WebP Gzip)
      *
      * @since   1.0.1
-     * @change  1.4.0
+     * @change  1.7.0
      *
      * @return  string  file path to new or potentially cached page
      */
 
     private static function cache_file_webp_gzip() {
 
-        return self::cache_file_dir_path() . self::cache_file_scheme() . '-' . self::CACHE_FILE_WEBP_GZIP;
+        return self::cache_file_dir_path() . self::cache_file_scheme() . '-index-webp.html.gz';
     }
 
 
