@@ -143,28 +143,22 @@ final class Cache_Enabler_Engine {
      * end output buffering and cache page if applicable
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.7.0
      *
-     * @param   string   $page_contents  contents of a page from the output buffer
-     * @param   integer  $phase          bitmask of PHP_OUTPUT_HANDLER_* constants
-     * @return  string   $page_contents  contents of a page from the output buffer
+     * @param   string   $contents  contents from the output buffer
+     * @param   integer  $phase     bitmask of PHP_OUTPUT_HANDLER_* constants
+     * @return  string   $contents  unchanged contents from the output buffer
      */
 
-    private static function end_buffering( $page_contents, $phase ) {
+    private static function end_buffering( $contents, $phase ) {
 
         if ( $phase & PHP_OUTPUT_HANDLER_FINAL || $phase & PHP_OUTPUT_HANDLER_END ) {
-            if ( ! self::is_cacheable( $page_contents ) || self::bypass_cache() ) {
-                return $page_contents;
+            if ( self::is_cacheable( $contents ) && ! self::bypass_cache() ) {
+                Cache_Enabler_Disk::cache_page( $contents );
             }
-
-            $page_contents = apply_filters( 'cache_enabler_page_contents_before_store', $page_contents );
-
-            $page_contents = apply_filters_deprecated( 'cache_enabler_before_store', array( $page_contents ), '1.6.0', 'cache_enabler_page_contents_before_store' );
-
-            Cache_Enabler_Disk::cache_page( $page_contents );
-
-            return $page_contents;
         }
+
+        return $contents;
     }
 
 
@@ -188,20 +182,20 @@ final class Cache_Enabler_Engine {
 
 
     /**
-     * check if page can be cached
+     * check if contents from the output buffer can be cached
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.7.0
      *
-     * @param   string   $page_contents  contents of a page from the output buffer
-     * @return  boolean                  true if page contents are cacheable, false otherwise
+     * @param   string   $contents  contents from the output buffer
+     * @return  boolean             true if contents from the output buffer are cacheable, false otherwise
      */
 
-    private static function is_cacheable( $page_contents ) {
+    private static function is_cacheable( $contents ) {
 
-        $has_html_tag       = ( stripos( $page_contents, '<html' ) !== false );
-        $has_html5_doctype  = preg_match( '/^<!DOCTYPE.+html>/i', ltrim( $page_contents ) );
-        $has_xsl_stylesheet = ( stripos( $page_contents, '<xsl:stylesheet' ) !== false || stripos( $page_contents, '<?xml-stylesheet' ) !== false );
+        $has_html_tag       = ( stripos( $contents, '<html' ) !== false );
+        $has_html5_doctype  = preg_match( '/^<!DOCTYPE.+html>/i', ltrim( $contents ) );
+        $has_xsl_stylesheet = ( stripos( $contents, '<xsl:stylesheet' ) !== false || stripos( $contents, '<?xml-stylesheet' ) !== false );
 
         if ( $has_html_tag && $has_html5_doctype && ! $has_xsl_stylesheet ) {
             return true;

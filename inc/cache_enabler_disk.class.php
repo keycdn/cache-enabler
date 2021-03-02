@@ -94,19 +94,25 @@ final class Cache_Enabler_Disk {
      * store cached page(s)
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.7.0
      *
      * @param   string  $page_contents  contents of a page from the output buffer
      */
 
     public static function cache_page( $page_contents ) {
 
-        // check if page is empty
+        // page contents before store hook
+        $page_contents = apply_filters( 'cache_enabler_page_contents_before_store', $page_contents );
+
+        // deprecated page contents before store hook
+        $page_contents = apply_filters_deprecated( 'cache_enabler_before_store', array( $page_contents ), '1.6.0', 'cache_enabler_page_contents_before_store' );
+
+        // check if there are page contents to cache
         if ( empty( $page_contents ) ) {
             return;
         }
 
-        // create cached page(s)
+        // create cached page(s) to be stored
         self::create_cache_files( $page_contents );
     }
 
