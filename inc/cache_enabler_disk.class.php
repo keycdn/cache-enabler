@@ -1208,7 +1208,7 @@ final class Cache_Enabler_Disk {
      * delete settings file
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.7.0
      */
 
     private static function delete_settings_file() {
@@ -1221,6 +1221,9 @@ final class Cache_Enabler_Disk {
 
         // delete settings directory if empty
         @rmdir( self::$settings_dir );
+
+        // delete parent directory of settings directory if empty
+        @rmdir( dirname( self::$settings_dir ) );
     }
 
 
