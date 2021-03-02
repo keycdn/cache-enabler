@@ -992,12 +992,12 @@ final class Cache_Enabler_Disk {
         }
 
         // check parent directory permissions
-        if ( $fs->getchmod( $parent_dir ) === '755' ) {
+        if ( $fs->getchmod( $parent_dir ) !== '755' ) {
             return $fs->chmod( $parent_dir, 0755, true );
         }
 
         // check directory permissions
-        if ( $fs->getchmod( $dir ) === '755' ) {
+        if ( $fs->getchmod( $dir ) !== '755' ) {
             return $fs->chmod( $dir, 0755 );
         }
 
