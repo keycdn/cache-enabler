@@ -43,6 +43,18 @@ final class Cache_Enabler_Engine {
 
 
     /**
+     * specific HTTP request headers from current request
+     *
+     * @since   1.7.0
+     * @change  1.7.0
+     *
+     * @var     array
+     */
+
+    public static $request_headers;
+
+
+    /**
      * engine settings from disk or database
      *
      * @since   1.5.0
@@ -58,10 +70,13 @@ final class Cache_Enabler_Engine {
      * constructor
      *
      * @since   1.5.0
-     * @change  1.6.0
+     * @change  1.7.0
      */
 
     public function __construct() {
+
+        // get request headers
+        self::$request_headers = self::get_request_headers();
 
         // get settings from disk if directory index file
         if ( self::is_index() ) {
@@ -85,7 +100,7 @@ final class Cache_Enabler_Engine {
      * check if engine should start
      *
      * @since   1.5.2
-     * @change  1.5.4
+     * @change  1.7.0
      *
      * @return  boolean  true if engine should start, false otherwise
      */
@@ -109,11 +124,6 @@ final class Cache_Enabler_Engine {
 
         // check if XMLRPC request
         if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
-            return false;
-        }
-
-        // check if Host request header is empty
-        if ( empty( $_SERVER['HTTP_HOST'] ) ) {
             return false;
         }
 
@@ -159,6 +169,33 @@ final class Cache_Enabler_Engine {
         }
 
         return $contents;
+    }
+
+
+    /**
+     * get specific HTTP request headers from current request
+     *
+     * @since   1.7.0
+     * @change  1.7.0
+     *
+     * @return  array  $request_headers  specific HTTP request headers from current request
+     */
+
+    private static function get_request_headers() {
+
+        $request_headers = ( function_exists( 'apache_request_headers' ) ) ? apache_request_headers() : array();
+
+        $request_headers = array(
+            'Accept'             => ( isset( $request_headers['Accept'] ) ) ? $request_headers['Accept'] : ( ( isset( $_SERVER[ 'HTTP_ACCEPT' ] ) ) ? $_SERVER[ 'HTTP_ACCEPT' ] : '' ),
+            'Accept-Encoding'    => ( isset( $request_headers['Accept-Encoding'] ) ) ? $request_headers['Accept-Encoding'] : ( ( isset( $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] ) ) ? $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] : '' ),
+            'Host'               => ( isset( $request_headers['Host'] ) ) ? $request_headers['Host'] : ( ( isset( $_SERVER[ 'HTTP_HOST' ] ) ) ? $_SERVER[ 'HTTP_HOST' ] : '' ),
+            'If-Modified-Since'  => ( isset( $request_headers['If-Modified-Since'] ) ) ? $request_headers['If-Modified-Since'] : ( ( isset( $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] ) ) ? $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] : '' ),
+            'User-Agent'         => ( isset( $request_headers['User-Agent'] ) ) ? $request_headers['User-Agent'] : ( ( isset( $_SERVER[ 'HTTP_USER_AGENT' ] ) ) ? $_SERVER[ 'HTTP_USER_AGENT' ] : '' ),
+            'X-Forwarded-Proto'  => ( isset( $request_headers['X-Forwarded-Proto'] ) ) ? $request_headers['X-Forwarded-Proto'] : ( ( isset( $_SERVER[ 'HTTP_X_FORWARDED_PROTO' ] ) ) ? $_SERVER[ 'HTTP_X_FORWARDED_PROTO' ] : '' ),
+            'X-Forwarded-Scheme' => ( isset( $request_headers['X-Forwarded-Scheme'] ) ) ? $request_headers['X-Forwarded-Scheme'] : ( ( isset( $_SERVER[ 'HTTP_X_FORWARDED_SCHEME' ] ) ) ? $_SERVER[ 'HTTP_X_FORWARDED_SCHEME' ] : '' ),
+        );
+
+        return $request_headers;
     }
 
 
@@ -291,7 +328,7 @@ final class Cache_Enabler_Engine {
                 $cookies_regex = '/^(wp-postpass|wordpress_logged_in|comment_author)_/';
             }
             // bypass cache if an excluded cookie is found
-            foreach ( $_COOKIE as $key => $value) {
+            foreach ( $_COOKIE as $key => $value ) {
                 if ( preg_match( $cookies_regex, $key ) ) {
                     return true;
                 }
@@ -322,25 +359,10 @@ final class Cache_Enabler_Engine {
 
 
     /**
-     * check if mobile template
-     *
-     * @since   1.0.0
-     * @change  1.0.0
-     *
-     * @return  boolean  true if mobile template, false otherwise
-     */
-
-    private static function is_mobile() {
-
-        return ( strpos( TEMPLATEPATH, 'wptouch' ) || strpos( TEMPLATEPATH, 'carrington' ) || strpos( TEMPLATEPATH, 'jetpack' ) || strpos( TEMPLATEPATH, 'handheld' ) );
-    }
-
-
-    /**
      * check if cache should be bypassed
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.7.0
      *
      * @return  boolean  true if cache should be bypassed, false otherwise
      */
@@ -379,7 +401,7 @@ final class Cache_Enabler_Engine {
 
         // check conditional tags when output buffering has ended
         if ( class_exists( 'WP' ) ) {
-            if ( is_admin() || self::is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() || self::is_mobile() ) {
+            if ( is_admin() || self::is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
                 return true;
             }
         }
@@ -392,15 +414,32 @@ final class Cache_Enabler_Engine {
      * deliver cache
      *
      * @since   1.5.0
-     * @change  1.6.0
+     * @change  1.7.0
      *
      * @return  boolean  false if cached page was not delivered
      */
 
     public static function deliver_cache() {
 
-        if ( Cache_Enabler_Disk::cache_exists() && ! Cache_Enabler_Disk::cache_expired() && ! self::bypass_cache()  ) {
-            readfile( Cache_Enabler_Disk::get_cache() );
+        $cache_file = Cache_Enabler_Disk::get_cache_file();
+
+        if ( Cache_Enabler_Disk::cache_exists( $cache_file ) && ! Cache_Enabler_Disk::cache_expired( $cache_file ) && ! self::bypass_cache()  ) {
+            // set X-Cache-Handler response header
+            header( 'X-Cache-Handler: cache-enabler-engine' );
+
+            // return 304 Not Modified with empty body if applicable
+            if ( strtotime( self::$request_headers['If-Modified-Since'] >= filemtime( $cache_file ) ) ) {
+                header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
+                exit;
+            }
+
+            // set Content-Encoding response header if applicable
+            if ( strpos( basename( $cache_file ), 'gz' ) !== false ) {
+                header( 'Content-Encoding: gzip' );
+            }
+
+            // deliver cache
+            readfile( $cache_file );
             exit;
         }
 
