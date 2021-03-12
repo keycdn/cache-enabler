@@ -1023,10 +1023,12 @@ final class Cache_Enabler_Disk {
         } elseif ( @file_exists( dirname( ABSPATH ) . '/wp-config.php' ) && ! @file_exists( dirname( ABSPATH ) . '/wp-settings.php' ) ) {
             // config file resides one level above ABSPATH but is not part of another installation
             $wp_config_file = dirname( ABSPATH ) . '/wp-config.php';
+        } else {
+            $wp_config_file = false;
         }
 
         // check if config file can be written to
-        if ( ! is_writable( $wp_config_file ) ) {
+        if ( ! $wp_config_file || ! is_writable( $wp_config_file ) ) {
             return;
         }
 
