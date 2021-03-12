@@ -289,7 +289,7 @@ final class Cache_Enabler {
 
         // create settings file if action has not been registered for hook yet, like when in activation hook
         if ( has_action( 'update_option_cache_enabler', array( __CLASS__, 'on_update_backend' ) ) === false ) {
-            Cache_Enabler_Disk::create_settings_file( $new_option_value );
+            self::on_update_backend( $old_option_value, $new_option_value );
         }
 
         return $new_option_value;
@@ -309,6 +309,15 @@ final class Cache_Enabler {
     public static function on_update_backend( $option, $new_option_value ) {
 
         Cache_Enabler_Disk::create_settings_file( $new_option_value );
+
+        // handle enabling or disabling the site cache
+        if ( isset( $option['enabled'] ) && $option['enabled'] !== $new_option_value['enabled'] ) {
+            if ( $new_option_value['enabled'] === 1 ) {
+                Cache_Enabler_Disk::setup();
+            } else {
+                self::on_deactivation( false );
+            }
+        }
     }
 
 
@@ -584,6 +593,7 @@ final class Cache_Enabler {
     private static function get_default_settings( $settings_type = null ) {
 
         $system_default_settings = array(
+            'enabled'             => 1,
             'version'             => (string) CACHE_ENABLER_VERSION,
             'permalink_structure' => (string) self::get_permalink_structure(),
         );
@@ -1482,6 +1492,11 @@ final class Cache_Enabler {
             );
         }
 
+        // checks below this line are only applicable if page caching is enabled.
+        if ( ! Cache_Enabler_Engine::$settings['enabled'] ) {
+            return;
+        }
+
         // check advanced-cache.php drop-in
         if ( ! file_exists( WP_CONTENT_DIR . '/advanced-cache.php' ) ) {
             printf(
@@ -1622,6 +1637,7 @@ final class Cache_Enabler {
     public static function validate_settings( $settings ) {
 
         $validated_settings = array(
+            'enabled'                            => (int) ( ! empty( $settings['enabled'] ) ),
             'cache_expires'                      => (int) ( ! empty( $settings['cache_expires'] ) ),
             'cache_expiry_time'                  => (int) $settings['cache_expiry_time'],
             'clear_site_cache_on_saved_post'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_post'] ) ),
@@ -1665,7 +1681,7 @@ final class Cache_Enabler {
             <h1><?php esc_html_e( 'Cache Enabler Settings', 'cache-enabler' ); ?></h1>
 
             <?php
-            if ( defined( 'WP_CACHE' ) && ! WP_CACHE ) {
+            if ( Cache_Enabler_Engine::$settings['enabled'] && ( ! defined( 'WP_CACHE' ) || ! WP_CACHE ) ) {
                 printf(
                     '<div class="notice notice-warning"><p>%s</p></div>',
                     sprintf(
@@ -1695,6 +1711,17 @@ final class Cache_Enabler {
             <form method="post" action="options.php">
                 <?php settings_fields( 'cache_enabler' ); ?>
                 <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row">
+                            <?php esc_html_e( 'Cache Status', 'cache-enabler' ); ?>
+                        </th>
+                        <td>
+                            <label for="cache_enabler_enabled" class="checkbox--form-control">
+                                <input name="cache_enabler[enabled]" type="checkbox" id="cache_enabler_enabled" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['enabled'] ); ?> />
+                                <?php esc_html_e( 'Enable the site cache.', 'cache-enabler' ); ?>
+                            </label>
+                        </td>
+                    </tr>
                     <tr valign="top">
                         <th scope="row">
                             <?php esc_html_e( 'Cache Behavior', 'cache-enabler' ); ?>
@@ -1842,7 +1869,9 @@ final class Cache_Enabler {
 
                 <p class="submit">
                     <input type="submit" class="button-secondary" value="<?php esc_html_e( 'Save Changes', 'cache-enabler' ); ?>" />
-                    <input name="cache_enabler[clear_site_cache_on_saved_settings]" type="submit" class="button-primary" value="<?php esc_html_e( 'Save Changes and Clear Site Cache', 'cache-enabler' ); ?>" />
+                    <?php if ( Cache_Enabler_Engine::$settings['enabled'] ) : ?>
+                        <input name="cache_enabler[clear_site_cache_on_saved_settings]" type="submit" class="button-primary" value="<?php esc_html_e( 'Save Changes and Clear Site Cache', 'cache-enabler' ); ?>" />
+                    <?php endif; ?>
                 </p>
             </form>
         </div>
