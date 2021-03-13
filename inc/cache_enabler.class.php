@@ -889,7 +889,7 @@ final class Cache_Enabler {
      * process clear cache request
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.7.0
      */
 
     public static function process_clear_cache_request() {
@@ -911,8 +911,7 @@ final class Cache_Enabler {
 
         // clear page cache
         if ( $_GET['_action'] === 'clearurl' ) {
-            // set clear URL without query string
-            $clear_url = parse_url( home_url(), PHP_URL_SCHEME ) . '://' . parse_url( home_url(), PHP_URL_HOST ) . preg_replace( '/\?.*/', '', $_SERVER['REQUEST_URI'] );
+            $clear_url = parse_url( home_url(), PHP_URL_SCHEME ) . '://' . Cache_Enabler_Engine::$request_headers['Host'] . $_SERVER['REQUEST_URI'];
             self::clear_page_cache_by_url( $clear_url );
         // clear site(s) cache
         } elseif ( $_GET['_action'] === 'clear' ) {
@@ -920,7 +919,7 @@ final class Cache_Enabler {
         }
 
         // redirect to same page
-        wp_safe_redirect( wp_get_referer() );
+        wp_safe_redirect( remove_query_arg( array( '_cache', '_action', '_wpnonce' ) ) );
 
         // set transient for clear notice
         if ( is_admin() ) {
