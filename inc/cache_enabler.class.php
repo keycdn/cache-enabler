@@ -72,7 +72,7 @@ final class Cache_Enabler {
         // system clear cache hooks
         add_action( '_core_updated_successfully', array( __CLASS__, 'clear_complete_cache' ) );
         add_action( 'upgrader_process_complete', array( __CLASS__, 'on_upgrade' ), 10, 2 );
-        add_action( 'switch_theme', array( __CLASS__, 'clear_complete_cache' ) );
+        add_action( 'switch_theme', array( __CLASS__, 'clear_site_cache' ) );
         add_action( 'permalink_structure_changed', array( __CLASS__, 'clear_site_cache' ) );
         add_action( 'activated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
         add_action( 'deactivated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
@@ -152,16 +152,48 @@ final class Cache_Enabler {
 
     public static function on_upgrade( $obj, $data ) {
 
-        // if setting enabled clear site cache on any plugin update
-        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_changed_plugin'] ) {
-            self::clear_site_cache();
+        if ( $data['action'] !== 'update' ) {
+            return;
         }
 
-        // check if Cache Enabler has been updated
-        if ( $data['action'] === 'update' && $data['type'] === 'plugin' && array_key_exists( 'plugins', $data ) ) {
-            foreach ( (array) $data['plugins'] as $plugin_file ) {
-                if ( $plugin_file === CACHE_ENABLER_BASE ) {
-                    self::on_cache_enabler_update();
+        // updated themes
+        if ( $data['type'] === 'theme' && isset( $data['themes'] ) ) {
+            $updated_themes = (array) $data['themes'];
+            $sites_themes   = self::each_site( is_multisite(), 'wp_get_theme' );
+
+            // check each site
+            foreach ( $sites_themes as $blog_id => $site_theme ) {
+                // if the active or parent theme has been updated clear site cache
+                if ( in_array( $site_theme->stylesheet, $updated_themes, true ) || in_array( $site_theme->template, $updated_themes, true ) ) {
+                    self::clear_site_cache_by_blog_id( $blog_id );
+                }
+            }
+        }
+
+        // updated plugins
+        if ( $data['type'] === 'plugin' && isset( $data['plugins'] ) ) {
+            $updated_plugins = (array) $data['plugins'];
+
+            // check if Cache Enabler has been updated
+            if ( in_array( CACHE_ENABLER_BASE, $updated_plugins, true ) ) {
+                self::on_cache_enabler_update();
+            // check all updated plugins otherwise
+            } else {
+                $network_plugins = ( is_multisite() ) ? array_flip( (array) get_site_option( 'active_sitewide_plugins', array() ) ) : array();
+
+                // if a network activated plugin has been updated clear complete cache
+                if ( ! empty( array_intersect( $updated_plugins, $network_plugins ) ) ) {
+                    self::clear_complete_cache();
+                // check each site otherwise
+                } else {
+                    $sites_plugins = self::each_site( is_multisite(), 'get_option', array( 'active_plugins', array() ) );
+
+                    foreach ( $sites_plugins as $blog_id => $site_plugins ) {
+                        // if an activated plugin has been updated clear site cache
+                        if ( ! empty( array_intersect( $updated_plugins, (array) $site_plugins ) ) ) {
+                            self::clear_site_cache_by_blog_id( $blog_id );
+                        }
+                    }
                 }
             }
         }
@@ -351,7 +383,7 @@ final class Cache_Enabler {
      * enter each site
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.7.0
      *
      * @param   boolean  $network          whether or not each site in network
      * @param   string   $callback         callback function
@@ -365,14 +397,16 @@ final class Cache_Enabler {
 
         if ( $network ) {
             $blog_ids = self::get_blog_ids();
+
             // switch to each site in network
             foreach ( $blog_ids as $blog_id ) {
                 switch_to_blog( $blog_id );
-                $callback_return[] = (int) call_user_func_array( $callback, $callback_params );
+                $callback_return[ $blog_id ] = call_user_func_array( $callback, $callback_params );
                 restore_current_blog();
             }
         } else {
-            $callback_return[] = (int) call_user_func_array( $callback, $callback_params );
+            $blog_id = 1;
+            $callback_return[ $blog_id ] = call_user_func_array( $callback, $callback_params );
         }
 
         return $callback_return;
@@ -422,18 +456,19 @@ final class Cache_Enabler {
      * get blog IDs
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.7.0
      *
      * @return  array  $blog_ids  blog IDs
      */
 
     private static function get_blog_ids() {
 
-        $blog_ids = array( '1' );
+        $blog_ids = array( 1 );
 
         if ( is_multisite() ) {
             global $wpdb;
-            $blog_ids = $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" );
+
+            $blog_ids = array_map( 'absint', $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" ) );
         }
 
         return $blog_ids;
@@ -1021,7 +1056,7 @@ final class Cache_Enabler {
      * transition post status hook
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.7.0
      *
      * @param   string   $new_status  new post status
      * @param   string   $old_status  old post status
@@ -1031,7 +1066,7 @@ final class Cache_Enabler {
     public static function on_transition_post_status( $new_status, $old_status, $post ) {
 
         // if any published post type status has changed
-        if ( $old_status === 'publish' && in_array( $new_status, array( 'future', 'draft', 'pending', 'private' ) ) ) {
+        if ( $old_status === 'publish' && in_array( $new_status, array( 'future', 'draft', 'pending', 'private' ), true ) ) {
             self::clear_cache_on_post_save( $post->ID );
         }
     }
@@ -1323,7 +1358,7 @@ final class Cache_Enabler {
         if ( ! is_int( $post_id ) ) {
             // if string try to convert to integer
             $post_id = (int) $post_id;
-            // conversion failed
+            // check if conversion failed
             if ( ! $post_id ) {
                 return;
             }
@@ -1354,7 +1389,7 @@ final class Cache_Enabler {
      * clear site cache by blog ID
      *
      * @since   1.4.0
-     * @change  1.6.1
+     * @change  1.7.0
      *
      * @param   integer|string  $blog_id                      blog ID
      * @param   boolean         $delete_cache_size_transient  whether or not the cache size transient should be deleted
@@ -1366,14 +1401,14 @@ final class Cache_Enabler {
         if ( ! is_int( $blog_id ) ) {
             // if string try to convert to integer
             $blog_id = (int) $blog_id;
-            // conversion failed
+            // check if conversion failed
             if ( ! $blog_id ) {
                 return;
             }
         }
 
         // check if blog ID exists
-        if ( ! in_array( $blog_id, self::get_blog_ids() ) ) {
+        if ( ! in_array( $blog_id, self::get_blog_ids(), true ) ) {
             return;
         }
 
@@ -1735,7 +1770,7 @@ final class Cache_Enabler {
 
                                 <label for="cache_enabler_clear_site_cache_on_changed_plugin">
                                     <input name="cache_enabler[clear_site_cache_on_changed_plugin]" type="checkbox" id="cache_enabler_clear_site_cache_on_changed_plugin" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_changed_plugin'] ); ?> />
-                                    <?php esc_html_e( 'Clear the site cache if a plugin has been activated, updated, or deactivated.', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Clear the site cache if a plugin has been activated or deactivated.', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />

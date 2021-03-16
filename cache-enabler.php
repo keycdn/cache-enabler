@@ -62,7 +62,7 @@ spl_autoload_register( 'cache_enabler_autoload' );
 // load required classes
 function cache_enabler_autoload( $class_name ) {
     // check if classes were loaded in advanced-cache.php
-    if ( in_array( $class_name, array( 'Cache_Enabler', 'Cache_Enabler_Engine', 'Cache_Enabler_Disk' ) ) && ! class_exists( $class_name ) ) {
+    if ( in_array( $class_name, array( 'Cache_Enabler', 'Cache_Enabler_Engine', 'Cache_Enabler_Disk' ), true ) && ! class_exists( $class_name ) ) {
         require_once sprintf(
             '%s/inc/%s.class.php',
             CACHE_ENABLER_DIR,
