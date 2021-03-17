@@ -384,10 +384,10 @@ final class Cache_Enabler_Engine {
             return true;
         }
 
-        // check HTTP status code
-        if ( http_response_code() !== 200 ) {
-            return true;
-        }
+		// check HTTP status code filter to prevent bypass
+		if ( !in_array( http_response_code(), apply_filters( 'cache_enabler_no_bypass_response', $response ) ) && http_response_code() !== 200 ) {
+        	return true;
+		}
 
         // check DONOTCACHEPAGE constant
         if ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE ) {
