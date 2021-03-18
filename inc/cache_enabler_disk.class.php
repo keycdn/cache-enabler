@@ -770,7 +770,7 @@ final class Cache_Enabler_Disk {
      * get site file system objects
      *
      * @since   1.6.0
-     * @change  1.6.0
+     * @change  1.7.0
      *
      * @param   string  $site_url      site URL
      * @return  array   $site_objects  site objects
@@ -797,10 +797,10 @@ final class Cache_Enabler_Disk {
             $blog_paths = Cache_Enabler::get_blog_paths();
 
             // check if main site in subdirectory network
-            if ( ! in_array( $blog_path, $blog_paths ) ) {
+            if ( ! in_array( $blog_path, $blog_paths, true ) ) {
                 foreach ( $site_objects as $key => $site_object ) {
                     // delete site object if it does not belong to main site
-                    if ( in_array( '/' . $site_object . '/', $blog_paths ) ) {
+                    if ( in_array( '/' . $site_object . '/', $blog_paths, true ) ) {
                         unset( $site_objects[ $key ] );
                     }
                 }

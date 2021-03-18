@@ -280,7 +280,7 @@ final class Cache_Enabler_Engine {
      * check if page is excluded from cache
      *
      * @since   1.5.0
-     * @change  1.5.3
+     * @change  1.7.0
      *
      * @return  boolean  true if page is excluded from the cache, false otherwise
      */
@@ -289,7 +289,10 @@ final class Cache_Enabler_Engine {
 
         // if post ID excluded
         if ( ! empty( self::$settings['excluded_post_ids'] ) && function_exists( 'is_singular' ) && is_singular() ) {
-            if ( in_array( get_queried_object_id(), (array) explode( ',', self::$settings['excluded_post_ids'] ) ) ) {
+            $post_id = get_queried_object_id();
+            $excluded_post_ids = array_map( 'absint', (array) explode( ',', self::$settings['excluded_post_ids'] ) );
+
+            if ( in_array( $post_id, $excluded_post_ids, true ) ) {
                 return true;
             }
         }
