@@ -10,9 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-/*
- * Set the CACHE_ENABLER_DIR constant in your wp-config.php file if the plugin resides
- * somewhere other than wp-content/plugins/cache-enabler/.
+/**
+ * set the CACHE_ENABLER_DIR constant without trailing slash in your wp-config.php file if the plugin resides
+ * somewhere other than path/to/wp-content/plugins/cache-enabler
  */
 if ( defined( 'CACHE_ENABLER_DIR' ) ) {
     $cache_enabler_dir = CACHE_ENABLER_DIR;

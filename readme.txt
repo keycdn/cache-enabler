@@ -2,7 +2,7 @@
 Contributors: keycdn
 Tags: cache, caching, performance, gzip, webp, speed
 Requires at least: 5.1
-Tested up to: 5.6
+Tested up to: 5.7
 Requires PHP: 5.6
 Stable tag: trunk
 License: GPLv2 or later
@@ -54,6 +54,19 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 
 == Changelog ==
+
+= 1.7.0 =
+* Update cache clearing for theme, plugin, post, and upgrade actions (#215 and #216)
+* Update cache handling with cache keys (#211)
+* Update settings file deletion handling (#205)
+* Update output buffer handling (#203)
+* Update removing CSS and JavaScript comments during HTML minification (#202)
+* Update WebP URL conversion for installations in a subdirectory (#198)
+* Add `CACHE_ENABLER_DIR` as definable plugin directory constant (#195 @stevegrunwell)
+* Add explicit directory access permissions (#194 @stevegrunwell)
+* Add exclusive lock when writing files (#191 @nawawi)
+* Fix clear cache request handling (#212)
+* Fix getting `wp-config.php` (#210 @stevegrunwell)
 
 = 1.6.2 =
 * Fix removing CSS and JavaScript comments during HTML minification (#188)
