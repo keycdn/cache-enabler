@@ -55,6 +55,9 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.7.1 =
+* Fix directory creation handling (#221 @stevegrunwell)
+
 = 1.7.0 =
 * Update cache clearing for theme, plugin, post, and upgrade actions (#215 and #216)
 * Update cache handling with cache keys (#211)
