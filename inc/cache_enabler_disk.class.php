@@ -281,6 +281,25 @@ final class Cache_Enabler_Disk {
 
 
     /**
+     * clear all expired files from the cache
+     */
+
+    public static function clear_expired_cache() {
+        $cache_objects = self::get_site_objects( home_url() );
+        $cache_dir     = trailingslashit( self::get_cache_file_dir( home_url() ) );
+
+        // Remove expired cache items.
+        array_walk( $cache_objects, function ( $cache_object ) use ( $cache_dir ) {
+            $file = $cache_dir . $cache_object;
+
+            if ( self::cache_expired( $file ) ) {
+                unlink( $file );
+            }
+        } );
+    }
+
+
+    /**
      * create file for cache
      *
      * @since   1.0.0

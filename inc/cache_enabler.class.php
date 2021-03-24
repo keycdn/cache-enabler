@@ -66,6 +66,7 @@ final class Cache_Enabler {
         add_action( 'cache_enabler_clear_site_cache_by_blog_id', array( __CLASS__, 'clear_site_cache_by_blog_id' ) );
         add_action( 'cache_enabler_clear_page_cache_by_post_id', array( __CLASS__, 'clear_page_cache_by_post_id' ) );
         add_action( 'cache_enabler_clear_page_cache_by_url', array( __CLASS__, 'clear_page_cache_by_url' ) );
+        add_action( 'cache_enabler_clear_expired_cache', array( 'Cache_Enabler_Disk', 'clear_expired_cache' ) );
         add_action( 'ce_clear_cache', array( __CLASS__, 'clear_complete_cache' ) ); // deprecated in 1.6.0
         add_action( 'ce_clear_post_cache', array( __CLASS__, 'clear_page_cache_by_post_id' ) ); // deprecated in 1.6.0
 
@@ -116,6 +117,11 @@ final class Cache_Enabler {
             add_action( 'admin_notices', array( __CLASS__, 'requirements_check' ) );
             add_action( 'admin_notices', array( __CLASS__, 'cache_cleared_notice' ) );
             add_action( 'network_admin_notices', array( __CLASS__, 'cache_cleared_notice' ) );
+        }
+
+        // cron events
+        if ( ! wp_next_scheduled( 'cache_enabler_clear_expired_cache' ) ) {
+            wp_schedule_event( time(), 'hourly', 'cache_enabler_clear_expired_cache' );
         }
     }
 
