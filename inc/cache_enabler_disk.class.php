@@ -885,8 +885,8 @@ final class Cache_Enabler_Disk {
             if ( $filesystem === false ) {
                 if ( is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
                     throw new \RuntimeException(
-                        $wp_filesystem->get_error_message,
-                        ( is_numeric( $wp_error->get_error_code() ) ) ? (int) $wp_error->get_error_code() : 0
+                        $wp_filesystem->errors->get_error_message(),
+                        ( is_numeric( $wp_filesystem->errors->get_error_code() ) ) ? (int) $wp_filesystem->errors->get_error_code() : 0
                     );
                 }
 
