@@ -292,7 +292,7 @@ final class Cache_Enabler_Disk {
         array_walk( $cache_objects, function ( $cache_object ) use ( $cache_dir ) {
             $file = $cache_dir . $cache_object;
 
-            if ( self::cache_expired( $file ) ) {
+            if ( is_file( $file ) && self::cache_expired( $file ) ) {
                 unlink( $file );
             }
         } );
