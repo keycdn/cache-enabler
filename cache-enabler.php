@@ -41,6 +41,12 @@ define( 'CACHE_ENABLER_BASE', plugin_basename( __FILE__ ) );
 if ( ! defined( 'CACHE_ENABLER_DIR' ) ) {
     define( 'CACHE_ENABLER_DIR', __DIR__ );
 }
+if (! defined('CACHE_ENABLER_CACHE_DIR')) {
+    define('CACHE_ENABLER_CACHE_DIR', WP_CONTENT_DIR . '/cache/cache-enabler');
+}
+if (! defined('CACHE_ENABLER_SETTINGS_DIR')) {
+    define('CACHE_ENABLER_SETTINGS_DIR', WP_CONTENT_DIR . '/settings/cache-enabler');
+}
 
 // deprecated constants (1.7.0)
 define( 'CE_VERSION', CACHE_ENABLER_VERSION );
