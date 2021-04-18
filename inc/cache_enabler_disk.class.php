@@ -20,7 +20,7 @@ final class Cache_Enabler_Disk {
      * @var     string
      */
 
-    public static $cache_dir = (defined('CACHE_ENABLER_CACHE_DIR') ? CACHE_ENABLER_CACHE_DIR : WP_CONTENT_DIR . '/cache/cache-enabler');
+    public static $cache_dir = CACHE_ENABLER_CACHE_DIR;
 
 
     /**
@@ -32,7 +32,7 @@ final class Cache_Enabler_Disk {
      * @var     string
      */
 
-    private static $settings_dir = (defined('CACHE_ENABLER_SETTINGS_DIR') ? CACHE_ENABLER_SETTINGS_DIR : WP_CONTENT_DIR . '/settings/cache-enabler');
+    private static $settings_dir = CACHE_ENABLER_SETTINGS_DIR;
 
 
     /**
