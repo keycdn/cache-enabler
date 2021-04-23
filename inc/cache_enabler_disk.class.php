@@ -912,7 +912,7 @@ final class Cache_Enabler_Disk {
      * makes directory recursively based on directory path
      *
      * @since   1.7.0
-     * @change  1.7.0
+     * @change  1.7.2
      *
      * @param   string   $dir  directory path to create
      * @return  boolean        true if the directory either already exists or was created and has the correct permissions, false otherwise
@@ -920,11 +920,13 @@ final class Cache_Enabler_Disk {
 
     private static function mkdir_p( $dir ) {
 
-        $parent_dir = dirname( $dir );
-        $fs = self::get_filesystem();
+        $fs          = self::get_filesystem();
+        $mode_octal  = apply_filters( 'cache_enabler_mkdir_mode', 0755 );
+        $mode_string = decoct( $mode_octal ); // get last three digits (e.g. '755')
+        $parent_dir  = dirname( $dir );
 
-        // check if directory and its parent have 755 permissions
-        if ( $fs->is_dir( $dir ) && $fs->getchmod( $dir ) === '755' && $fs->getchmod( $parent_dir ) === '755' ) {
+        // check if directory and its parent have correct permissions
+        if ( $fs->is_dir( $dir ) && $fs->getchmod( $dir ) === $mode_string && $fs->getchmod( $parent_dir ) === $mode_string ) {
             return true;
         }
 
@@ -934,13 +936,13 @@ final class Cache_Enabler_Disk {
         }
 
         // check parent directory permissions
-        if ( $fs->getchmod( $parent_dir ) !== '755' ) {
-            return $fs->chmod( $parent_dir, 0755, true );
+        if ( $fs->getchmod( $parent_dir ) !== $mode_string ) {
+            return $fs->chmod( $parent_dir, $mode_octal, true );
         }
 
         // check directory permissions
-        if ( $fs->getchmod( $dir ) !== '755' ) {
-            return $fs->chmod( $dir, 0755 );
+        if ( $fs->getchmod( $dir ) !== $mode_string ) {
+            return $fs->chmod( $dir, $mode_octal );
         }
 
         return true;
