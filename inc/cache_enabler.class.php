@@ -72,6 +72,9 @@ final class Cache_Enabler {
         add_action( 'comment_post', array( __CLASS__, 'on_comment_post' ), 99, 2 );
         add_action( 'edit_comment', array( __CLASS__, 'on_edit_comment' ), 10, 2 );
         add_action( 'transition_comment_status', array( __CLASS__, 'on_transition_comment_status' ), 10, 3 );
+        add_action( 'edit_terms', array( __CLASS__, 'on_edit_terms' ), 10, 2 );
+        add_action( 'edit_term', array( __CLASS__, 'on_edit_delete_term' ), 10, 3 );
+        add_action( 'delete_term', array( __CLASS__, 'on_edit_delete_term' ), 10, 3 );
 
         // third party clear cache hooks
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_complete_cache' ) );
@@ -697,6 +700,7 @@ final class Cache_Enabler {
             'cache_expiry_time'                  => 0,
             'clear_site_cache_on_saved_post'     => 0,
             'clear_site_cache_on_saved_comment'  => 0,
+            'clear_site_cache_on_saved_term'     => 0,
             'clear_site_cache_on_changed_plugin' => 0,
             'convert_image_urls_to_webp'         => 0,
             'mobile_cache'                       => 0,
@@ -1310,31 +1314,56 @@ final class Cache_Enabler {
      * clear taxonomies archives pages cache by post ID
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @param   integer  $post_id  post ID
      */
 
     public static function clear_taxonomies_archives_cache_by_post_id( $post_id ) {
 
-        // get taxonomies
-        $taxonomies = get_taxonomies();
+        // get public taxonomies
+        $taxonomies = array_filter( get_taxonomies(),  array( __CLASS__, 'is_taxonomy_public' ) );
 
-        foreach ( $taxonomies as $taxonomy ) {
-            if ( wp_count_terms( $taxonomy ) > 0 ) {
-                // get terms attached to post
-                $term_ids = wp_get_post_terms( $post_id, $taxonomy,  array( 'fields' => 'ids' ) );
+        // get terms attached to post
+        $terms = wp_get_post_terms( $post_id, $taxonomies );
 
-                foreach ( $term_ids as $term_id ) {
-                    // get term archives URL
-                    $term_archives_url = get_term_link( (int) $term_id, $taxonomy );
+        if ( $terms && ! is_wp_error( $terms ) ) {
+            foreach ( $terms as $term ) {
+                // clear term archive page of current post
+                self::clear_term_archive_cache( $term );
 
-                    // if term archives URL exists and does not have a query string clear taxonomy archives page and its pagination page(s) cache
-                    if ( ! is_wp_error( $term_archives_url ) && strpos( $term_archives_url, '?' ) === false ) {
-                        self::clear_page_cache_by_url( $term_archives_url, 'pagination' );
-                    }
+                // if taxonomy is hierarchical, also clear parent term cache (posts also show up on parent term pages)
+                if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
+                    self::clear_parent_term_cache( $term );
                 }
             }
+        }
+    }
+
+
+    /**
+     * clear archive page of term
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Term|int  $term  term instance or term_id
+     */
+
+    public static function clear_term_archive_cache( $term, $taxonomy = '' ) {
+
+        if ( is_int( $term ) ) {
+            $term = get_term( $term, $taxonomy );
+            if ( ! $term || is_wp_error( $term ) ) {
+                return;
+            }
+        }
+
+        $term_archive_url = get_term_link( $term );
+
+        // if term archives URL exists and does not have a query string clear taxonomy archives page and its pagination page(s) cache
+        if ( ! is_wp_error( $term_archive_url ) && strpos( $term_archive_url, '?' ) === false ) {
+            self::clear_page_cache_by_url( $term_archive_url, 'pagination' );
         }
     }
 
@@ -1405,6 +1434,170 @@ final class Cache_Enabler {
         // if page URL exists and does not have a query string (e.g. guid) clear page cache
         if ( ! empty( $page_url ) && strpos( $page_url, '?' ) === false ) {
             self::clear_page_cache_by_url( $page_url, $args );
+        }
+    }
+
+
+    /**
+     * edit terms hook
+     *
+     * runs just before the term is updated in the database
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   integer  $term_id   term ID
+     * @param   string   $taxonomy  taxonomy slug
+     */
+
+    public static function on_edit_terms( $term_id, $taxonomy ) {
+
+        // delete old term page, in case the slug was changed
+        self::clear_term_archive_cache( $term_id, $taxonomy );
+    }
+
+
+    /**
+     * edit or delete term hook
+     *
+     * runs after the term has been updated in the database
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   integer  $term_id   term ID
+     * @param   integer  $tt_id     term taxonomy ID
+     * @param   string   $taxonomy  taxonomy slug
+     */
+
+    public static function on_edit_delete_term( $term_id, $tt_id, $taxonomy ) {
+
+        // only clear cache if taxonomy is public
+        if ( self::is_taxonomy_public( $taxonomy ) ) {
+
+            // if setting enabled clear site cache
+            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_term'] ) {
+                self::clear_site_cache();
+                // clear term archive and/or associated cache otherwise
+            } else {
+                $term = get_term( $term_id );
+                if ( $term && ! is_wp_error( $term ) ) {
+                    self::clear_term_archive_cache( $term );
+                    self::clear_cache_associated_with_term( $term );
+                }
+            }
+        }
+    }
+
+
+    /**
+     * check if taxonomy is public
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   string  $taxonomy  taxonomy slug
+     */
+
+    public static function is_taxonomy_public( $taxonomy ) {
+        $wp_taxonomy = get_taxonomy( $taxonomy );
+        return ( $wp_taxonomy && $wp_taxonomy->public );
+    }
+
+
+    /**
+     * clear all cached pages that are associated with term
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Term  $term  term instance
+     */
+
+    public static function clear_cache_associated_with_term( $term ) {
+
+        if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
+            // clear child term cache (term could be part of a breadcrumb list on child pages)
+            self::clear_child_term_cache( $term );
+
+            // clear parent terms (term could be part of list of sub pages)
+            self::clear_parent_term_cache( $term );
+        }
+
+        // clear all pages that are associated with term (term could be featured on these pages)
+        self::clear_page_cache_by_term( $term );
+    }
+
+
+    /**
+     * clear all child term archives that are associated with term
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Term  $term  term instance
+     */
+
+    public static function clear_child_term_cache( $term ) {
+
+        $child_ids = get_term_children( $term->term_id, $term->taxonomy );
+        if ( $child_ids && ! is_wp_error( $child_ids ) ) {
+            foreach ( $child_ids as $child_id ) {
+                self::clear_term_archive_cache( $child_id, $term->taxonomy );
+            }
+        }
+    }
+
+
+    /**
+     * clear all parent term archives that are associated with term
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Term  $term  term instance
+     */
+
+    public static function clear_parent_term_cache( $term ) {
+
+        $parent_ids = get_ancestors( $term->term_id, $term->taxonomy, 'taxonomy' );
+
+        foreach ( $parent_ids as $parent_id ) {
+            self::clear_term_archive_cache( $parent_id, $term->taxonomy );
+        }
+    }
+
+
+    /**
+     * clear all cached pages that are associated with term
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Term  $term  term instance
+     */
+
+    public static function clear_page_cache_by_term( $term ) {
+
+        // clear post pages that are assocuated with term
+        $args = array(
+            'post_type' => 'any',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids',
+            'order' => 'none',
+            'cache_results' => false,
+            'no_found_rows' => true,
+            'tax_query' => array(
+                array(
+                    'taxonomy' => $term->taxonomy,
+                    'terms' => $term->term_id,
+                )
+            )
+        );
+        $post_ids = get_posts( $args );
+        foreach ( $post_ids as $post_id ) {
+            self::clear_page_cache_by_post_id( $post_id );
         }
     }
 
@@ -1734,6 +1927,7 @@ final class Cache_Enabler {
             'cache_expiry_time'                  => (int) $settings['cache_expiry_time'],
             'clear_site_cache_on_saved_post'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_post'] ) ),
             'clear_site_cache_on_saved_comment'  => (int) ( ! empty( $settings['clear_site_cache_on_saved_comment'] ) ),
+            'clear_site_cache_on_saved_term'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_term'] ) ),
             'clear_site_cache_on_changed_plugin' => (int) ( ! empty( $settings['clear_site_cache_on_changed_plugin'] ) ),
             'convert_image_urls_to_webp'         => (int) ( ! empty( $settings['convert_image_urls_to_webp'] ) ),
             'mobile_cache'                       => (int) ( ! empty( $settings['mobile_cache'] ) ),
@@ -1837,6 +2031,13 @@ final class Cache_Enabler {
                                 <label for="cache_enabler_clear_site_cache_on_saved_comment">
                                     <input name="cache_enabler[clear_site_cache_on_saved_comment]" type="checkbox" id="cache_enabler_clear_site_cache_on_saved_comment" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ); ?> />
                                     <?php esc_html_e( 'Clear the site cache if a comment has been posted, updated, spammed, or trashed (instead of only the page cache).', 'cache-enabler' ); ?>
+                                </label>
+
+                                <br />
+
+                                <label for="cache_enabler_clear_site_cache_on_saved_term">
+                                    <input name="cache_enabler[clear_site_cache_on_saved_term]" type="checkbox" id="cache_enabler_clear_site_cache_on_saved_term" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_term'] ); ?> />
+                                    <?php esc_html_e( 'Clear the site cache if a tag, category, or custom taxonomy term has been updated or deleted (instead of only the associated pages).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
