@@ -739,7 +739,7 @@ final class Cache_Enabler {
         array_unshift( $action_links, sprintf(
             '<a href="%s">%s</a>',
             admin_url( 'options-general.php?page=cache-enabler' ),
-            esc_html__( 'Settings' )
+            esc_html__( 'Settings', 'cache-enabler' )
         ) );
 
         return $action_links;
@@ -750,7 +750,7 @@ final class Cache_Enabler {
      * add plugin metadata in the plugins list table
      *
      * @since   1.0.0
-     * @change  1.7.0
+     * @change  1.7.2
      *
      * @param   array   $plugin_meta  plugin metadata, including the version, author, author URI, and plugin URI
      * @param   string  $plugin_file  path to the plugin file relative to the plugins directory
@@ -767,7 +767,7 @@ final class Cache_Enabler {
         // append metadata
         $plugin_meta = wp_parse_args(
             array(
-                '<a href="https://www.keycdn.com/support/wordpress-cache-enabler-plugin" target="_blank" rel="nofollow noopener">' . esc_html__( 'Documentation' ) . '</a>',
+                '<a href="https://www.keycdn.com/support/wordpress-cache-enabler-plugin" target="_blank" rel="nofollow noopener">' . esc_html__( 'Documentation', 'cache-enabler' ) . '</a>',
             ),
             $plugin_meta
         );
@@ -1840,7 +1840,7 @@ final class Cache_Enabler {
                 </table>
 
                 <p class="submit">
-                    <input type="submit" class="button-secondary" value="<?php esc_html_e( 'Save Changes' ); ?>" />
+                    <input type="submit" class="button-secondary" value="<?php esc_html_e( 'Save Changes', 'cache-enabler' ); ?>" />
                     <input name="cache_enabler[clear_site_cache_on_saved_settings]" type="submit" class="button-primary" value="<?php esc_html_e( 'Save Changes and Clear Site Cache', 'cache-enabler' ); ?>" />
                 </p>
             </form>
