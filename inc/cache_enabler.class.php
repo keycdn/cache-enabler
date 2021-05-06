@@ -750,7 +750,7 @@ final class Cache_Enabler {
      * add plugin metadata in the plugins list table
      *
      * @since   1.0.0
-     * @change  1.7.0
+     * @change  1.7.2
      *
      * @param   array   $plugin_meta  plugin metadata, including the version, author, author URI, and plugin URI
      * @param   string  $plugin_file  path to the plugin file relative to the plugins directory
@@ -767,7 +767,7 @@ final class Cache_Enabler {
         // append metadata
         $plugin_meta = wp_parse_args(
             array(
-                '<a href="https://www.keycdn.com/support/wordpress-cache-enabler-plugin" target="_blank" rel="nofollow noopener">Documentation</a>',
+                '<a href="https://www.keycdn.com/support/wordpress-cache-enabler-plugin" target="_blank" rel="nofollow noopener">' . esc_html__( 'Documentation', 'cache-enabler' ) . '</a>',
             ),
             $plugin_meta
         );
