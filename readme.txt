@@ -55,6 +55,10 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.7.2 =
+* Update string to be translatable (#235 @timse201)
+* Add `cache_enabler_mkdir_mode` filter hook (#233)
+
 = 1.7.1 =
 * Fix directory creation handling (#221 @stevegrunwell)
 
