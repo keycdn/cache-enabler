@@ -35,22 +35,10 @@ final class Cache_Enabler {
 
 
     /**
-     * fire page cache cleared hook
-     *
-     * @since   1.6.0
-     * @change  1.6.0
-     *
-     * @var     boolean
-     */
-
-    public static $fire_page_cache_cleared_hook = true;
-
-
-    /**
      * constructor
      *
      * @since   1.0.0
-     * @change  1.7.0
+     * @change  1.8.0
      */
 
     public function __construct() {
@@ -59,6 +47,7 @@ final class Cache_Enabler {
         add_action( 'init', array( 'Cache_Enabler_Engine', 'start' ) );
         add_action( 'init', array( __CLASS__, 'process_clear_cache_request' ) );
         add_action( 'init', array( __CLASS__, 'register_textdomain' ) );
+        add_action( 'init', array( __CLASS__, 'schedule_events' ) );
 
         // public clear cache hooks
         add_action( 'cache_enabler_clear_complete_cache', array( __CLASS__, 'clear_complete_cache' ) );
@@ -66,6 +55,7 @@ final class Cache_Enabler {
         add_action( 'cache_enabler_clear_site_cache_by_blog_id', array( __CLASS__, 'clear_site_cache_by_blog_id' ) );
         add_action( 'cache_enabler_clear_page_cache_by_post_id', array( __CLASS__, 'clear_page_cache_by_post_id' ) );
         add_action( 'cache_enabler_clear_page_cache_by_url', array( __CLASS__, 'clear_page_cache_by_url' ) );
+        add_action( 'cache_enabler_clear_expired_cache', array( __CLASS__, 'clear_expired_cache' ) );
         add_action( 'ce_clear_cache', array( __CLASS__, 'clear_complete_cache' ) ); // deprecated in 1.6.0
         add_action( 'ce_clear_post_cache', array( __CLASS__, 'clear_page_cache_by_post_id' ) ); // deprecated in 1.6.0
 
@@ -89,6 +79,11 @@ final class Cache_Enabler {
         add_action( 'woocommerce_variation_set_stock', array( __CLASS__, 'on_woocommerce_stock_update' ) );
         add_action( 'woocommerce_product_set_stock_status', array( __CLASS__, 'on_woocommerce_stock_update' ) );
         add_action( 'woocommerce_variation_set_stock_status', array( __CLASS__, 'on_woocommerce_stock_update' ) );
+
+        // system cache created/cleared hooks
+        add_action( 'cache_enabler_page_cache_created', array( __CLASS__, 'on_cache_created_cleared' ), 10, 3 );
+        add_action( 'cache_enabler_site_cache_cleared', array( __CLASS__, 'on_cache_created_cleared' ), 10, 3 );
+        add_action( 'cache_enabler_page_cache_cleared', array( __CLASS__, 'on_cache_created_cleared' ), 10, 3 );
 
         // multisite hooks
         add_action( 'wp_initialize_site', array( __CLASS__, 'install_later' ) );
@@ -253,6 +248,42 @@ final class Cache_Enabler {
 
 
     /**
+     * cache created or cleared hook
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param  string   $url    site or post URL
+     * @param  integer  $id     blog or post ID
+     * @param  array    $index  cache created or cleared index
+     */
+
+    public static function on_cache_created_cleared( $url, $id, $index ) {
+
+        if ( is_multisite() && ! wp_is_site_initialized( get_current_blog_id() ) ) {
+            return;
+        }
+
+        $current_cache_size = get_transient( 'cache_enabler_cache_size' );
+
+        if ( $current_cache_size === false ) {
+            self::get_cache_size(); // get current cache size from disk and set cache size transient
+        } else {
+            if ( count( $index ) > 1 ) {
+                delete_transient( 'cache_enabler_cache_size' ); // prevent incorrect cache size being built if cache cleared index is not entire site
+            } else {
+                $changed_cache_size = array_sum( current( $index )['versions'] );
+                $new_cache_size     = $current_cache_size + $changed_cache_size; // changed cache size is negative if cache cleared
+
+                if ( $new_cache_size >= 0 ) {
+                    set_transient( 'cache_enabler_cache_size', $new_cache_size, HOUR_IN_SECONDS );
+                }
+            }
+        }
+    }
+
+
+    /**
      * install on new site in multisite network
      *
      * @since   1.0.0
@@ -283,7 +314,7 @@ final class Cache_Enabler {
      * add or update backend requirements
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @return  array  $new_option_value  new or current database option value
      */
@@ -304,13 +335,13 @@ final class Cache_Enabler {
         $old_option_value = get_option( 'cache_enabler', array() );
 
         // maybe convert old settings to new settings
-        $old_option_value = self::convert_settings( $old_option_value );
+        $new_option_value = self::convert_settings( $old_option_value );
 
         // update default system settings
-        $old_option_value = wp_parse_args( self::get_default_settings( 'system' ), $old_option_value );
+        $new_option_value = wp_parse_args( self::get_default_settings( 'system' ), $new_option_value );
 
         // merge defined settings into default settings
-        $new_option_value = wp_parse_args( $old_option_value, self::get_default_settings() );
+        $new_option_value = wp_parse_args( $new_option_value, self::get_default_settings() );
 
         // validate settings
         $new_option_value = self::validate_settings( $new_option_value );
@@ -318,9 +349,9 @@ final class Cache_Enabler {
         // add or update database option
         update_option( 'cache_enabler', $new_option_value );
 
-        // create settings file if action has not been registered for hook yet, like when in activation hook
+        // create settings file if action has not been registered for hook yet, like when in activation hook (even if backend was not actually updated)
         if ( has_action( 'update_option_cache_enabler', array( __CLASS__, 'on_update_backend' ) ) === false ) {
-            Cache_Enabler_Disk::create_settings_file( $new_option_value );
+            self::on_update_backend( $old_option_value, $new_option_value );
         }
 
         return $new_option_value;
@@ -347,20 +378,18 @@ final class Cache_Enabler {
      * uninstall on deleted site in multisite network
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.8.0
      *
      * @param   WP_Site  $old_site  old site instance
      */
 
     public static function uninstall_later( $old_site ) {
 
-        $delete_cache_size_transient = false;
-
         // clean system files
         Cache_Enabler_Disk::clean();
 
         // clear site cache of deleted site
-        self::clear_site_cache_by_blog_id( (int) $old_site->blog_id, $delete_cache_size_transient );
+        self::clear_site_cache_by_blog_id( (int) $old_site->blog_id );
     }
 
 
@@ -478,19 +507,50 @@ final class Cache_Enabler {
      * get blog path
      *
      * @since   1.6.0
-     * @change  1.6.0
+     * @change  1.8.0
      *
-     * @return  string  $blog_path  blog path from site address URL, empty otherwise
+     * @return  string  $blog_path  blog path (with leading and trailing slash) from site address URL if it exists, empty if not
      */
 
     public static function get_blog_path() {
 
-        $site_url_path = parse_url( home_url(), PHP_URL_PATH );
-        $site_url_path = rtrim( $site_url_path, '/' );
-        $site_url_path_pieces = explode( '/', $site_url_path );
+        $site_url_path        = (string) parse_url( home_url(), PHP_URL_PATH );
+        $site_url_path_pieces = explode( '/', trim( $site_url_path, '/' ) );
 
-        // get last piece in case installation is in a subdirectory
-        $blog_path = ( ! empty( end( $site_url_path_pieces ) ) ) ? '/' . end( $site_url_path_pieces ) . '/' : '';
+        // get last piece in case installation is in a nested subdirectory
+        $blog_path = end( $site_url_path_pieces );
+
+        // using empty string instead of '/' because it simplifies the blog path check handling
+        $blog_path = ( ! empty( $blog_path ) ) ? '/' . $blog_path . '/' : '';
+
+        return $blog_path;
+    }
+
+
+    /**
+     * get blog path from URL
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @return  string  $blog_path  blog path (with leading and trailing slash) from URL if it exists, empty if not
+     */
+
+    public static function get_blog_path_from_url( $url ) {
+
+        $url_path        = (string) parse_url( $url, PHP_URL_PATH );
+        $url_path_pieces = explode( '/', trim( $url_path, '/' ) );
+        $blog_path       = '/';
+        $blog_paths      = self::get_blog_paths();
+
+        foreach( $url_path_pieces as $url_path_piece ) {
+            $url_path_piece = '/' . $url_path_piece . '/';
+
+            if ( in_array( $url_path_piece, $blog_paths, true ) ) {
+                $blog_path = $url_path_piece;
+                break;
+            }
+        }
 
         return $blog_path;
     }
@@ -511,6 +571,7 @@ final class Cache_Enabler {
 
         if ( is_multisite() ) {
             global $wpdb;
+
             $blog_paths = $wpdb->get_col( "SELECT path FROM $wpdb->blogs" );
         }
 
@@ -550,41 +611,46 @@ final class Cache_Enabler {
 
 
     /**
-     * get cache size from database or disk
+     * get cache index for current site from disk
      *
-     * @since   1.0.0
-     * @change  1.7.0
+     * @since   1.8.0
+     * @change  1.8.0
      *
-     * @return  integer  $cache_size  cache size in bytes
+     * @return  array  $cache_index  cache index
      */
 
-    public static function get_cache_size() {
+    public static function get_cache_index() {
 
-        $cache_size = get_transient( self::get_cache_size_transient_name() );
+        $args['subpages']['exclude'] = self::get_root_blog_exclusions();
+        $cache = Cache_Enabler_Disk::cache_iterator( home_url(), $args );
+        $cache_index = $cache['index'];
 
-        if ( ! $cache_size ) {
-            $cache_size = Cache_Enabler_Disk::get_cache_size();
-            set_transient( self::get_cache_size_transient_name(), $cache_size, MINUTE_IN_SECONDS * 15 );
-        }
-
-        return $cache_size;
+        return $cache_index;
     }
 
 
     /**
-     * get the cache size transient name
+     * get cache size for current site from database or disk
      *
-     * @since   1.5.0
-     * @change  1.6.0
+     * @since   1.0.0
+     * @change  1.8.0
      *
-     * @return  string  $transient_name  transient name
+     * @return  integer  $cache_size  cache size in bytes from database if it exists, directly from the disk otherwise
      */
 
-    private static function get_cache_size_transient_name() {
+    public static function get_cache_size() {
 
-        $transient_name = 'cache_enabler_cache_size';
+        $cache_size = get_transient( 'cache_enabler_cache_size' );
 
-        return $transient_name;
+        if ( $cache_size === false ) {
+            $args['subpages']['exclude'] = self::get_root_blog_exclusions();
+            $cache = Cache_Enabler_Disk::cache_iterator( home_url(), $args );
+            $cache_size = $cache['size'];
+
+            set_transient( 'cache_enabler_cache_size', $cache_size, HOUR_IN_SECONDS );
+        }
+
+        return $cache_size;
     }
 
 
@@ -611,7 +677,7 @@ final class Cache_Enabler {
      * @since   1.0.0
      * @change  1.7.0
      *
-     * @param   string  $settings_type                              default `system` settings
+     * @param   string  $settings_type                              default 'system' settings, defaults to all default settings if empty
      * @return  array   $system_default_settings|$default_settings  only default system settings or all default settings
      */
 
@@ -647,6 +713,32 @@ final class Cache_Enabler {
         $default_settings = wp_parse_args( $user_default_settings, $system_default_settings );
 
         return $default_settings;
+    }
+
+
+    /**
+     * get subpages that do not belong to root blog in subdirectory network
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @return  array  blog paths to other sites in network if current site is root blog in subdirectory network, empty otherwise
+     */
+
+    private static function get_root_blog_exclusions() {
+
+        if ( ! is_multisite() || is_subdomain_install() ) {
+            return array();
+        }
+
+        $current_blog_path  = self::get_blog_path();
+        $network_blog_paths = self::get_blog_paths();
+
+        if ( ! in_array( $current_blog_path, $network_blog_paths, true ) ) {
+            return $network_blog_paths;
+        }
+
+        return array();
     }
 
 
@@ -780,31 +872,27 @@ final class Cache_Enabler {
      * add dashboard cache size count
      *
      * @since   1.0.0
-     * @change  1.5.0
+     * @change  1.8.0
      *
-     * @param   array  $items  initial array with dashboard items
-     * @return  array  $items  merged array with dashboard items
+     * @param   array  $items  extra 'At a Glance' widget items
+     * @return  array  $items  extra 'At a Glance' widget items with cache size maybe added
      */
 
-    public static function add_dashboard_cache_size( $items = array() ) {
+    public static function add_dashboard_cache_size( $items ) {
 
         // check user role
         if ( ! current_user_can( 'manage_options' ) ) {
             return $items;
         }
 
-        // get cache size
         $cache_size = self::get_cache_size();
 
-        // display items
-        $items = array(
-            sprintf(
-                '<a href="%s" title="%s">%s %s</a>',
-                admin_url( 'options-general.php?page=cache-enabler' ),
-                esc_html__( 'Refreshes every 15 minutes', 'cache-enabler' ),
-                ( empty( $cache_size ) ) ? esc_html__( 'Empty', 'cache-enabler' ) : size_format( $cache_size ),
-                esc_html__( 'Cache Size', 'cache-enabler' )
-            )
+        // add cache size as new widget item
+        $items[] = sprintf(
+            '<a href="%s">%s %s</a>',
+            admin_url( 'options-general.php?page=cache-enabler' ),
+            ( empty( $cache_size ) ) ? esc_html__( 'Empty', 'cache-enabler' ) : size_format( $cache_size ),
+            esc_html__( 'Cache Size', 'cache-enabler' )
         );
 
         return $items;
@@ -1137,16 +1225,13 @@ final class Cache_Enabler {
      * clear complete cache
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.8.0
      */
 
     public static function clear_complete_cache() {
 
         // clear site(s) cache
         self::each_site( is_multisite(), 'self::clear_site_cache' );
-
-        // delete cache size transient(s)
-        self::each_site( is_multisite(), 'delete_transient', array( self::get_cache_size_transient_name() ) );
     }
 
 
@@ -1173,6 +1258,22 @@ final class Cache_Enabler {
     public static function clear_site_cache() {
 
         self::clear_site_cache_by_blog_id( get_current_blog_id() );
+    }
+
+
+    /**
+     * clear expired cache
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     */
+
+    public static function clear_expired_cache() {
+
+        $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
+        $args['expired'] = 1;
+
+        self::clear_site_cache_by_blog_id( get_current_blog_id(), $args );
     }
 
 
@@ -1260,7 +1361,7 @@ final class Cache_Enabler {
      * clear author archives page cache by user ID
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.8.0
      *
      * @param   integer  $user_id  user ID of the author
      */
@@ -1269,8 +1370,7 @@ final class Cache_Enabler {
 
         // get author archives URL
         $author_username     = get_the_author_meta( 'user_login', $user_id );
-        $author_base         = $GLOBALS['wp_rewrite']->author_base;
-        $author_archives_url = home_url( '/' ) . $author_base . '/' . $author_username;
+        $author_archives_url = trailingslashit( home_url( '/' ) . $GLOBALS['wp_rewrite']->author_base ) . $author_username;
 
         // clear author archives page and its pagination page(s) cache
         self::clear_page_cache_by_url( $author_archives_url, 'pagination' );
@@ -1309,23 +1409,20 @@ final class Cache_Enabler {
      * clear page cache by post ID
      *
      * @since   1.0.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @param   integer|string  $post_id     post ID
-     * @param   string          $clear_type  clear the `pagination` cache or all `subpages` cache instead of only the `page` cache
+     * @param   integer|string  $post_id  post ID
+     * @param   array|string    $args     cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
      */
 
-    public static function clear_page_cache_by_post_id( $post_id, $clear_type = 'page'  ) {
+    public static function clear_page_cache_by_post_id( $post_id, $args = array() ) {
 
-        // validate integer
-        $post_id = (int) $post_id;
-
-        // get page URL
+        $post_id  = (int) $post_id;
         $page_url = ( $post_id ) ? get_permalink( $post_id ) : '';
 
         // if page URL exists and does not have a query string (e.g. guid) clear page cache
         if ( ! empty( $page_url ) && strpos( $page_url, '?' ) === false ) {
-            self::clear_page_cache_by_url( $page_url, $clear_type );
+            self::clear_page_cache_by_url( $page_url, $args );
         }
     }
 
@@ -1334,15 +1431,30 @@ final class Cache_Enabler {
      * clear page cache by URL
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.8.0
      *
-     * @param   string  $clear_url   full URL to potentially cached page
-     * @param   string  $clear_type  clear the `pagination` cache or all `subpages` cache instead of only the `page` cache
+     * @param   string        $url   full URL to potentially cached page
+     * @param   array|string  $args  cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
      */
 
-    public static function clear_page_cache_by_url( $clear_url, $clear_type = 'page' ) {
+    public static function clear_page_cache_by_url( $url, $args = array() ) {
 
-        Cache_Enabler_Disk::clear_cache( $clear_url, $clear_type );
+        switch ( $args ) {
+            case 'pagination':
+                $args['subpages']['include'] = $GLOBALS['wp_rewrite']->pagination_base;
+                break;
+            case 'subpages':
+                $args['subpages'] = 1;
+                break;
+        }
+
+        $args['clear'] = 1;
+
+        if ( ! isset( $args['hooks']['include'] ) ) {
+            $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
+        }
+
+        Cache_Enabler_Disk::cache_iterator( $url, $args );
     }
 
 
@@ -1350,53 +1462,27 @@ final class Cache_Enabler {
      * clear site cache by blog ID
      *
      * @since   1.4.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @param   integer|string  $blog_id                      blog ID
-     * @param   boolean         $delete_cache_size_transient  whether or not the cache size transient should be deleted
+     * @param   integer|string  $blog_id  blog ID
+     * @param   array           $args     cache iterator arguments (see Cache_Enabler_Disk::cache_iterator())
      */
 
-    public static function clear_site_cache_by_blog_id( $blog_id, $delete_cache_size_transient = true ) {
+    public static function clear_site_cache_by_blog_id( $blog_id, $args = array() ) {
 
-        // validate integer
         $blog_id = (int) $blog_id;
 
-        // check if blog ID exists
         if ( ! in_array( $blog_id, self::get_blog_ids(), true ) ) {
-            return;
+            return; // blog ID does not exist
         }
 
-        // ensure site cache being cleared is current blog
-        if ( is_multisite() ) {
-            switch_to_blog( $blog_id );
+        $args['subpages']['exclude'] = self::get_root_blog_exclusions();
+
+        if ( ! isset( $args['hooks']['include'] ) ) {
+            $args['hooks']['include'] = 'cache_enabler_complete_cache_cleared,cache_enabler_site_cache_cleared';
         }
 
-        // disable page cache cleared hook
-        self::$fire_page_cache_cleared_hook = false;
-
-        // get site URL
-        $site_url = home_url();
-
-        // get site objects
-        $site_objects = Cache_Enabler_Disk::get_site_objects( $site_url );
-
-        // clear all first level pages and subpages cache
-        foreach ( $site_objects as $site_object ) {
-            self::clear_page_cache_by_url( trailingslashit( $site_url ) . $site_object, 'subpages' );
-        }
-
-        // clear home page cache
-        self::clear_page_cache_by_url( $site_url );
-
-        // delete cache size transient
-        if ( $delete_cache_size_transient ) {
-            delete_transient( self::get_cache_size_transient_name() );
-        }
-
-        // restore current blog from before site cache being cleared
-        if ( is_multisite() ) {
-            restore_current_blog();
-        }
+        self::clear_page_cache_by_url( get_home_url( $blog_id ), $args );
     }
 
 
@@ -1571,6 +1657,25 @@ final class Cache_Enabler {
 
 
     /**
+     * schedule cron events
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     */
+
+    public static function schedule_events() {
+
+        if ( ! Cache_Enabler_Engine::$started ) {
+            return;
+        }
+
+        if ( Cache_Enabler_Engine::$settings['cache_expires'] && ! wp_next_scheduled( 'cache_enabler_clear_expired_cache' ) ) {
+            wp_schedule_event( time(), 'hourly', 'cache_enabler_clear_expired_cache' );
+        }
+    }
+
+
+    /**
      * validate regex
      *
      * @since   1.2.3
@@ -1646,7 +1751,7 @@ final class Cache_Enabler {
      * settings page
      *
      * @since   1.0.0
-     * @change  1.7.0
+     * @change  1.8.0
      */
 
     public static function settings_page() {
@@ -1731,13 +1836,13 @@ final class Cache_Enabler {
 
                                 <br />
 
-                                <p class="subheading"><?php esc_html_e( 'Variants', 'cache-enabler' ); ?></p>
+                                <p class="subheading"><?php esc_html_e( 'Versions', 'cache-enabler' ); ?></p>
                                 <label for="cache_enabler_convert_image_urls_to_webp">
                                     <input name="cache_enabler[convert_image_urls_to_webp]" type="checkbox" id="cache_enabler_convert_image_urls_to_webp" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['convert_image_urls_to_webp'] ); ?> />
                                     <?php
                                     printf(
                                         // translators: %s: Optimus
-                                        esc_html__( 'Create an additional cached version for WebP image support. Convert your images to WebP with %s.', 'cache-enabler' ),
+                                        esc_html__( 'Create a cached version for WebP support. Convert your images to WebP with %s.', 'cache-enabler' ),
                                         '<a href="https://optimus.io" target="_blank" rel="nofollow noopener">Optimus</a>'
                                     );
                                     ?>
@@ -1747,14 +1852,14 @@ final class Cache_Enabler {
 
                                 <label for="cache_enabler_mobile_cache">
                                     <input name="cache_enabler[mobile_cache]" type="checkbox" id="cache_enabler_mobile_cache" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['mobile_cache'] ); ?> />
-                                    <?php esc_html_e( 'Create an additional cached version for mobile devices.', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Create a cached version for mobile devices.', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_enabler_compress_cache">
                                     <input name="cache_enabler[compress_cache]" type="checkbox" id="cache_enabler_compress_cache" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['compress_cache'] ); ?> />
-                                    <?php esc_html_e( 'Pre-compress cached pages with Gzip.', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Create a cached version pre-compressed with Gzip.', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
