@@ -1433,7 +1433,7 @@ final class Cache_Enabler {
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @param   string        $url   full URL to potentially cached page
+     * @param   string        $url   URL (with or without scheme) to potentially cached page
      * @param   array|string  $args  cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
      */
 
@@ -1441,11 +1441,15 @@ final class Cache_Enabler {
 
         switch ( $args ) {
             case 'pagination':
-                $args['subpages']['include'] = $GLOBALS['wp_rewrite']->pagination_base;
+                $args = array( 'subpages' => array( 'include' => $GLOBALS['wp_rewrite']->pagination_base ) );
                 break;
             case 'subpages':
-                $args['subpages'] = 1;
+                $args = array( 'subpages' => 1 );
                 break;
+        }
+
+        if ( ! is_array( $args ) ) {
+            $args = array();
         }
 
         $args['clear'] = 1;
