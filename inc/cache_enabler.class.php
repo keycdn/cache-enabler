@@ -72,9 +72,9 @@ final class Cache_Enabler {
         add_action( 'comment_post', array( __CLASS__, 'on_comment_post' ), 99, 2 );
         add_action( 'edit_comment', array( __CLASS__, 'on_edit_comment' ), 10, 2 );
         add_action( 'transition_comment_status', array( __CLASS__, 'on_transition_comment_status' ), 10, 3 );
+        add_action( 'saved_term', array( __CLASS__, 'on_saved_delete_term' ), 10, 3 );
         add_action( 'edit_terms', array( __CLASS__, 'on_edit_terms' ), 10, 2 );
-        add_action( 'edit_term', array( __CLASS__, 'on_edit_delete_term' ), 10, 3 );
-        add_action( 'delete_term', array( __CLASS__, 'on_edit_delete_term' ), 10, 3 );
+        add_action( 'delete_term', array( __CLASS__, 'on_saved_delete_term' ), 10, 3 );
 
         // third party clear cache hooks
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_complete_cache' ) );
@@ -1460,7 +1460,7 @@ final class Cache_Enabler {
 
 
     /**
-     * edit or delete term hook
+     * saved or delete term hook
      *
      * runs after the term has been updated in the database
      *
@@ -1472,7 +1472,7 @@ final class Cache_Enabler {
      * @param   string   $taxonomy  taxonomy slug
      */
 
-    public static function on_edit_delete_term( $term_id, $tt_id, $taxonomy ) {
+    public static function on_saved_delete_term( $term_id, $tt_id, $taxonomy ) {
 
         // only clear cache if taxonomy is public
         if ( self::is_taxonomy_public( $taxonomy ) ) {
@@ -2080,7 +2080,7 @@ final class Cache_Enabler {
 
                                 <label for="cache_enabler_clear_site_cache_on_saved_term">
                                     <input name="cache_enabler[clear_site_cache_on_saved_term]" type="checkbox" id="cache_enabler_clear_site_cache_on_saved_term" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_term'] ); ?> />
-                                    <?php esc_html_e( 'Clear the site cache if a tag, category, or custom taxonomy term has been updated or deleted (instead of only the associated pages).', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Clear the site cache if a tag, category, or custom taxonomy has been added, updated, or deleted (instead of only the page and/or associated cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
