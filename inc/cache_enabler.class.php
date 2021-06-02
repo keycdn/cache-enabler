@@ -1125,7 +1125,7 @@ final class Cache_Enabler {
      * comment post hook
      *
      * @since   1.2.0
-     * @change  1.6.0
+     * @change  1.8.0
      *
      * @param   integer         $comment_id        comment ID
      * @param   integer|string  $comment_approved  comment approval status
@@ -1135,13 +1135,7 @@ final class Cache_Enabler {
 
         // if new approved comment is posted
         if ( $comment_approved === 1 ) {
-            // if setting enabled clear site cache
-            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
-                self::clear_site_cache();
-            // clear page cache otherwise
-            } else {
-                self::clear_page_cache_by_post_id( get_comment( $comment_id )->comment_post_ID );
-            }
+            self::clear_cache_on_comment_save( $comment_id );
         }
     }
 
@@ -1150,7 +1144,7 @@ final class Cache_Enabler {
      * edit comment hook
      *
      * @since   1.0.0
-     * @change  1.6.1
+     * @change  1.8.0
      *
      * @param   integer  $comment_id    comment ID
      * @param   array    $comment_data  comment data
@@ -1162,13 +1156,7 @@ final class Cache_Enabler {
 
         // if approved comment is edited
         if ( $comment_approved === 1 ) {
-            // if setting enabled clear site cache
-            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
-                self::clear_site_cache();
-            // clear page cache otherwise
-            } else {
-                self::clear_page_cache_by_post_id( get_comment( $comment_id )->comment_post_ID );
-            }
+            self::clear_cache_on_comment_save( $comment_id );
         }
     }
 
@@ -1177,7 +1165,7 @@ final class Cache_Enabler {
      * transition comment status hook
      *
      * @since   1.0.0
-     * @change  1.6.1
+     * @change  1.8.0
      *
      * @param   integer|string  $new_status  new comment status
      * @param   integer|string  $old_status  old comment status
@@ -1188,13 +1176,7 @@ final class Cache_Enabler {
 
         // if comment status has changed from or to approved
         if ( $old_status === 'approved' || $new_status === 'approved' ) {
-            // if setting enabled clear site cache
-            if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
-                self::clear_site_cache();
-            // clear page cache otherwise
-            } else {
-                self::clear_page_cache_by_post_id( $comment->comment_post_ID );
-            }
+            self::clear_cache_on_comment_save( $comment );
         }
     }
 
@@ -1519,6 +1501,35 @@ final class Cache_Enabler {
         } else {
             self::clear_page_cache_by_post_id( $post_id );
             self::clear_associated_cache( $post );
+        }
+    }
+
+
+    /**
+     * clear cache when a comment been posted, updated, spammed, or trashed
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Comment|integer  $comment  comment instance or comment ID
+     */
+
+    public static function clear_cache_on_comment_save( $comment ) {
+
+        if ( ! is_object( $comment ) ) {
+            if ( is_int( $comment ) ) {
+                $comment = get_comment( $comment );
+            } else {
+                return;
+            }
+        }
+
+        // if setting enabled clear site cache
+        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
+            self::clear_site_cache();
+        // clear page cache otherwise
+        } else {
+            self::clear_page_cache_by_post_id( $comment->comment_post_ID );
         }
     }
 
