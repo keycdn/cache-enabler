@@ -1473,25 +1473,22 @@ final class Cache_Enabler {
 
 
     /**
-     * clear cache when any post type has been created, updated, or trashed
+     * clear cache when any post type has been published, updated, or trashed
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @param   integer|WP_Post  $post  post ID or post instance
+     * @param   WP_Post|integer  $post  post instance or post ID
      */
 
     public static function clear_cache_on_post_save( $post ) {
 
-        if ( is_int( $post ) ) {
-            $post_id = $post;
-            $post    = get_post( $post_id );
-
-            if ( ! is_object( $post ) ) {
+        if ( ! is_object( $post ) ) {
+            if ( is_int( $post ) ) {
+                $post = get_post( $post );
+            } else {
                 return;
             }
-        } elseif ( is_object( $post ) ) {
-            $post_id = $post->ID;
         }
 
         // if setting enabled clear site cache
@@ -1499,7 +1496,7 @@ final class Cache_Enabler {
             self::clear_site_cache();
         // clear page and/or associated cache otherwise
         } else {
-            self::clear_page_cache_by_post_id( $post_id );
+            self::clear_page_cache_by_post_id( $post->ID );
             self::clear_associated_cache( $post );
         }
     }
