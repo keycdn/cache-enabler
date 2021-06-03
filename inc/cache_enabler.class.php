@@ -1871,7 +1871,7 @@ final class Cache_Enabler {
 
                                 <label for="cache_enabler_compress_cache">
                                     <input name="cache_enabler[compress_cache]" type="checkbox" id="cache_enabler_compress_cache" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['compress_cache'] ); ?> />
-                                    <?php esc_html_e( 'Create a cached version pre-compressed with Gzip.', 'cache-enabler' ); ?>
+                                    <?php echo function_exists( 'brotli_compress' ) && is_ssl() ? esc_html__( 'Create a cached version pre-compressed with Brotli or Gzip.', 'cache-enabler' ) : esc_html__( 'Create a cached version pre-compressed with Gzip.', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
