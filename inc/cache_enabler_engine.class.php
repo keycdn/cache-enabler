@@ -437,7 +437,9 @@ final class Cache_Enabler_Engine {
             }
 
             // set Content-Encoding response header if applicable
-            if ( strpos( basename( $cache_file ), 'gz' ) !== false ) {
+            if ( strpos( basename( $cache_file ), 'br' ) !== false ) {
+                header( 'Content-Encoding: br' );
+            } elseif ( strpos( basename( $cache_file ), 'gz' ) !== false ) {
                 header( 'Content-Encoding: gzip' );
             }
 

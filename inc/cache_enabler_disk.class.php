@@ -309,8 +309,15 @@ final class Cache_Enabler_Disk {
             $page_contents = self::converter( $page_contents );
         }
 
-        // compress page contents with Gzip if applicable
-        if ( strpos( $new_cache_file_name, 'gz' ) !== false ) {
+        // compress page contents with Brotli or Gzip if applicable
+        if ( strpos( $new_cache_file_name, 'br' ) !== false ) {
+            $page_contents = brotli_compress( $page_contents );
+
+            // check if Brotli compression failed
+            if ( $page_contents === false ) {
+                return;
+            }
+        } elseif ( strpos( $new_cache_file_name, 'gz' ) !== false ) {
             $page_contents = gzencode( $page_contents, 9 );
 
             // check if Gzip compression failed
@@ -656,7 +663,12 @@ final class Cache_Enabler_Disk {
 
         // compression cache key
         if ( Cache_Enabler_Engine::$settings['compress_cache'] ) {
-            if ( strpos( Cache_Enabler_Engine::$request_headers['Accept-Encoding'], 'gzip' ) !== false ) {
+            if ( function_exists( 'brotli_compress' )
+                && $cache_keys['scheme'] === 'https-'
+                && strpos( Cache_Enabler_Engine::$request_headers['Accept-Encoding'], 'br' ) !== false
+            ) {
+                $cache_keys['compression'] = '.br';
+            } elseif ( strpos( Cache_Enabler_Engine::$request_headers['Accept-Encoding'], 'gzip' ) !== false ) {
                 $cache_keys['compression'] = '.gz';
             }
         }
