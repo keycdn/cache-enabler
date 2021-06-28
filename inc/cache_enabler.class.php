@@ -1194,7 +1194,7 @@ final class Cache_Enabler {
      * @change  1.8.0
      *
      * @param   integer  $term_id   term ID
-     * @param   string   $taxonomy  taxonomy name that $term is part of
+     * @param   string   $taxonomy  taxonomy name that $term_id is part of
      */
 
     public static function on_edit_terms( $term_id, $taxonomy ) {
@@ -1215,7 +1215,7 @@ final class Cache_Enabler {
      *
      * @param   integer  $term_id   term ID
      * @param   integer  $tt_id     term taxonomy ID
-     * @param   string   $taxonomy  taxonomy name that $term is part of
+     * @param   string   $taxonomy  taxonomy name that $term_id is part of
      */
 
     public static function on_saved_delete_term( $term_id, $tt_id, $taxonomy ) {
@@ -2083,7 +2083,7 @@ final class Cache_Enabler {
 
                                 <label for="cache_enabler_clear_site_cache_on_saved_term">
                                     <input name="cache_enabler[clear_site_cache_on_saved_term]" type="checkbox" id="cache_enabler_clear_site_cache_on_saved_term" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_term'] ); ?> />
-                                    <?php esc_html_e( 'Clear the site cache if a tag, category, or custom taxonomy has been added, updated, or deleted (instead of only the page and/or associated cache).', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Clear the site cache if a category, tag, or custom taxonomy term has been added, updated, or deleted (instead of only the archive and/or associated cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
