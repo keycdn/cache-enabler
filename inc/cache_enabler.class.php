@@ -1284,7 +1284,7 @@ final class Cache_Enabler {
      * clear cached pages that might have changed from any new or updated post
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.8.0
      *
      * @param   WP_Post  $post  post instance
      */
@@ -1295,7 +1295,7 @@ final class Cache_Enabler {
         self::clear_post_type_archives_cache( $post->post_type );
 
         // clear taxonomies archives
-        self::clear_taxonomies_archives_cache_by_post_id( $post->ID );
+        self::clear_post_terms_archives_cache( $post );
 
         if ( $post->post_type === 'post' ) {
             // clear author archives
@@ -1328,30 +1328,41 @@ final class Cache_Enabler {
 
 
     /**
-     * clear taxonomies archives pages cache by post ID
+     * clear taxonomies archives cache by post ID (deprecated)
      *
-     * @since   1.5.0
-     * @change  1.8.0
-     *
-     * @param   integer  $post_id  post ID
+     * @since       1.5.0
+     * @deprecated  1.8.0
      */
 
     public static function clear_taxonomies_archives_cache_by_post_id( $post_id ) {
 
-        // get public taxonomies
-        $taxonomies = array_filter( get_taxonomies(),  'is_taxonomy_viewable' );
+        self::clear_post_terms_archives_cache( $post_id );
+    }
 
-        // get terms attached to post
-        $terms = wp_get_post_terms( $post_id, $taxonomies );
 
-        if ( $terms && ! is_wp_error( $terms ) ) {
-            foreach ( $terms as $term ) {
-                // clear term archive page of current post
-                self::clear_term_archive_cache( $term );
+    /**
+     * clear post terms archives cache
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Post|int  $post  post instance or post ID
+     */
 
-                // if taxonomy is hierarchical, also clear parent term cache (posts also show up on parent term pages)
-                if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
-                    self::clear_parent_term_cache( $term );
+    public static function clear_post_terms_archives_cache( $post ) {
+
+        $post = get_post( $post );
+
+        if ( $post instanceof WP_Post ) {
+            $terms = wp_get_post_terms( $post->ID, get_taxonomies() );
+
+            if ( is_array( $terms ) ) {
+                foreach ( $terms as $term ) {
+                    self::clear_term_archive_cache( $term );
+
+                    if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
+                        self::clear_term_parents_archives_cache( $term ); // post can be in term parents archives
+                    }
                 }
             }
         }
