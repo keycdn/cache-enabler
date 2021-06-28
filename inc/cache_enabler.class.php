@@ -1354,7 +1354,7 @@ final class Cache_Enabler {
     public static function clear_term_archive_cache( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
-        if ( $term instanceOf WP_Term ) {
+        if ( $term instanceof WP_Term ) {
             $term_archive_url = get_term_link( $term );
 
             // if term archives URL exists and does not have a query string, clear taxonomy archives page and its pagination page(s) cache
@@ -1483,7 +1483,7 @@ final class Cache_Enabler {
                 // clear term archive and/or associated cache otherwise
             } else {
                 $term = get_term( $term_id, $taxonomy );
-                if ( $term instanceOf WP_Term ) {
+                if ( $term instanceof WP_Term ) {
                     self::clear_term_archive_cache( $term );
                     self::clear_cache_associated_with_term( $term );
                 }
@@ -1520,7 +1520,7 @@ final class Cache_Enabler {
     public static function clear_cache_associated_with_term( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
-        if ( $term instanceOf WP_Term ) {
+        if ( $term instanceof WP_Term ) {
 
             if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
                 // clear child term cache (term could be part of a breadcrumb list on child pages)
@@ -1549,7 +1549,7 @@ final class Cache_Enabler {
     public static function clear_child_term_cache( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
-        if ( $term instanceOf WP_Term ) {
+        if ( $term instanceof WP_Term ) {
             $child_ids = get_term_children( $term->term_id, $term->taxonomy );
 
             if ( $child_ids && !is_wp_error( $child_ids ) ) {
@@ -1574,7 +1574,7 @@ final class Cache_Enabler {
     public static function clear_parent_term_cache( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
-        if ( $term instanceOf WP_Term ) {
+        if ( $term instanceof WP_Term ) {
             $parent_ids = get_ancestors( $term->term_id, $term->taxonomy, 'taxonomy' );
 
             foreach ( $parent_ids as $parent_id ) {
@@ -1597,7 +1597,7 @@ final class Cache_Enabler {
     public static function clear_page_cache_by_term( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
-        if ( $term instanceOf WP_Term ) {
+        if ( $term instanceof WP_Term ) {
 
             // clear post pages that are associated with term
             $args = array(
