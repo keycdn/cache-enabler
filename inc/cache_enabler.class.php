@@ -1186,6 +1186,47 @@ final class Cache_Enabler {
 
 
     /**
+     * edit terms hook
+     *
+     * runs just before the term is updated in the database
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   integer  $term_id   term ID
+     * @param   string   $taxonomy  taxonomy name that $term is part of
+     */
+
+    public static function on_edit_terms( $term_id, $taxonomy ) {
+
+        if ( is_taxonomy_viewable( $taxonomy ) ) {
+            self::clear_cache_on_term_save( $term_id, $taxonomy );
+        }
+    }
+
+
+    /**
+     * saved or delete term hook
+     *
+     * runs after the term has been updated in the database
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   integer  $term_id   term ID
+     * @param   integer  $tt_id     term taxonomy ID
+     * @param   string   $taxonomy  taxonomy name that $term is part of
+     */
+
+    public static function on_saved_delete_term( $term_id, $tt_id, $taxonomy ) {
+
+        if ( is_taxonomy_viewable( $taxonomy ) ) {
+            self::clear_cache_on_term_save( $term_id, $taxonomy );
+        }
+    }
+
+
+    /**
      * WooCommerce stock hooks
      *
      * @since   1.3.0
@@ -1302,6 +1343,31 @@ final class Cache_Enabler {
             self::clear_author_archives_cache_by_user_id( $post->post_author );
             // clear date archives
             self::clear_date_archives_cache_by_post_id( $post->ID );
+        }
+    }
+
+
+    /**
+     * clear cache associated with term
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Term|int  $term      term instance or term ID
+     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
+     */
+
+    public static function clear_cache_associated_with_term( $term, $taxonomy = '' ) {
+
+        $term = get_term( $term, $taxonomy );
+
+        if ( $term instanceof WP_Term ) {
+            if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
+                self::clear_term_children_archives_cache( $term );
+                self::clear_term_parents_archives_cache( $term );
+            }
+
+            self::clear_page_cache_by_term( $term );
         }
     }
 
@@ -1446,94 +1512,6 @@ final class Cache_Enabler {
 
 
     /**
-     * clear page cache by post ID
-     *
-     * @since   1.0.0
-     * @change  1.8.0
-     *
-     * @param   integer|string  $post_id  post ID
-     * @param   array|string    $args     cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
-     */
-
-    public static function clear_page_cache_by_post_id( $post_id, $args = array() ) {
-
-        $post_id  = (int) $post_id;
-        $page_url = ( $post_id ) ? get_permalink( $post_id ) : '';
-
-        // if page URL exists and does not have a query string (e.g. guid) clear page cache
-        if ( ! empty( $page_url ) && strpos( $page_url, '?' ) === false ) {
-            self::clear_page_cache_by_url( $page_url, $args );
-        }
-    }
-
-
-    /**
-     * edit terms hook
-     *
-     * runs just before the term is updated in the database
-     *
-     * @since   1.8.0
-     * @change  1.8.0
-     *
-     * @param   integer  $term_id   term ID
-     * @param   string   $taxonomy  taxonomy name that $term is part of
-     */
-
-    public static function on_edit_terms( $term_id, $taxonomy ) {
-
-        if ( is_taxonomy_viewable( $taxonomy ) ) {
-            self::clear_cache_on_term_save( $term_id, $taxonomy );
-        }
-    }
-
-
-    /**
-     * saved or delete term hook
-     *
-     * runs after the term has been updated in the database
-     *
-     * @since   1.8.0
-     * @change  1.8.0
-     *
-     * @param   integer  $term_id   term ID
-     * @param   integer  $tt_id     term taxonomy ID
-     * @param   string   $taxonomy  taxonomy name that $term is part of
-     */
-
-    public static function on_saved_delete_term( $term_id, $tt_id, $taxonomy ) {
-
-        if ( is_taxonomy_viewable( $taxonomy ) ) {
-            self::clear_cache_on_term_save( $term_id, $taxonomy );
-        }
-    }
-
-
-    /**
-     * clear cache associated with term
-     *
-     * @since   1.8.0
-     * @change  1.8.0
-     *
-     * @param   WP_Term|int  $term      term instance or term ID
-     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
-     */
-
-    public static function clear_cache_associated_with_term( $term, $taxonomy = '' ) {
-
-        $term = get_term( $term, $taxonomy );
-
-        if ( $term instanceof WP_Term ) {
-            if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
-                self::clear_term_children_archives_cache( $term );
-                self::clear_term_parents_archives_cache( $term );
-            }
-
-            self::clear_page_cache_by_term( $term );
-        }
-    }
-
-
-    /**
      * clear term children archives cache
      *
      * @since   1.8.0
@@ -1579,6 +1557,28 @@ final class Cache_Enabler {
             foreach ( $parent_ids as $parent_id ) {
                 self::clear_term_archive_cache( $parent_id, $term->taxonomy );
             }
+        }
+    }
+
+
+    /**
+     * clear page cache by post ID
+     *
+     * @since   1.0.0
+     * @change  1.8.0
+     *
+     * @param   integer|string  $post_id  post ID
+     * @param   array|string    $args     cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     */
+
+    public static function clear_page_cache_by_post_id( $post_id, $args = array() ) {
+
+        $post_id  = (int) $post_id;
+        $page_url = ( $post_id ) ? get_permalink( $post_id ) : '';
+
+        // if page URL exists and does not have a query string (e.g. guid) clear page cache
+        if ( ! empty( $page_url ) && strpos( $page_url, '?' ) === false ) {
+            self::clear_page_cache_by_url( $page_url, $args );
         }
     }
 
