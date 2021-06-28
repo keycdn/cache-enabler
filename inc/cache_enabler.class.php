@@ -1322,7 +1322,7 @@ final class Cache_Enabler {
     public static function clear_taxonomies_archives_cache_by_post_id( $post_id ) {
 
         // get public taxonomies
-        $taxonomies = array_filter( get_taxonomies(),  array( __CLASS__, 'is_taxonomy_public' ) );
+        $taxonomies = array_filter( get_taxonomies(),  'is_taxonomy_viewable' );
 
         // get terms attached to post
         $terms = wp_get_post_terms( $post_id, $taxonomies );
@@ -1475,7 +1475,7 @@ final class Cache_Enabler {
     public static function on_saved_delete_term( $term_id, $tt_id, $taxonomy ) {
 
         // only clear cache if taxonomy is public
-        if ( self::is_taxonomy_public( $taxonomy ) ) {
+        if ( is_taxonomy_viewable( $taxonomy ) ) {
 
             // if setting enabled clear site cache
             if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_term'] ) {
@@ -1489,21 +1489,6 @@ final class Cache_Enabler {
                 }
             }
         }
-    }
-
-
-    /**
-     * check if taxonomy is public
-     *
-     * @since   1.8.0
-     * @change  1.8.0
-     *
-     * @param   string  $taxonomy  taxonomy slug
-     */
-
-    public static function is_taxonomy_public( $taxonomy ) {
-        $wp_taxonomy = get_taxonomy( $taxonomy );
-        return ( $wp_taxonomy && $wp_taxonomy->public );
     }
 
 
