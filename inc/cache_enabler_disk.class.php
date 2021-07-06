@@ -459,8 +459,8 @@ final class Cache_Enabler_Disk {
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string   $dir_object  file or directory path to filter
-     * @param   array    $filter      file or directory path(s) to 'include' and/or 'exclude' (e.g. $filter['include'] = [ $inclusions ])
+     * @param   string   $dir_object  file or directory path to filter (without trailing slash)
+     * @param   array[]  $filter      file or directory path(s) to 'include' and/or 'exclude' (without trailing slash)
      * @return  boolean               true if directory object should be included, false if excluded
      */
 
@@ -477,21 +477,47 @@ final class Cache_Enabler_Disk {
         if ( isset( $filter['include'] ) ) {
             $match = in_array( $dir_object, $filter['include'], true );
 
-            if ( ! $match && is_dir( $dir_object ) ) {
-                $nested_dir_object = $dir_object . '/'; // append trailing slash to prevent false matches
+            if ( $match ) {
+                return true;
+            }
+        }
 
-                foreach( $filter['include'] as $filter_object ) {
+        if ( isset( $match ) && is_dir( $dir_object ) ) {
+            $nested_dir_object = $dir_object . '/'; // append trailing slash to prevent a false match
+            ksort( $filter ); // check exclusions first
+
+            foreach( $filter as $filter_type => $filter_value ) {
+                if ( $filter_type !== 'include' && $filter_type !== 'exclude' ) {
+                    continue;
+                }
+
+                foreach ( $filter_value as $filter_object ) {
+                    // if trailing asterisk exists remove it to allow a wildcard match
+                    if ( substr( $filter_object, -1 ) === '*' ) {
+                        $filter_object = substr( $filter_object, 0, -1 );
+                    // append trailing slash to force a strict match otherwise
+                    } else {
+                        $filter_object = $filter_object . '/';
+                    }
+
                     if ( str_replace( $filter_object, '', $nested_dir_object ) !== $nested_dir_object ) {
-                        return true; // past inclusion
+                        switch( $filter_type ) {
+                            case 'include':
+                                return true; // past inclusion or present wildcard inclusion
+                            case 'exclude':
+                                return false; // present wildcard exclusion
+                        }
                     }
 
                     if ( strpos( $filter_object, $nested_dir_object ) === 0 ) {
-                        return true; // future inclusion
+                        return true; // future strict or wildcard inclusion
                     }
                 }
             }
+        }
 
-            return $match;
+        if ( isset( $filter['include'] ) ) {
+            return false; // match not found
         }
 
         return true;
@@ -964,8 +990,9 @@ final class Cache_Enabler_Disk {
 
         $dir_object_names = scandir( $dir ); // sorted order is alphabetical in ascending order
 
-        if ( ! empty( $filter ) && is_array( $filter ) && empty( $filter['full_path'] ) ) {
+        if ( is_array( $filter ) && empty( $filter['full_path'] ) ) {
             $filter['full_path'] = 1;
+
             foreach( $filter as $filter_type => &$filter_value ) {
                 if ( $filter_type === 'include' || $filter_type === 'exclude' ) {
                     foreach( $filter_value as &$filter_object ) {
@@ -983,7 +1010,7 @@ final class Cache_Enabler_Disk {
             $dir_object = $dir . '/' . $dir_object_name;
 
             if ( is_dir( $dir_object ) ) {
-                if ( $filter && ! self::filter_dir_object( $dir_object, $filter ) ) {
+                if ( ! empty( $filter['full_path'] ) && ! self::filter_dir_object( $dir_object, $filter ) ) {
                     continue; // skip object because it is excluded
                 }
 
