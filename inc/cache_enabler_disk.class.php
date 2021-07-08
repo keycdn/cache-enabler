@@ -191,6 +191,10 @@ final class Cache_Enabler_Disk {
 
         foreach ( $cache_objects as $cache_object ) {
             if ( is_file( $cache_object ) ) {
+                if ( $args['root'] && strpos( $cache_object, $args['root'] ) !== 0 ) {
+                    continue; // skip to next object because file does not start with provided root path
+                }
+
                 $cache_object_name = basename( $cache_object );
 
                 if ( $cache_keys_regex && ! preg_match( $cache_keys_regex, $cache_object_name ) ) {
@@ -583,6 +587,7 @@ final class Cache_Enabler_Disk {
             'keys'     => 0,
             'expired'  => 0,
             'hooks'    => 0,
+            'root'     => '',
         );
 
         // merge arguments defined in query string into arguments defined in parameter
@@ -1525,7 +1530,9 @@ final class Cache_Enabler_Disk {
         $validated_args = array();
 
         foreach( $args as $arg_name => $arg_value ) {
-            if ( is_array( $arg_value ) ) {
+            if ( $arg_name === 'root' ) {
+                $validated_args[ $arg_name ] = (string) $arg_value;
+            } elseif ( is_array( $arg_value ) ) {
                 foreach( $arg_value as $filter_type => $filter_value ) {
                     if ( is_string( $filter_value ) ) {
                         $filter_value = ( substr_count( $filter_value, '|' ) > 0 ) ? explode( '|', $filter_value ) : explode( ',', $filter_value );

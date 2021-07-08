@@ -1657,6 +1657,18 @@ final class Cache_Enabler {
             $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
         }
 
+        $url_path = (string) parse_url( $url, PHP_URL_PATH );
+
+        if ( substr( $url_path, -1 ) === '*' ) {
+            $url_path_pieces  = explode( '/', $url_path );
+            $wildcard_subpage = end( $url_path_pieces );
+            $new_url_path     = substr( $url_path, 0, -strlen( $wildcard_subpage ) );
+            $url              = str_replace( $url_path, $new_url_path, $url );
+
+            $args['subpages']['include'] = $wildcard_subpage;
+            $args['root'] = Cache_Enabler_Disk::$cache_dir . '/' . substr( (string) parse_url( $url, PHP_URL_HOST ) . $url_path, 0, -1 );
+        }
+
         Cache_Enabler_Disk::cache_iterator( $url, $args );
     }
 
