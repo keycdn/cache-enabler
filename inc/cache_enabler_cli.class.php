@@ -66,7 +66,7 @@ class Cache_Enabler_CLI {
 
         // clear page(s) cache by post ID(s) and/or URL(s)
         if ( ! empty( $assoc_args['ids'] ) || ! empty( $assoc_args['urls'] ) ) {
-            array_map( 'Cache_Enabler::clear_page_cache_by_post_id', explode( ',', $assoc_args['ids'] ) );
+            array_map( 'Cache_Enabler::clear_page_cache_by_post', explode( ',', $assoc_args['ids'] ) );
             array_map( 'Cache_Enabler::clear_page_cache_by_url', explode( ',', $assoc_args['urls'] ) );
 
             // check if there is more than one ID and/or URL
@@ -81,7 +81,7 @@ class Cache_Enabler_CLI {
 
         // clear pages cache by blog ID(s)
         if ( ! empty( $assoc_args['sites'] ) ) {
-            array_map( 'Cache_Enabler::clear_site_cache_by_blog_id', explode( ',', $assoc_args['sites'] ) );
+            array_map( 'Cache_Enabler::clear_page_cache_by_site', explode( ',', $assoc_args['sites'] ) );
 
             // check if there is more than one site
             $separators = substr_count( $assoc_args['sites'], ',' );
