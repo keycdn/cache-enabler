@@ -61,10 +61,8 @@ final class Cache_Enabler_Disk {
 
     public static function clean() {
 
-        // delete settings file
         self::delete_settings_file();
 
-        // check if settings directory exists
         if ( ! is_dir( self::$settings_dir ) ) {
             // delete old advanced cache settings file(s) (1.4.0)
             array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) );
@@ -152,8 +150,8 @@ final class Cache_Enabler_Disk {
      * @change  1.8.0
      * @access  private
      *
-     * @param   string  $url    URL (with or without scheme) to potentially cached page
-     * @param   array   $args   arguments for iterating over cache, default is empty (docs coming after finalization and before 1.8.0 release)
+     * @param   string  $url    URL to potentially cached page (with or without scheme)
+     * @param   array   $args   TODO
      * @return  array   $cache  cache data
      */
 
@@ -213,10 +211,9 @@ final class Cache_Enabler_Disk {
                         continue; // skip to next object because file deletion failed
                     }
 
-                    $cache_object_size = ( -1 * $cache_object_size );
+                    $cache_object_size = -$cache_object_size; // cache size is negative when cleared
 
-                    // remove containing directory if empty along with any of its empty parents
-                    self::rmdir( $cache_object_dir, true );
+                    self::rmdir( $cache_object_dir, true ); // remove containing directory if empty along with any of its empty parents
                 }
 
                 if ( strpos( $cache_object_name, 'index' ) === false ) {
@@ -233,8 +230,7 @@ final class Cache_Enabler_Disk {
             }
         }
 
-        // sort cache index so path with least amount of slashes is first
-        uksort( $cache['index'], 'self::sort_dir_objects' );
+        uksort( $cache['index'], 'self::sort_dir_objects' ); // sort cache index so path with least amount of slashes is first
 
         if ( $args['clear'] ) {
             self::fire_cache_cleared_hooks( $cache['index'], $args['hooks'] );
@@ -794,7 +790,7 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * get cache url from directory path
+     * get cache URL from directory path
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -1508,7 +1504,7 @@ final class Cache_Enabler_Disk {
     public static function delete_asset( $url ) {
 
         if ( empty( $url ) ) {
-            wp_die( 'URL is empty.' );
+            return;
         }
 
         Cache_Enabler::clear_page_cache_by_url( $url, 'subpages' );
@@ -1521,7 +1517,7 @@ final class Cache_Enabler_Disk {
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   array  $args            cache iterator arguments (see self::cache_iterator())
+     * @param   array  $args            see self::cache_iterator() for available arguments
      * @return  array  $validated_args  validated cache iterator arguments
      */
 

@@ -52,12 +52,12 @@ final class Cache_Enabler {
         // public clear cache hooks
         add_action( 'cache_enabler_clear_complete_cache', array( __CLASS__, 'clear_complete_cache' ) );
         add_action( 'cache_enabler_clear_site_cache', array( __CLASS__, 'clear_site_cache' ) );
-        add_action( 'cache_enabler_clear_site_cache_by_blog_id', array( __CLASS__, 'clear_site_cache_by_blog_id' ) );
-        add_action( 'cache_enabler_clear_page_cache_by_post_id', array( __CLASS__, 'clear_page_cache_by_post_id' ) );
+        add_action( 'cache_enabler_clear_page_cache_by_post_id', array( __CLASS__, 'clear_page_cache_by_post' ) );
         add_action( 'cache_enabler_clear_page_cache_by_url', array( __CLASS__, 'clear_page_cache_by_url' ) );
         add_action( 'cache_enabler_clear_expired_cache', array( __CLASS__, 'clear_expired_cache' ) );
         add_action( 'ce_clear_cache', array( __CLASS__, 'clear_complete_cache' ) ); // deprecated in 1.6.0
-        add_action( 'ce_clear_post_cache', array( __CLASS__, 'clear_page_cache_by_post_id' ) ); // deprecated in 1.6.0
+        add_action( 'ce_clear_post_cache', array( __CLASS__, 'clear_page_cache_by_post' ) ); // deprecated in 1.6.0
+        add_action( 'cache_enabler_clear_site_cache_by_blog_id', array( __CLASS__, 'clear_page_cache_by_site' ) ); // deprecated in 1.8.0
 
         // system clear cache hooks
         add_action( '_core_updated_successfully', array( __CLASS__, 'clear_complete_cache' ) );
@@ -75,6 +75,10 @@ final class Cache_Enabler {
         add_action( 'saved_term', array( __CLASS__, 'on_saved_delete_term' ), 10, 3 );
         add_action( 'edit_terms', array( __CLASS__, 'on_edit_terms' ), 10, 2 );
         add_action( 'delete_term', array( __CLASS__, 'on_saved_delete_term' ), 10, 3 );
+        add_action( 'user_register', array( __CLASS__, 'on_register_update_delete_user' ), 10 );
+        add_action( 'profile_update', array( __CLASS__, 'on_register_update_delete_user' ), 10 );
+        add_action( 'delete_user', array( __CLASS__, 'on_register_update_delete_user' ), 10 );
+        add_action( 'deleted_user', array( __CLASS__, 'on_deleted_user' ), 10, 2 );
 
         // third party clear cache hooks
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_complete_cache' ) );
@@ -141,7 +145,7 @@ final class Cache_Enabler {
      * upgrade hook
      *
      * @since   1.2.3
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @param   WP_Upgrader  $obj   upgrade instance
      * @param   array        $data  update data
@@ -162,7 +166,7 @@ final class Cache_Enabler {
             foreach ( $sites_themes as $blog_id => $site_theme ) {
                 // if the active or parent theme has been updated clear site cache
                 if ( in_array( $site_theme->stylesheet, $updated_themes, true ) || in_array( $site_theme->template, $updated_themes, true ) ) {
-                    self::clear_site_cache_by_blog_id( $blog_id );
+                    self::clear_page_cache_by_site( $blog_id );
                 }
             }
         }
@@ -188,7 +192,7 @@ final class Cache_Enabler {
                     foreach ( $sites_plugins as $blog_id => $site_plugins ) {
                         // if an activated plugin has been updated clear site cache
                         if ( ! empty( array_intersect( $updated_plugins, (array) $site_plugins ) ) ) {
-                            self::clear_site_cache_by_blog_id( $blog_id );
+                            self::clear_page_cache_by_site( $blog_id );
                         }
                     }
                 }
@@ -392,7 +396,7 @@ final class Cache_Enabler {
         Cache_Enabler_Disk::clean();
 
         // clear site cache of deleted site
-        self::clear_site_cache_by_blog_id( (int) $old_site->blog_id );
+        self::clear_page_cache_by_site( (int) $old_site->blog_id );
     }
 
 
@@ -614,12 +618,12 @@ final class Cache_Enabler {
 
 
     /**
-     * get cache index for current site from disk
+     * get the cache index for the current site
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @return  array  $cache_index  cache index
+     * @return  array  $cache_index  cache index from the disk
      */
 
     public static function get_cache_index() {
@@ -633,12 +637,12 @@ final class Cache_Enabler {
 
 
     /**
-     * get cache size for current site from database or disk
+     * get the cache size for the current site
      *
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @return  integer  $cache_size  cache size in bytes from database if it exists, directly from the disk otherwise
+     * @return  int    $cache_size  cache size in bytes, either from the database or disk
      */
 
     public static function get_cache_size() {
@@ -678,7 +682,7 @@ final class Cache_Enabler {
      * get default settings
      *
      * @since   1.0.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @param   string  $settings_type                              default 'system' settings, defaults to all default settings if empty
      * @return  array   $system_default_settings|$default_settings  only default system settings or all default settings
@@ -701,6 +705,7 @@ final class Cache_Enabler {
             'clear_site_cache_on_saved_post'     => 0,
             'clear_site_cache_on_saved_comment'  => 0,
             'clear_site_cache_on_saved_term'     => 0,
+            'clear_site_cache_on_saved_user'     => 0,
             'clear_site_cache_on_changed_plugin' => 0,
             'convert_image_urls_to_webp'         => 0,
             'mobile_cache'                       => 0,
@@ -713,7 +718,6 @@ final class Cache_Enabler {
             'excluded_cookies'                   => '',
         );
 
-        // merge default settings
         $default_settings = wp_parse_args( $user_default_settings, $system_default_settings );
 
         return $default_settings;
@@ -963,7 +967,6 @@ final class Cache_Enabler {
 
     public static function add_admin_resources( $hook ) {
 
-        // settings page
         if ( $hook === 'settings_page_cache-enabler' ) {
             wp_enqueue_style( 'cache-enabler-settings', plugins_url( 'css/settings.min.css', CACHE_ENABLER_FILE ), array(), CACHE_ENABLER_VERSION );
         }
@@ -1067,7 +1070,6 @@ final class Cache_Enabler {
 
     public static function cache_cleared_notice() {
 
-        // check user role
         if ( ! self::user_can_clear_cache() ) {
             return;
         }
@@ -1227,17 +1229,49 @@ final class Cache_Enabler {
 
 
     /**
+     * register, update, or delete user hook
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   int    $user_id  ID of the newly registered, updated, or about to be deleted user
+     */
+
+    public static function on_register_update_delete_user( $user_id ) {
+
+        self::clear_cache_on_user_save( $user_id );
+    }
+
+
+    /**
+     * deleted user hook
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   int       $user_id   ID of the deleted user
+     * @param   int|null  $reassign  ID of the user reassigned to the old posts of $user_id
+     */
+
+    public static function on_deleted_user( $user_id, $reassign ) {
+
+        if ( $reassign ) {
+            self::clear_cache_on_user_save( $reassign );
+        }
+    }
+
+
+    /**
      * WooCommerce stock hooks
      *
      * @since   1.3.0
      * @change  1.6.1
      *
-     * @param   integer|WC_Product  $product  product ID or product instance
+     * @param   WC_Product|int  $product  product instance or product ID
      */
 
     public static function on_woocommerce_stock_update( $product ) {
 
-        // get product ID
         if ( is_int( $product ) ) {
             $product_id = $product;
         } else {
@@ -1249,7 +1283,7 @@ final class Cache_Enabler {
 
 
     /**
-     * clear complete cache
+     * clear the site cache of a single site or all sites in a multisite network
      *
      * @since   1.0.0
      * @change  1.8.0
@@ -1257,7 +1291,6 @@ final class Cache_Enabler {
 
     public static function clear_complete_cache() {
 
-        // clear site(s) cache
         self::each_site( is_multisite(), 'self::clear_site_cache' );
     }
 
@@ -1276,36 +1309,109 @@ final class Cache_Enabler {
 
 
     /**
-     * clear site cache
+     * clear the site cache for the current site or of a given site
      *
      * @since   1.6.0
-     * @change  1.6.0
+     * @change  1.8.0
+     *
+     * @param   WP_Site|int|string  $site  (optional) site instance or site blog ID, defaults to current site if empty
      */
 
-    public static function clear_site_cache() {
+    public static function clear_site_cache( $site = null ) {
 
-        self::clear_site_cache_by_blog_id( get_current_blog_id() );
+        if ( is_multisite() ) {
+            $site = get_site( $site );
+
+            if ( ! $site instanceof WP_Site ) {
+                return;
+            }
+
+            $blog_id = (int) $site->blog_id;
+        } else {
+            $blog_id = get_current_blog_id();
+        }
+
+        self::clear_page_cache_by_site( $blog_id );
     }
 
 
     /**
-     * clear expired cache
+     * clear the expired cache for the current site or of a given site
      *
      * @since   1.8.0
      * @change  1.8.0
+     *
+     * @param   WP_Site|int|string  $site  (optional) site instance or site blog ID, defaults to current site if empty
      */
 
-    public static function clear_expired_cache() {
+    public static function clear_expired_cache( $site = null ) {
+
+        if ( is_multisite() ) {
+            $site = get_site( $site );
+
+            if ( ! $site instanceof WP_Site ) {
+                return;
+            }
+
+            $blog_id = (int) $site->blog_id;
+        } else {
+            $blog_id = get_current_blog_id();
+        }
 
         $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
         $args['expired'] = 1;
 
-        self::clear_site_cache_by_blog_id( get_current_blog_id(), $args );
+        self::clear_page_cache_by_site( $blog_id, $args );
     }
 
 
     /**
-     * clear the archive and associated cache of a given term
+     * clear the post cache for the current post (if it is set) or of a given post
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     */
+
+    public static function clear_post_cache( $post = null ) {
+
+        $post = get_post( $post );
+
+        if ( $post instanceof WP_Post ) {
+            self::clear_page_cache_by_post( $post, 'pagination' );
+            self::clear_post_type_archive_cache( $post );
+            self::clear_post_terms_archives_cache( $post );
+
+            if ( $post->post_type === 'post' ) {
+                self::clear_post_author_archive_cache( $post );
+                self::clear_post_date_archives_cache( $post );
+            }
+        }
+    }
+
+
+    /**
+     * clear the comment cache for the current comment (if it is set) or of a given comment
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Comment|int|string  $comment  (optional) comment instance or comment ID, maybe defaults to current comment if empty
+     */
+
+    public static function clear_comment_cache( $comment = null ) {
+
+        $comment = get_comment( $comment );
+
+        if ( $comment instanceof WP_Comment ) {
+            self::clear_page_cache_by_comment( $comment, 'pagination' );
+        }
+    }
+
+
+    /**
+     * clear the term cache for the current term (if it is set) or of a given term
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -1316,77 +1422,76 @@ final class Cache_Enabler {
 
     public static function clear_term_cache( $term, $taxonomy = '' ) {
 
-        self::clear_term_archive_cache( $term, $taxonomy );
-        self::clear_cache_associated_with_term( $term, $taxonomy );
-    }
-
-
-    /**
-     * clear cached pages that might have changed from any new or updated post
-     *
-     * @since   1.5.0
-     * @change  1.8.0
-     *
-     * @param   WP_Post  $post  post instance
-     */
-
-    public static function clear_associated_cache( $post ) {
-
-        // clear post type archives
-        self::clear_post_type_archives_cache( $post->post_type );
-
-        // clear taxonomies archives
-        self::clear_post_terms_archives_cache( $post );
-
-        if ( $post->post_type === 'post' ) {
-            // clear author archives
-            self::clear_author_archives_cache_by_user_id( $post->post_author );
-            // clear date archives
-            self::clear_date_archives_cache_by_post_id( $post->ID );
-        }
-    }
-
-
-    /**
-     * clear cache associated with term
-     *
-     * @since   1.8.0
-     * @change  1.8.0
-     *
-     * @param   WP_Term|int  $term      term instance or term ID
-     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
-     */
-
-    public static function clear_cache_associated_with_term( $term, $taxonomy = '' ) {
-
         $term = get_term( $term, $taxonomy );
 
         if ( $term instanceof WP_Term ) {
+            self::clear_page_cache_by_term( $term, '', 'pagination' ); // clear the page cache for all posts that have the term set
+            self::clear_term_archive_cache( $term );
+
             if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
                 self::clear_term_children_archives_cache( $term );
                 self::clear_term_parents_archives_cache( $term );
             }
-
-            self::clear_page_cache_by_term( $term );
         }
     }
 
 
     /**
-     * clear post type archives page cache
+     * clear the user cache for the current user (if logged in) or of a given user
      *
-     * @since   1.5.0
-     * @change  1.5.0
+     * @since   1.8.0
+     * @change  1.8.0
      *
-     * @param   string  $post_type  post type
+     * @param   WP_User|int|string  $user  (optional) user instance or user ID, maybe defaults to current user if empty
+     */
+
+    public static function clear_user_cache( $user = null ) {
+
+        if ( empty( $user ) ) {
+            $user = wp_get_current_user();
+        }
+
+        if ( is_numeric( $user ) ) {
+            $user = get_userdata( $user );
+        }
+
+        if ( $user instanceof WP_User ) {
+            self::clear_page_cache_by_user( $user, 'pagination' ); // clear the page cache for all posts that the user is the author or has commented on
+            self::clear_author_archive_cache( $user );
+        }
+    }
+
+
+    /**
+     * clear cached pages that might have changed from any new or updated post (deprecated)
+     *
+     * @since       1.5.0
+     * @deprecated  1.8.0
+     */
+
+    public static function clear_associated_cache( $post ) {
+
+        self::clear_post_type_archive_cache( $post );
+        self::clear_post_terms_archives_cache( $post );
+
+        if ( $post->post_type === 'post' ) {
+            self::clear_post_author_archive_cache( $post );
+            self::clear_post_date_archives_cache( $post );
+        }
+    }
+
+
+    /**
+     * clear post type archives page cache (deprecated)
+     *
+     * @since       1.5.0
+     * @deprecated  1.8.0
      */
 
     public static function clear_post_type_archives_cache( $post_type ) {
 
-        // get post type archives URL
         $post_type_archives_url = get_post_type_archive_link( $post_type );
 
-        // if post type archives URL exists clear post type archives page and its pagination page(s) cache
         if ( ! empty( $post_type_archives_url ) ) {
             self::clear_page_cache_by_url( $post_type_archives_url, 'pagination' );
         }
@@ -1394,28 +1499,38 @@ final class Cache_Enabler {
 
 
     /**
-     * clear taxonomies archives cache by post ID (deprecated)
-     *
-     * @since       1.5.0
-     * @deprecated  1.8.0
-     */
-
-    public static function clear_taxonomies_archives_cache_by_post_id( $post_id ) {
-
-        self::clear_post_terms_archives_cache( $post_id );
-    }
-
-
-    /**
-     * clear post terms archives cache
+     * clear the post type archive cache for the current post (if it is set) or of a given post
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Post|int  $post  post instance or post ID
+     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
      */
 
-    public static function clear_post_terms_archives_cache( $post ) {
+    public static function clear_post_type_archive_cache( $post = null ) {
+
+        $post = get_post( $post );
+
+        if ( $post instanceof WP_Post ) {
+            $post_type_archive_url = get_post_type_archive_link( $post->post_type );
+
+            if ( $post_type_archive_url !== false && strpos( $post_type_archive_url, '?' ) === false ) {
+                self::clear_page_cache_by_url( $post_type_archive_url, 'pagination' );
+            }
+        }
+    }
+
+
+    /**
+     * clear the post terms archives cache for the current post (if it is set) or of a given post
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     */
+
+    public static function clear_post_terms_archives_cache( $post = null ) {
 
         $post = get_post( $post );
 
@@ -1436,7 +1551,95 @@ final class Cache_Enabler {
 
 
     /**
-     * clear term archive cache
+     * clear the post author archive cache for the current post (if it is set) or of a given post
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     */
+
+    public static function clear_post_author_archive_cache( $post = null ) {
+
+        $post = get_post( $post );
+
+        if ( $post instanceof WP_Post ) {
+            self::clear_author_archive_cache( (int) $post->post_author );
+        }
+    }
+
+
+    /**
+     * clear the post date archives cache for the current post (if it is set) or of a given post
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     */
+
+    public static function clear_post_date_archives_cache( $post = null ) {
+
+        $post = get_post( $post );
+
+        if ( $post instanceof WP_Post ) {
+            $date_archive_day    = get_the_date( 'd', $post );
+            $date_archive_month  = get_the_date( 'm', $post );
+            $date_archive_year   = get_the_date( 'Y', $post );
+            $date_archive_urls[] = get_day_link( $date_archive_year, $date_archive_month, $date_archive_day );
+            $date_archive_urls[] = get_month_link( $date_archive_year, $date_archive_month );
+            $date_archive_urls[] = get_year_link( $date_archive_year );
+
+            foreach( $date_archive_urls as $date_archive_url ) {
+                if ( strpos( $date_archive_url, '?' ) === false ) {
+                    self::clear_page_cache_by_url( $date_archive_url, 'pagination' );
+                }
+            }
+        }
+    }
+
+
+    /**
+     * clear taxonomies archives cache by post ID (deprecated)
+     *
+     * @since       1.5.0
+     * @deprecated  1.8.0
+     */
+
+    public static function clear_taxonomies_archives_cache_by_post_id( $post_id ) {
+
+        self::clear_post_terms_archives_cache( $post_id );
+    }
+
+
+    /**
+     * clear author archives page cache by user ID (deprecated)
+     *
+     * @since       1.5.0
+     * @deprecated  1.8.0
+     */
+
+    public static function clear_author_archives_cache_by_user_id( $user_id ) {
+
+        self::clear_author_archive_cache( $user_id );
+    }
+
+
+    /**
+     * clear date archives cache by post ID (deprecated)
+     *
+     * @since       1.5.0
+     * @deprecated  1.8.0
+     */
+
+    public static function clear_date_archives_cache_by_post_id( $post_id ) {
+
+        self::clear_post_date_archives_cache( $post_id );
+    }
+
+
+    /**
+     * clear the term archive cache of a given term
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -1451,12 +1654,12 @@ final class Cache_Enabler {
 
         if ( $term instanceof WP_Term ) {
             if ( ! is_taxonomy_viewable( $term->taxonomy ) ) {
-                return; // term archive cache does not exist if taxonomy is not viewable
+                return; // term archive cache does not exist
             }
 
             $term_archive_url = get_term_link( $term );
 
-            if ( ! is_wp_error( $term_archive_url ) ) {
+            if ( ! is_wp_error( $term_archive_url ) && strpos( $term_archive_url, '?' ) === false ) {
                 self::clear_page_cache_by_url( $term_archive_url, 'pagination' );
             }
         }
@@ -1464,55 +1667,7 @@ final class Cache_Enabler {
 
 
     /**
-     * clear author archives page cache by user ID
-     *
-     * @since   1.5.0
-     * @change  1.8.0
-     *
-     * @param   integer  $user_id  user ID of the author
-     */
-
-    public static function clear_author_archives_cache_by_user_id( $user_id ) {
-
-        // get author archives URL
-        $author_username     = get_the_author_meta( 'user_login', $user_id );
-        $author_archives_url = trailingslashit( home_url( '/' ) . $GLOBALS['wp_rewrite']->author_base ) . $author_username;
-
-        // clear author archives page and its pagination page(s) cache
-        self::clear_page_cache_by_url( $author_archives_url, 'pagination' );
-    }
-
-
-    /**
-     * clear date archives pages cache
-     *
-     * @since   1.5.0
-     * @change  1.5.0
-     *
-     * @param   integer  $post_id  post ID
-     */
-
-    public static function clear_date_archives_cache_by_post_id( $post_id ) {
-
-        // get post dates
-        $post_date_day   = get_the_date( 'd', $post_id );
-        $post_date_month = get_the_date( 'm', $post_id );
-        $post_date_year  = get_the_date( 'Y', $post_id );
-
-        // get post dates archives URLs
-        $date_archives_day_url   = get_day_link( $post_date_year, $post_date_month, $post_date_day );
-        $date_archives_month_url = get_month_link( $post_date_year, $post_date_month );
-        $date_archives_year_url  = get_year_link( $post_date_year );
-
-        // clear date archives pages and their pagination pages cache
-        self::clear_page_cache_by_url( $date_archives_day_url, 'pagination' );
-        self::clear_page_cache_by_url( $date_archives_month_url, 'pagination' );
-        self::clear_page_cache_by_url( $date_archives_year_url, 'pagination' );
-    }
-
-
-    /**
-     * clear term children archives cache
+     * clear the term children archives cache of a given term
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -1538,7 +1693,7 @@ final class Cache_Enabler {
 
 
     /**
-     * clear term parents archives cache
+     * clear the term parents archives cache of a given term
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -1562,36 +1717,145 @@ final class Cache_Enabler {
 
 
     /**
-     * clear page cache by post ID
+     * clear the author archive cache for the current user (if logged in) or of a given user
      *
-     * @since   1.0.0
+     * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   integer|string  $post_id  post ID
-     * @param   array|string    $args     cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     * @param   WP_User|int|string  $author  (optional) author user instance or author user ID, maybe defaults to current user if empty
      */
 
-    public static function clear_page_cache_by_post_id( $post_id, $args = array() ) {
+    public static function clear_author_archive_cache( $author = null ) {
 
-        $post_id  = (int) $post_id;
-        $page_url = ( $post_id ) ? get_permalink( $post_id ) : '';
+        if ( empty( $author ) ) {
+            $author = wp_get_current_user();
+        }
 
-        // if page URL exists and does not have a query string (e.g. guid) clear page cache
-        if ( ! empty( $page_url ) && strpos( $page_url, '?' ) === false ) {
-            self::clear_page_cache_by_url( $page_url, $args );
+        if ( is_numeric( $author ) ) {
+            $author = get_userdata( $author );
+        }
+
+        if ( $author instanceof WP_User ) {
+            if ( empty( $author->user_nicename ) ) {
+                return; // author archive cache does not exist
+            }
+
+            $author_archive_url = get_author_posts_url( $author->ID, $author->user_nicename );
+
+            if ( strpos( $author_archive_url, '?' ) === false ) {
+                self::clear_page_cache_by_url( $author_archive_url, 'pagination' );
+            }
         }
     }
 
 
     /**
-     * clear page cache by term
+     * clear the page cache associated with a given site
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Term|int  $term      term instance or term ID
-     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
-     * @param   array        $args      see Cache_Enabler_Disk::cache_iterator() for available arguments
+     * @param   WP_Site|int|string  $site  site instance or site blog ID
+     * @param   array|string        $args  (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     */
+
+    public static function clear_page_cache_by_site( $site, $args = array() ) {
+
+        if ( is_multisite() ) {
+            $site    = get_site( $site );
+            $blog_id = ( $site instanceof WP_Site ) ? (int) $site->blog_id : 0;
+        } else {
+            $blog_id = (int) $site;
+        }
+
+        if ( ! in_array( $blog_id, self::get_blog_ids(), true ) ) {
+            return; // blog ID does not exist
+        }
+
+        $args['subpages']['exclude'] = self::get_root_blog_exclusions();
+
+        if ( ! isset( $args['hooks']['include'] ) ) {
+            $args['hooks']['include'] = 'cache_enabler_complete_cache_cleared,cache_enabler_site_cache_cleared';
+        }
+
+        self::clear_page_cache_by_url( get_home_url( $blog_id ), $args );
+    }
+
+
+    /**
+     * clear page cache by post ID (deprecated)
+     *
+     * @since       1.0.0
+     * @deprecated  1.8.0
+     */
+
+    public static function clear_page_cache_by_post_id( $post_id, $args = array() ) {
+
+        self::clear_page_cache_by_post( $post_id, $args );
+    }
+
+
+    /**
+     * clear the page cache of a given post
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Post|int|string  $post  post instance or post ID
+     * @param   array|string        $args  (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     */
+
+    public static function clear_page_cache_by_post( $post, $args = array() ) {
+
+        $post = get_post( $post );
+
+        if ( $post instanceof WP_Post ) {
+            if ( $post->post_status !== 'publish' ) {
+                return; // page cache does not exist
+            }
+
+            $post_url = get_permalink( $post );
+
+            if ( $post_url !== false && strpos( $post_url, '?' ) === false ) {
+                self::clear_page_cache_by_url( $post_url, $args );
+            }
+        }
+    }
+
+
+    /**
+     * clear the page cache of the post associated with a given comment
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Comment|int|string  $comment  comment instance or comment ID
+     * @param   array|string           $args     (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     */
+
+    public static function clear_page_cache_by_comment( $comment, $args = array() ) {
+
+        $comment = get_comment( $comment );
+
+        if ( $comment instanceof WP_Comment ) {
+            if ( $comment->comment_approved !== '1' ) {
+                return; // page cache does not exist
+            }
+
+            self::clear_page_cache_by_post( (int) $comment->comment_post_ID, $args );
+        }
+    }
+
+
+    /**
+     * clear the page cache of the posts associated with a given term
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Term|int   $term      term instance or term ID
+     * @param   string        $taxonomy  (optional) taxonomy name that $term is part of
+     * @param   array|string  $args      (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
      */
 
     public static function clear_page_cache_by_term( $term, $taxonomy = '', $args = array() ) {
@@ -1602,11 +1866,10 @@ final class Cache_Enabler {
             return;
         }
 
-        $args = array(
+        $post_query_args = array(
             'post_type'     => 'any',
             'post_status'   => 'publish',
             'numberposts'   => -1,
-            'fields'        => 'ids',
             'order'         => 'none',
             'cache_results' => false,
             'no_found_rows' => true,
@@ -1618,29 +1881,90 @@ final class Cache_Enabler {
             ),
         );
 
-        $post_ids = get_posts( $args );
+        $posts = get_posts( $post_query_args );
 
-        foreach ( $post_ids as $post_id ) {
-            self::clear_page_cache_by_post_id( $post_id, $args );
+        foreach ( $posts as $post ) {
+            self::clear_page_cache_by_post( $post, $args );
         }
     }
 
 
     /**
-     * clear page cache by URL
+     * clear the page cache of the posts associated with a given user
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_User|int|string  $user  user instance or user ID
+     * @param   array|string        $args  (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     */
+
+    public static function clear_page_cache_by_user( $user, $args = array() ) {
+
+        if ( is_numeric( $user ) ) {
+            $user = get_userdata( $user );
+        }
+
+        if ( ! $user instanceof WP_User ) {
+            return;
+        }
+
+        $post_query_args = array(
+            'author'        => $user->ID,
+            'post_type'     => 'any',
+            'post_status'   => 'publish',
+            'numberposts'   => -1,
+            'fields'        => 'ids',
+            'order'         => 'none',
+            'cache_results' => false,
+            'no_found_rows' => true,
+        );
+
+        $post_ids = get_posts( $post_query_args );
+
+        $comment_query_args = array(
+            'status'  => 'approve',
+            'user_id' => $user->ID,
+        );
+
+        $comments = get_comments( $comment_query_args );
+
+        foreach ( $comments as $comment ) {
+            $comment_post_id = (int) $comment->comment_post_ID;
+
+            if ( ! in_array( $comment_post_id, $post_ids, true ) ) {
+                $post_ids[] = $comment_post_id;
+            }
+        }
+
+        foreach ( $post_ids as $post_id ) {
+            self::clear_page_cache_by_post( $post_id, $args );
+        }
+    }
+
+
+    /**
+     * clear the page cache of a given URL
      *
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @param   string        $url   URL (with or without scheme) to potentially cached page
-     * @param   array|string  $args  cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     * @param   string        $url   URL to potentially cached page (with or without scheme)
+     * @param   array|string  $args  (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
      */
 
     public static function clear_page_cache_by_url( $url, $args = array() ) {
 
+        if ( ! is_string( $url ) ) {
+            return;
+        }
+
         switch ( $args ) {
             case 'pagination':
-                $args = array( 'subpages' => array( 'include' => $GLOBALS['wp_rewrite']->pagination_base ) );
+                global $wp_rewrite;
+                $included_subpages[] = ( isset( $wp_rewrite->pagination_base ) ) ? $wp_rewrite->pagination_base : '';
+                $included_subpages[] = ( isset( $wp_rewrite->comments_pagination_base ) ) ? $wp_rewrite->comments_pagination_base . '-*' : '';
+                $args = array( 'subpages' => array( 'include' => $included_subpages ) );
                 break;
             case 'subpages':
                 $args = array( 'subpages' => 1 );
@@ -1674,65 +1998,58 @@ final class Cache_Enabler {
 
 
     /**
-     * clear site cache by blog ID
+     * clear site cache by blog ID (deprecated)
      *
-     * @since   1.4.0
-     * @change  1.8.0
-     *
-     * @param   integer|string  $blog_id  blog ID
-     * @param   array           $args     cache iterator arguments (see Cache_Enabler_Disk::cache_iterator())
+     * @since       1.4.0
+     * @deprecated  1.8.0
      */
 
-    public static function clear_site_cache_by_blog_id( $blog_id, $args = array() ) {
+    public static function clear_site_cache_by_blog_id( $blog_id, $deprecated = null ) {
 
-        $blog_id = (int) $blog_id;
-
-        if ( ! in_array( $blog_id, self::get_blog_ids(), true ) ) {
-            return; // blog ID does not exist
-        }
-
-        $args['subpages']['exclude'] = self::get_root_blog_exclusions();
-
-        if ( ! isset( $args['hooks']['include'] ) ) {
-            $args['hooks']['include'] = 'cache_enabler_complete_cache_cleared,cache_enabler_site_cache_cleared';
-        }
-
-        self::clear_page_cache_by_url( get_home_url( $blog_id ), $args );
+        self::clear_page_cache_by_site( $blog_id );
     }
 
 
     /**
-     * clear cache when any post type has been published, updated, or trashed
+     * clear the site or post cache when any post type has been published, updated, or trashed
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   WP_Post|integer  $post  post instance or post ID
+     * @param   WP_Post|int|string  $post  post instance or post ID
      */
 
     public static function clear_cache_on_post_save( $post ) {
 
-        if ( ! is_object( $post ) ) {
-            if ( is_int( $post ) ) {
-                $post = get_post( $post );
-            } else {
-                return;
-            }
-        }
-
-        // if setting enabled clear site cache
         if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_post'] ) {
             self::clear_site_cache();
-        // clear page and/or associated cache otherwise
         } else {
-            self::clear_page_cache_by_post_id( $post->ID );
-            self::clear_associated_cache( $post );
+            self::clear_post_cache( $post );
         }
     }
 
 
     /**
-     * clear cache when any term has been added, updated, or deleted
+     * clear the site or comment cache when a comment been posted, updated, spammed, or trashed
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Comment|int|string  $comment  comment instance or comment ID
+     */
+
+    public static function clear_cache_on_comment_save( $comment ) {
+
+        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
+            self::clear_site_cache();
+        } else {
+            self::clear_comment_cache( $comment );
+        }
+    }
+
+
+    /**
+     * clear the site or term cache when any term has been added, updated, or deleted
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -1743,10 +2060,8 @@ final class Cache_Enabler {
 
     public static function clear_cache_on_term_save( $term, $taxonomy = '' ) {
 
-        // if setting enabled clear site cache
         if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_term'] ) {
             self::clear_site_cache();
-        // clear term archive and/or associated cache otherwise
         } else {
             self::clear_term_cache( $term, $taxonomy );
         }
@@ -1754,30 +2069,20 @@ final class Cache_Enabler {
 
 
     /**
-     * clear cache when a comment been posted, updated, spammed, or trashed
+     * clear the site or user cache when any user has been added, updated, or deleted
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Comment|integer  $comment  comment instance or comment ID
+     * @param   WP_User|int|string  $user  user instance or user ID
      */
 
-    public static function clear_cache_on_comment_save( $comment ) {
+    public static function clear_cache_on_user_save( $user ) {
 
-        if ( ! is_object( $comment ) ) {
-            if ( is_int( $comment ) ) {
-                $comment = get_comment( $comment );
-            } else {
-                return;
-            }
-        }
-
-        // if setting enabled clear site cache
-        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
+        if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_user'] ) {
             self::clear_site_cache();
-        // clear page cache otherwise
         } else {
-            self::clear_page_cache_by_post_id( $comment->comment_post_ID );
+            self::clear_user_cache( $user );
         }
     }
 
@@ -1972,7 +2277,7 @@ final class Cache_Enabler {
      * validate settings
      *
      * @since   1.0.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @param   array  $settings            user defined settings
      * @return  array  $validated_settings  validated settings
@@ -1986,6 +2291,7 @@ final class Cache_Enabler {
             'clear_site_cache_on_saved_post'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_post'] ) ),
             'clear_site_cache_on_saved_comment'  => (int) ( ! empty( $settings['clear_site_cache_on_saved_comment'] ) ),
             'clear_site_cache_on_saved_term'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_term'] ) ),
+            'clear_site_cache_on_saved_user'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_user'] ) ),
             'clear_site_cache_on_changed_plugin' => (int) ( ! empty( $settings['clear_site_cache_on_changed_plugin'] ) ),
             'convert_image_urls_to_webp'         => (int) ( ! empty( $settings['convert_image_urls_to_webp'] ) ),
             'mobile_cache'                       => (int) ( ! empty( $settings['mobile_cache'] ) ),
@@ -2081,21 +2387,28 @@ final class Cache_Enabler {
                                 <p class="subheading"><?php esc_html_e( 'Clearing', 'cache-enabler' ); ?></p>
                                 <label for="cache_enabler_clear_site_cache_on_saved_post">
                                     <input name="cache_enabler[clear_site_cache_on_saved_post]" type="checkbox" id="cache_enabler_clear_site_cache_on_saved_post" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_post'] ); ?> />
-                                    <?php esc_html_e( 'Clear the site cache if any post type has been published, updated, or trashed (instead of only the page and/or associated cache).', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Clear the site cache if any post type has been published, updated, or trashed (instead of the post cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_enabler_clear_site_cache_on_saved_comment">
                                     <input name="cache_enabler[clear_site_cache_on_saved_comment]" type="checkbox" id="cache_enabler_clear_site_cache_on_saved_comment" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ); ?> />
-                                    <?php esc_html_e( 'Clear the site cache if a comment has been posted, updated, spammed, or trashed (instead of only the page cache).', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Clear the site cache if a comment has been posted, updated, spammed, or trashed (instead of the comment cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
 
                                 <label for="cache_enabler_clear_site_cache_on_saved_term">
                                     <input name="cache_enabler[clear_site_cache_on_saved_term]" type="checkbox" id="cache_enabler_clear_site_cache_on_saved_term" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_term'] ); ?> />
-                                    <?php esc_html_e( 'Clear the site cache if a category, tag, or custom taxonomy term has been added, updated, or deleted (instead of only the archive and/or associated cache).', 'cache-enabler' ); ?>
+                                    <?php esc_html_e( 'Clear the site cache if a term has been added, updated, or deleted (instead of the term cache).', 'cache-enabler' ); ?>
+                                </label>
+
+                                <br />
+
+                                <label for="cache_enabler_clear_site_cache_on_saved_user">
+                                    <input name="cache_enabler[clear_site_cache_on_saved_user]" type="checkbox" id="cache_enabler_clear_site_cache_on_saved_user" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_user'] ); ?> />
+                                    <?php esc_html_e( 'Clear the site cache if a user has been added, updated, or deleted (instead of the user cache).', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />

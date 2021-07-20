@@ -417,7 +417,7 @@ final class Cache_Enabler_Engine {
      * deliver cache
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @return  boolean  false if cached page was not delivered
      */
