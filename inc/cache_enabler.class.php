@@ -2091,7 +2091,7 @@ final class Cache_Enabler {
      * check plugin requirements
      *
      * @since   1.1.0
-     * @change  1.7.0
+     * @change  1.8.0
      */
 
     public static function requirements_check() {
@@ -2136,8 +2136,8 @@ final class Cache_Enabler {
                     esc_html__( '%1$s requires the %2$s drop-in. Please deactivate and then activate the plugin to automatically copy this file or manually copy it from the %3$s directory to the %4$s directory.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
                     '<code>advanced-cache.php</code>',
-                    '<code>wp-content/plugins/cache-enabler</code>',
-                    '<code>wp-content</code>'
+                    '<code>' . str_replace( ABSPATH, '', CACHE_ENABLER_DIR ) . '</code>',
+                    '<code>' . basename( WP_CONTENT_DIR ) . '</code>'
                 )
             );
         }
@@ -2160,22 +2160,28 @@ final class Cache_Enabler {
         }
 
         // check file permissions
-        if ( file_exists( dirname( Cache_Enabler_Disk::$cache_dir ) ) && ! is_writable( dirname( Cache_Enabler_Disk::$cache_dir ) ) ) {
-            printf(
-                '<div class="notice notice-warning"><p>%s</p></div>',
-                sprintf(
-                    // translators: 1. Cache Enabler 2. 755 3. wp-content/cache 4. file permissions
-                    esc_html__( '%1$s requires write permissions %2$s in the %3$s directory. Please change the %4$s.', 'cache-enabler' ),
-                    '<strong>Cache Enabler</strong>',
-                    '<code>755</code>',
-                    '<code>wp-content/cache</code>',
+        $dirs = array( Cache_Enabler_Disk::$cache_dir, Cache_Enabler_Disk::$settings_dir );
+
+        foreach ( $dirs as $dir ) {
+            $parent_dir = dirname( $dir );
+
+            if ( file_exists( $parent_dir ) && ! is_writable( $parent_dir ) ) {
+                printf(
+                    '<div class="notice notice-warning"><p>%s</p></div>',
                     sprintf(
-                        '<a href="%s" target="_blank" rel="nofollow noopener">%s</a>',
-                        'https://wordpress.org/support/article/changing-file-permissions/',
-                        esc_html__( 'file permissions', 'cache-enabler' )
+                        // translators: 1. Cache Enabler 2. 755 3. wp-content/cache 4. file permissions
+                        esc_html__( '%1$s requires write permissions %2$s in the %3$s directory. Please change the %4$s.', 'cache-enabler' ),
+                        '<strong>Cache Enabler</strong>',
+                        '<code>755</code>',
+                        '<code>' . str_replace( ABSPATH, '', $parent_dir ) . '</code>',
+                        sprintf(
+                            '<a href="%s" target="_blank" rel="nofollow noopener">%s</a>',
+                            'https://wordpress.org/support/article/changing-file-permissions/',
+                            esc_html__( 'file permissions', 'cache-enabler' )
+                        )
                     )
-                )
-            );
+                );
+            }
         }
 
         // check Autoptimize HTML optimization
