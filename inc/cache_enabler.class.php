@@ -14,7 +14,7 @@ final class Cache_Enabler {
     /**
      * initialize plugin
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.5.0
      */
 
@@ -144,7 +144,7 @@ final class Cache_Enabler {
     /**
      * upgrade hook
      *
-     * @since   1.2.3
+     * @since   1.4.0
      * @change  1.8.0
      *
      * @param   WP_Upgrader  $obj   upgrade instance
@@ -403,8 +403,8 @@ final class Cache_Enabler {
     /**
      * uninstall backend requirements
      *
-     * @since   1.0.0
-     * @change  1.4.0
+     * @since   1.5.0
+     * @change  1.5.0
      */
 
     private static function uninstall_backend() {
@@ -467,7 +467,7 @@ final class Cache_Enabler {
     /**
      * get settings from database
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.0
      *
      * @return  array  $settings  current settings from database
@@ -490,7 +490,7 @@ final class Cache_Enabler {
     /**
      * get blog IDs
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.0
      *
      * @return  array  $blog_ids  blog IDs
@@ -566,7 +566,7 @@ final class Cache_Enabler {
     /**
      * get blog paths
      *
-     * @since   1.4.0
+     * @since   1.5.0
      * @change  1.6.0
      *
      * @return  array  $blog_paths  blog paths
@@ -681,7 +681,7 @@ final class Cache_Enabler {
     /**
      * get default settings
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.8.0
      *
      * @param   string  $settings_type                              default 'system' settings, defaults to all default settings if empty
@@ -821,7 +821,7 @@ final class Cache_Enabler {
     /**
      * add plugin action links in the plugins list table
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.0
      *
      * @param   array  $action_links  action links
@@ -849,7 +849,7 @@ final class Cache_Enabler {
     /**
      * add plugin metadata in the plugins list table
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.2
      *
      * @param   array   $plugin_meta  plugin metadata, including the version, author, author URI, and plugin URI
@@ -879,7 +879,7 @@ final class Cache_Enabler {
     /**
      * add dashboard cache size count
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.8.0
      *
      * @param   array  $items  extra 'At a Glance' widget items
@@ -910,7 +910,7 @@ final class Cache_Enabler {
     /**
      * add admin bar items
      *
-     * @since   1.0.0
+     * @since   1.6.0
      * @change  1.6.0
      *
      * @param   object  $wp_admin_bar  menu properties
@@ -1018,7 +1018,7 @@ final class Cache_Enabler {
     /**
      * process clear cache request
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.0
      */
 
@@ -1064,7 +1064,7 @@ final class Cache_Enabler {
     /**
      * admin notice after cache has been cleared
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.0
      */
 
@@ -1130,7 +1130,7 @@ final class Cache_Enabler {
     /**
      * comment post hook
      *
-     * @since   1.2.0
+     * @since   1.6.0
      * @change  1.8.0
      *
      * @param   integer         $comment_id        comment ID
@@ -1149,7 +1149,7 @@ final class Cache_Enabler {
     /**
      * edit comment hook
      *
-     * @since   1.0.0
+     * @since   1.6.0
      * @change  1.8.0
      *
      * @param   integer  $comment_id    comment ID
@@ -1170,7 +1170,7 @@ final class Cache_Enabler {
     /**
      * transition comment status hook
      *
-     * @since   1.0.0
+     * @since   1.6.0
      * @change  1.8.0
      *
      * @param   integer|string  $new_status  new comment status
@@ -1264,7 +1264,7 @@ final class Cache_Enabler {
     /**
      * WooCommerce stock hooks
      *
-     * @since   1.3.0
+     * @since   1.4.0
      * @change  1.6.1
      *
      * @param   WC_Product|int  $product  product instance or product ID
@@ -1285,7 +1285,7 @@ final class Cache_Enabler {
     /**
      * clear the site cache of a single site or all sites in a multisite network
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.8.0
      */
 

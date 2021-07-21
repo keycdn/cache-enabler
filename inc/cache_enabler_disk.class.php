@@ -101,7 +101,7 @@ final class Cache_Enabler_Disk {
     /**
      * check if cached page exists
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.0
      *
      * @param   string   $cache_file  file path to potentially cached page
@@ -117,7 +117,7 @@ final class Cache_Enabler_Disk {
     /**
      * check if cached page expired
      *
-     * @since   1.0.1
+     * @since   1.5.0
      * @change  1.7.0
      *
      * @param   string   $cache_file  file path to existing cached page
@@ -1245,7 +1245,7 @@ final class Cache_Enabler_Disk {
     /**
      * set or unset WP_CACHE constant in wp-config.php
      *
-     * @since   1.1.1
+     * @since   1.5.0
      * @change  1.7.0
      *
      * @param   boolean  $set  true to set WP_CACHE constant, false to unset
@@ -1364,8 +1364,8 @@ final class Cache_Enabler_Disk {
     /**
      * convert image URL(s) to WebP
      *
-     * @since   1.0.1
-     * @change  1.5.0
+     * @since   1.5.0
+     * @change  1.7.0
      *
      * @param   array   $matches     pattern matches from parsed page contents
      * @return  string  $conversion  converted image URL(s) to WebP if applicable, default URL(s) otherwise
@@ -1410,7 +1410,7 @@ final class Cache_Enabler_Disk {
     /**
      * minify HTML
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.0
      *
      * @param   string  $page_contents                 contents of a page from the output buffer

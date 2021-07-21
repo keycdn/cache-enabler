@@ -202,7 +202,7 @@ final class Cache_Enabler_Engine {
     /**
      * check if directory index file
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.5.0
      *
      * @return  boolean  true if directory index file, false otherwise
@@ -364,7 +364,7 @@ final class Cache_Enabler_Engine {
     /**
      * check if cache should be bypassed
      *
-     * @since   1.0.0
+     * @since   1.5.0
      * @change  1.7.0
      *
      * @return  boolean  true if cache should be bypassed, false otherwise
