@@ -179,6 +179,11 @@ final class Cache_Enabler_Disk {
                 $switch = true;
                 switch_to_blog( $blog_id );
             }
+
+            if ( isset( $GLOBALS['switched'] ) && $GLOBALS['switched'] === true ) {
+                global $wp_rewrite;
+                $wp_rewrite->init(); // reinitialize rewrite rules to pick up correct data for url_to_postid() and user_trailingslashit()
+            }
         }
 
         $args             = self::get_cache_iterator_args( $url, $args );
@@ -440,7 +445,7 @@ final class Cache_Enabler_Disk {
         }
 
         if ( in_array( 'cache_enabler_site_cache_cleared', $hooks_to_fire, true ) && empty( Cache_Enabler::get_cache_index() ) ) {
-            $site_cleared_url = self::get_cache_url(); // not using home_url() directly in case trailing slash needs to be appended
+            $site_cleared_url = user_trailingslashit( home_url() );
             $site_cleared_id  = get_current_blog_id();
 
             do_action( 'cache_enabler_site_cache_cleared', $site_cleared_url, $site_cleared_id, $cache_cleared_index );
@@ -795,8 +800,8 @@ final class Cache_Enabler_Disk {
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $dir        directory path (without trailing slash) to potentially cached page, defaults to site cache directory if empty
-     * @return  string  $cache_url  full URL to potentially cached page
+     * @param   string  $dir        directory path to potentially cached page, defaults to site cache directory if empty
+     * @return  string  $cache_url  full URL to potentially cached page (with trailing slash if the permalink structure has it)
      */
 
     private static function get_cache_url( $dir = null ) {
@@ -806,10 +811,7 @@ final class Cache_Enabler_Disk {
         }
 
         $cache_url = parse_url( home_url(), PHP_URL_SCHEME ) . '://' . str_replace( self::$cache_dir . '/', '', $dir );
-
-        if ( Cache_Enabler_Engine::$settings['permalink_structure'] === 'has_trailing_slash' ) {
-            $cache_url .= ( $cache_url !== home_url() || ! empty( Cache_Enabler::get_blog_path() ) ) ? '/' : '';
-        }
+        $cache_url = user_trailingslashit( $cache_url );
 
         return $cache_url;
     }
