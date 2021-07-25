@@ -246,7 +246,7 @@ final class Cache_Enabler_Engine {
      * check permalink structure
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.8.0
      *
      * @return  boolean  true if request URI does not match permalink structure or if plain, false otherwise
      */
@@ -254,21 +254,12 @@ final class Cache_Enabler_Engine {
     private static function is_wrong_permalink_structure() {
 
         // check if trailing slash is set and missing (ignoring root index and file extensions)
-        if ( self::$settings['permalink_structure'] === 'has_trailing_slash' ) {
+        if ( self::$settings['use_trailing_slashes'] ) {
             if ( preg_match( '/\/[^\.\/\?]+(\?.*)?$/', $_SERVER['REQUEST_URI'] ) ) {
                 return true;
             }
-        }
-
-        // check if trailing slash is not set and appended (ignoring root index and file extensions)
-        if ( self::$settings['permalink_structure'] === 'no_trailing_slash' ) {
-            if ( preg_match( '/\/[^\.\/\?]+\/(\?.*)?$/', $_SERVER['REQUEST_URI'] ) ) {
-                return true;
-            }
-        }
-
-        // check if custom permalink structure is not set
-        if ( self::$settings['permalink_structure'] === 'plain' ) {
+        // check if trailing slash is not set and appended otherwise (ignoring root index and file extensions)
+        } elseif ( preg_match( '/\/[^\.\/\?]+\/(\?.*)?$/', $_SERVER['REQUEST_URI'] ) ) {
             return true;
         }
 

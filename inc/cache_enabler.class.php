@@ -589,15 +589,12 @@ final class Cache_Enabler {
     /**
      * get permalink structure
      *
-     * @since   1.5.0
-     * @change  1.5.0
-     *
-     * @return  string  permalink structure
+     * @since       1.5.0
+     * @deprecated  1.8.0
      */
 
     private static function get_permalink_structure() {
 
-        // get permalink structure
         $permalink_structure = get_option( 'permalink_structure' );
 
         // permalink structure is custom and has a trailing slash
@@ -691,8 +688,9 @@ final class Cache_Enabler {
     private static function get_default_settings( $settings_type = null ) {
 
         $system_default_settings = array(
-            'version'             => (string) CACHE_ENABLER_VERSION,
-            'permalink_structure' => (string) self::get_permalink_structure(),
+            'version'              => (string) CACHE_ENABLER_VERSION,
+            'use_trailing_slashes' => (int) $GLOBALS['wp_rewrite']->use_trailing_slashes,
+            'permalink_structure'  => (string) self::get_permalink_structure(), // deprecated in 1.8.0
         );
 
         if ( $settings_type === 'system' ) {
@@ -1019,7 +1017,7 @@ final class Cache_Enabler {
      * process clear cache request
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      */
 
     public static function process_clear_cache_request() {
@@ -1041,8 +1039,7 @@ final class Cache_Enabler {
 
         // clear page cache
         if ( $_GET['_action'] === 'clearurl' ) {
-            $clear_url = parse_url( home_url(), PHP_URL_SCHEME ) . '://' . Cache_Enabler_Engine::$request_headers['Host'] . $_SERVER['REQUEST_URI'];
-            self::clear_page_cache_by_url( $clear_url );
+            self::clear_page_cache_by_url( Cache_Enabler_Engine::$request_headers['Host'] . $_SERVER['REQUEST_URI'] );
         // clear site(s) cache
         } elseif ( $_GET['_action'] === 'clear' ) {
             self::each_site( ( is_multisite() && is_network_admin() ), 'self::clear_site_cache' );
@@ -2143,7 +2140,7 @@ final class Cache_Enabler {
         }
 
         // check permalink structure
-        if ( Cache_Enabler_Engine::$settings['permalink_structure'] === 'plain' && current_user_can( 'manage_options' ) ) {
+        if ( empty( get_option( 'permalink_structure' ) ) ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
