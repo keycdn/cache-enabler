@@ -222,7 +222,7 @@ final class Cache_Enabler_Engine {
      * check if contents from the output buffer can be cached
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @param   string   $contents  contents from the output buffer
      * @return  boolean             true if contents from the output buffer are cacheable, false otherwise
@@ -231,7 +231,7 @@ final class Cache_Enabler_Engine {
     private static function is_cacheable( $contents ) {
 
         $has_html_tag       = ( stripos( $contents, '<html' ) !== false );
-        $has_html5_doctype  = preg_match( '/^<!DOCTYPE.+html>/i', ltrim( $contents ) );
+        $has_html5_doctype  = preg_match( '/^<!DOCTYPE.+html\s*>/i', ltrim( $contents ) );
         $has_xsl_stylesheet = ( stripos( $contents, '<xsl:stylesheet' ) !== false || stripos( $contents, '<?xml-stylesheet' ) !== false );
 
         if ( $has_html_tag && $has_html5_doctype && ! $has_xsl_stylesheet ) {
