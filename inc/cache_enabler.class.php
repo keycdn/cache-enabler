@@ -1980,7 +1980,7 @@ final class Cache_Enabler {
 
         $url_path = (string) parse_url( $url, PHP_URL_PATH );
 
-        if ( substr( $url_path, -1 ) === '*' ) {
+        if ( substr( $url_path, -1, 1 ) === '*' ) {
             $url_path_pieces  = explode( '/', $url_path );
             $wildcard_subpage = end( $url_path_pieces );
             $new_url_path     = substr( $url_path, 0, -strlen( $wildcard_subpage ) );
