@@ -504,7 +504,7 @@ final class Cache_Enabler_Disk {
 
             foreach ( $filter_value as $filter_object ) {
                 // if trailing asterisk exists remove it to allow a wildcard match
-                if ( substr( $filter_object, -1 ) === '*' ) {
+                if ( substr( $filter_object, -1, 1 ) === '*' ) {
                     $filter_object = substr( $filter_object, 0, -1 );
                 // maybe append trailing slash to force a strict match otherwise
                 } else {
