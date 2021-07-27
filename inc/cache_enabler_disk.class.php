@@ -24,6 +24,18 @@ final class Cache_Enabler_Disk {
 
 
     /**
+     * file path to the cached page for the current request
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @var     string
+     */
+
+    private static $cache_file;
+
+
+    /**
      * settings directory
      *
      * @since   1.5.0
@@ -291,55 +303,43 @@ final class Cache_Enabler_Disk {
 
     private static function create_cache_file( $page_contents ) {
 
-        // check cache file requirements
         if ( ! is_string( $page_contents ) || strlen( $page_contents ) === 0 ) {
             return;
         }
 
-        // get new cache file
         $new_cache_file      = self::get_cache_file();
         $new_cache_file_dir  = dirname( $new_cache_file );
         $new_cache_file_name = basename( $new_cache_file );
 
-        // if setting enabled minify HTML
         if ( Cache_Enabler_Engine::$settings['minify_html'] ) {
             $page_contents = self::minify_html( $page_contents );
         }
 
-        // append cache signature
         $page_contents = $page_contents . self::get_cache_signature( $new_cache_file_name );
 
-        // convert image URLs to WebP if applicable
         if ( strpos( $new_cache_file_name, 'webp' ) !== false ) {
             $page_contents = self::converter( $page_contents );
         }
 
-        // compress page contents with Brotli or Gzip if applicable
-        if ( strpos( $new_cache_file_name, 'br' ) !== false ) {
-            $page_contents = brotli_compress( $page_contents );
-
-            // check if Brotli compression failed
-            if ( $page_contents === false ) {
-                return;
-            }
-        } elseif ( strpos( $new_cache_file_name, 'gz' ) !== false ) {
-            $page_contents = gzencode( $page_contents, 9 );
-
-            // check if Gzip compression failed
-            if ( $page_contents === false ) {
-                return;
-            }
+        switch ( substr( $new_cache_file_name, -2, 2 ) ) {
+            case 'br':
+                $page_contents = brotli_compress( $page_contents );
+                break;
+            case 'gz':
+                $page_contents = gzencode( $page_contents, 9 );
+                break;
         }
 
-        // create directory if necessary
+        if ( $page_contents === false ) {
+            return; // compression failed
+        }
+
         if ( ! self::mkdir_p( $new_cache_file_dir ) ) {
             return;
         }
 
-        // try to create new cache file
         $new_cache_file_created = file_put_contents( $new_cache_file, $page_contents, LOCK_EX );
 
-        // set file permissions if successfully created
         if ( $new_cache_file_created !== false ) {
             clearstatcache();
             $new_cache_file_stats = @stat( $new_cache_file_dir );
@@ -371,15 +371,12 @@ final class Cache_Enabler_Disk {
 
     public static function create_settings_file( $settings ) {
 
-        // check settings file requirements
         if ( ! is_array( $settings ) || ! function_exists( 'home_url' ) ) {
             return;
         }
 
-        // get new settings file
         $new_settings_file = self::get_settings_file();
 
-        // add new settings file contents
         $new_settings_file_contents  = '<?php' . PHP_EOL;
         $new_settings_file_contents .= '/**' . PHP_EOL;
         $new_settings_file_contents .= ' * Cache Enabler settings for ' . home_url() . PHP_EOL;
@@ -392,12 +389,10 @@ final class Cache_Enabler_Disk {
         $new_settings_file_contents .= PHP_EOL;
         $new_settings_file_contents .= 'return ' . var_export( $settings, true ) . ';';
 
-        // create directory if necessary
         if ( ! self::mkdir_p( dirname( $new_settings_file ) ) ) {
             return;
         }
 
-        // create new settings file
         file_put_contents( $new_settings_file, $new_settings_file_contents, LOCK_EX );
 
         return $new_settings_file;
@@ -611,23 +606,27 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * get cache file
+     * get the cache file for the current request
      *
      * @since   1.7.0
      * @change  1.8.0
      *
-     * @return  string  $cache_file  file path to new or potentially cached page
+     * @return  string  file path to new or potentially cached page
      */
 
     public static function get_cache_file() {
 
-        $cache_file = sprintf(
+        if ( ! empty( self::$cache_file ) ) {
+            return self::$cache_file;
+        }
+
+        self::$cache_file = sprintf(
             '%s/%s',
             self::get_cache_dir(),
             self::get_cache_file_name()
         );
 
-        return $cache_file;
+        return self::$cache_file;
     }
 
 
