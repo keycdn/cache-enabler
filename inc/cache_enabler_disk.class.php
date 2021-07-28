@@ -497,7 +497,7 @@ final class Cache_Enabler_Disk {
             $dir_object = $dir_object . '/'; // append trailing slash to prevent a false match
         }
 
-        foreach( $filter as $filter_type => $filter_value ) {
+        foreach ( $filter as $filter_type => $filter_value ) {
             if ( $filter_type !== 'include' && $filter_type !== 'exclude' ) {
                 continue;
             }
@@ -512,7 +512,7 @@ final class Cache_Enabler_Disk {
                 }
 
                 if ( str_replace( $filter_object, '', $dir_object ) !== $dir_object ) {
-                    switch( $filter_type ) {
+                    switch ( $filter_type ) {
                         case 'include':
                             return true; // past inclusion or present wildcard inclusion
                         case 'exclude':
@@ -744,7 +744,7 @@ final class Cache_Enabler_Disk {
                     continue 2; // skip to next filter value
             }
 
-            foreach( $filter_value as $cache_key ) {
+            foreach ( $filter_value as $cache_key ) {
                 $cache_keys_regex .= '(' . $lookahead . '.*' . preg_quote( $cache_key ) . ')';
             }
         }
@@ -1001,9 +1001,9 @@ final class Cache_Enabler_Disk {
         if ( is_array( $filter ) && empty( $filter['full_path'] ) ) {
             $filter['full_path'] = 1;
 
-            foreach( $filter as $filter_type => &$filter_value ) {
+            foreach ( $filter as $filter_type => &$filter_value ) {
                 if ( $filter_type === 'include' || $filter_type === 'exclude' ) {
-                    foreach( $filter_value as &$filter_object ) {
+                    foreach ( $filter_value as &$filter_object ) {
                         $filter_object = $dir . '/' . $filter_object;
                     }
                 }
@@ -1532,11 +1532,11 @@ final class Cache_Enabler_Disk {
 
         $validated_args = array();
 
-        foreach( $args as $arg_name => $arg_value ) {
+        foreach ( $args as $arg_name => $arg_value ) {
             if ( $arg_name === 'root' ) {
                 $validated_args[ $arg_name ] = (string) $arg_value;
             } elseif ( is_array( $arg_value ) ) {
-                foreach( $arg_value as $filter_type => $filter_value ) {
+                foreach ( $arg_value as $filter_type => $filter_value ) {
                     if ( is_string( $filter_value ) ) {
                         $filter_value = ( substr_count( $filter_value, '|' ) > 0 ) ? explode( '|', $filter_value ) : explode( ',', $filter_value );
                     } elseif ( ! is_array( $filter_value ) ) {
