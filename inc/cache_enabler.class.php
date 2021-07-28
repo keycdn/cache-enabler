@@ -550,7 +550,7 @@ final class Cache_Enabler {
         $blog_path       = '/';
         $blog_paths      = self::get_blog_paths();
 
-        foreach( $url_path_pieces as $url_path_piece ) {
+        foreach ( $url_path_pieces as $url_path_piece ) {
             $url_path_piece = '/' . $url_path_piece . '/';
 
             if ( in_array( $url_path_piece, $blog_paths, true ) ) {
@@ -1587,7 +1587,7 @@ final class Cache_Enabler {
             $date_archive_urls[] = get_month_link( $date_archive_year, $date_archive_month );
             $date_archive_urls[] = get_year_link( $date_archive_year );
 
-            foreach( $date_archive_urls as $date_archive_url ) {
+            foreach ( $date_archive_urls as $date_archive_url ) {
                 if ( strpos( $date_archive_url, '?' ) === false ) {
                     self::clear_page_cache_by_url( $date_archive_url, 'pagination' );
                 }
@@ -2446,7 +2446,7 @@ final class Cache_Enabler {
 
                                 <label for="cache_enabler_compress_cache">
                                     <input name="cache_enabler[compress_cache]" type="checkbox" id="cache_enabler_compress_cache" value="1" <?php checked( '1', Cache_Enabler_Engine::$settings['compress_cache'] ); ?> />
-                                    <?php echo function_exists( 'brotli_compress' ) && is_ssl() ? esc_html__( 'Create a cached version pre-compressed with Brotli or Gzip.', 'cache-enabler' ) : esc_html__( 'Create a cached version pre-compressed with Gzip.', 'cache-enabler' ); ?>
+                                    <?php ( function_exists( 'brotli_compress' ) && is_ssl() ) ? esc_html_e( 'Create a cached version pre-compressed with Brotli or Gzip.', 'cache-enabler' ) : esc_html_e( 'Create a cached version pre-compressed with Gzip.', 'cache-enabler' ); ?>
                                 </label>
 
                                 <br />
