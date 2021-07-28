@@ -417,24 +417,23 @@ final class Cache_Enabler_Engine {
 
         $cache_file = Cache_Enabler_Disk::get_cache_file();
 
-        if ( Cache_Enabler_Disk::cache_exists( $cache_file ) && ! Cache_Enabler_Disk::cache_expired( $cache_file ) && ! self::bypass_cache()  ) {
-            // set X-Cache-Handler response header
+        if ( Cache_Enabler_Disk::cache_exists( $cache_file ) && ! Cache_Enabler_Disk::cache_expired( $cache_file ) && ! self::bypass_cache() ) {
             header( 'X-Cache-Handler: cache-enabler-engine' );
 
-            // return 304 Not Modified with empty body if applicable
             if ( strtotime( self::$request_headers['If-Modified-Since'] >= filemtime( $cache_file ) ) ) {
                 header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
-                exit;
+                exit; // deliver empty body
             }
 
-            // set Content-Encoding response header if applicable
-            if ( strpos( basename( $cache_file ), 'br' ) !== false ) {
-                header( 'Content-Encoding: br' );
-            } elseif ( strpos( basename( $cache_file ), 'gz' ) !== false ) {
-                header( 'Content-Encoding: gzip' );
+            switch ( substr( $cache_file, -2, 2 ) ) {
+                case 'br':
+                    header( 'Content-Encoding: br' );
+                    break;
+                case 'gz':
+                    header( 'Content-Encoding: gzip' );
+                    break;
             }
 
-            // deliver cache
             readfile( $cache_file );
             exit;
         }
