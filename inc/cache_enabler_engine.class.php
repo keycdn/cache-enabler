@@ -176,12 +176,16 @@ final class Cache_Enabler_Engine {
      * get specific HTTP request headers from current request
      *
      * @since   1.7.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @return  array  $request_headers  specific HTTP request headers from current request
      */
 
     private static function get_request_headers() {
+
+        if ( ! empty( self::$request_headers ) ) {
+            return self::$request_headers;
+        }
 
         $request_headers = ( function_exists( 'apache_request_headers' ) ) ? apache_request_headers() : array();
 
@@ -200,17 +204,17 @@ final class Cache_Enabler_Engine {
 
 
     /**
-     * check if directory index file
+     * check if the script currently being executed is the WordPress installation directory index file
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.8.0
      *
-     * @return  boolean  true if directory index file, false otherwise
+     * @return  bool   true if directory index file, false otherwise
      */
 
     private static function is_index() {
 
-        if ( strtolower( basename( $_SERVER['SCRIPT_NAME'] ) ) === 'index.php' ) {
+        if ( defined( 'CACHE_ENABLER_INDEX_FILE' ) && $_SERVER['SCRIPT_FILENAME'] === CACHE_ENABLER_INDEX_FILE ) {
             return true;
         }
 
