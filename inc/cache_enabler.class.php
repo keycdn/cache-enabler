@@ -702,7 +702,7 @@ final class Cache_Enabler {
 
         $system_default_settings = array(
             'version'              => (string) CACHE_ENABLER_VERSION,
-            'use_trailing_slashes' => (int) $GLOBALS['wp_rewrite']->use_trailing_slashes,
+            'use_trailing_slashes' => (int) ( substr( get_option( 'permalink_structure' ), -1, 1 ) === '/' ),
             'permalink_structure'  => (string) self::get_permalink_structure(), // deprecated in 1.8.0
         );
 
