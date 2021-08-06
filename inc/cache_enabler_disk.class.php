@@ -153,6 +153,10 @@ final class Cache_Enabler_Disk {
             'size'  => 0,
         );
 
+        if ( empty( $url ) ) {
+            return $cache;
+        }
+
         $url       = esc_url_raw( $url, array( 'http', 'https' ) );
         $cache_dir = self::get_cache_dir( $url );
 
@@ -961,7 +965,7 @@ final class Cache_Enabler_Disk {
             $settings = include $settings_file;
         } else {
             $fallback      = true;
-            $settings_file = self::get_settings_file( true );
+            $settings_file = self::get_settings_file( $fallback );
 
             if ( is_file( $settings_file ) ) {
                 $settings = include $settings_file;
