@@ -1,6 +1,6 @@
 === Cache Enabler ===
 Contributors: keycdn
-Tags: cache, caching, performance, gzip, webp, speed
+Tags: cache, caching, performance, webp, gzip, brotli, mobile, speed
 Requires at least: 5.5
 Tested up to: 5.8
 Requires PHP: 5.6
@@ -9,11 +9,11 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 
-A lightweight caching plugin for WordPress that makes your website faster by generating static HTML files. WebP and Gzip support included.
+A lightweight caching plugin for WordPress that makes your website faster by generating static HTML files.
 
 
 == Description ==
-Cache Enabler is a simple, yet powerful WordPress caching plugin that is easy to use, needs minimal configuration, and best of all helps improve site performance for a faster load time. It creates static HTML files and stores them on the server's disk. This allows the web server to deliver the static HTML files avoiding resource intensive backend processes from the WordPress core, plugins, and database.
+Cache Enabler is a simple, yet powerful WordPress caching plugin that is easy to use, needs minimal configuration, and best of all helps improve site performance for a faster load time. It creates static HTML files of frontend pages and stores them on the server's disk. This allows the static HTML files to be delivered instead of generating pages on the fly, avoiding resource intensive backend processes from the WordPress core, plugins, and database.
 
 
 = Features =
@@ -22,18 +22,18 @@ Cache Enabler is a simple, yet powerful WordPress caching plugin that is easy to
 * Manual cache clearing
 * WP-CLI cache clearing
 * Cache expiry
-* Cache size display in the WordPress dashboard
-* Minification of HTML excluding or including inline CSS and JavaScript
-* WordPress multisite network support
 * WebP support (convert images to WebP with [Optimus](https://optimus.io))
-* Gzip pre-compression support
+* Mobile support
+* Brotli and Gzip pre-compression support
+* Minification of HTML excluding or including inline CSS and JavaScript
+* Real-time cache size display in the WordPress dashboard
 * Custom post type support
 * `304 Not Modified` support
 * Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/) and the majority of other third party plugins
 
 
 = How does the caching work? =
-Cache Enabler captures page contents and saves it as a static HTML file on the server’s disk. Converting inline image URLs to WebP as a separate static HTML file and pre-compressing both static HTML files with Gzip is possible. The accepted static HTML file is then delivered to users without any database queries or on the fly compression for a faster site load time.
+Cache Enabler captures page contents and saves it as a static HTML file on the server's disk. The static HTML file created can be one of several possible cache versions depending on the plugin settings and HTTP request. Accepted static HTML files are then delivered without any database queries or on the fly compression, allowing for a quicker page load.
 
 
 = Documentation =
