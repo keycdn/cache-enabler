@@ -35,6 +35,16 @@ final class Cache_Enabler {
 
 
     /**
+     * fire page cache cleared hook (deprecated)
+     *
+     * @since       1.6.0
+     * @deprecated  1.8.0
+     */
+
+    public static $fire_page_cache_cleared_hook = true;
+
+
+    /**
      * constructor
      *
      * @since   1.0.0
@@ -133,10 +143,8 @@ final class Cache_Enabler {
 
     public static function on_activation( $network_wide ) {
 
-        // add backend requirements, triggering the settings file(s) to be created
         self::each_site( $network_wide, 'self::update_backend' );
 
-        // configure system files
         Cache_Enabler_Disk::setup();
     }
 
@@ -162,7 +170,6 @@ final class Cache_Enabler {
             $updated_themes = (array) $data['themes'];
             $sites_themes   = self::each_site( is_multisite(), 'wp_get_theme' );
 
-            // check each site
             foreach ( $sites_themes as $blog_id => $site_theme ) {
                 // if the active or parent theme has been updated clear site cache
                 if ( in_array( $site_theme->stylesheet, $updated_themes, true ) || in_array( $site_theme->template, $updated_themes, true ) ) {
@@ -174,26 +181,19 @@ final class Cache_Enabler {
         // updated plugins
         if ( $data['type'] === 'plugin' && isset( $data['plugins'] ) ) {
             $updated_plugins = (array) $data['plugins'];
+            $network_plugins = ( is_multisite() ) ? array_flip( (array) get_site_option( 'active_sitewide_plugins', array() ) ) : array();
 
-            // check if Cache Enabler has been updated
-            if ( in_array( CACHE_ENABLER_BASE, $updated_plugins, true ) ) {
-                self::on_cache_enabler_update();
-            // check all updated plugins otherwise
+            // if a network activated plugin has been updated clear complete cache
+            if ( ! empty( array_intersect( $updated_plugins, $network_plugins ) ) ) {
+                self::clear_complete_cache();
+            // check each site otherwise
             } else {
-                $network_plugins = ( is_multisite() ) ? array_flip( (array) get_site_option( 'active_sitewide_plugins', array() ) ) : array();
+                $sites_plugins = self::each_site( is_multisite(), 'get_option', array( 'active_plugins', array() ) );
 
-                // if a network activated plugin has been updated clear complete cache
-                if ( ! empty( array_intersect( $updated_plugins, $network_plugins ) ) ) {
-                    self::clear_complete_cache();
-                // check each site otherwise
-                } else {
-                    $sites_plugins = self::each_site( is_multisite(), 'get_option', array( 'active_plugins', array() ) );
-
-                    foreach ( $sites_plugins as $blog_id => $site_plugins ) {
-                        // if an activated plugin has been updated clear site cache
-                        if ( ! empty( array_intersect( $updated_plugins, (array) $site_plugins ) ) ) {
-                            self::clear_page_cache_by_site( $blog_id );
-                        }
+                foreach ( $sites_plugins as $blog_id => $site_plugins ) {
+                    // if an activated plugin has been updated clear site cache
+                    if ( ! empty( array_intersect( $updated_plugins, (array) $site_plugins ) ) ) {
+                        self::clear_page_cache_by_site( $blog_id );
                     }
                 }
             }
@@ -202,21 +202,18 @@ final class Cache_Enabler {
 
 
     /**
-     * Cache Enabler update actions
+     * Cache Enabler update actions (deprecated)
      *
-     * @since   1.4.0
-     * @change  1.7.0
+     * @since       1.4.0
+     * @deprecated  1.8.0
      */
 
     public static function on_cache_enabler_update() {
 
-        // clean system files
         self::each_site( is_multisite(), 'Cache_Enabler_Disk::clean' );
 
-        // configure system files
         Cache_Enabler_Disk::setup();
 
-        // clear complete cache
         self::clear_complete_cache();
     }
 
@@ -227,15 +224,12 @@ final class Cache_Enabler {
      * @since   1.0.0
      * @change  1.6.0
      *
-     * @param   boolean  $network_wide  network deactivated
+     * @param   bool   $network_wide  network deactivated
      */
 
     public static function on_deactivation( $network_wide ) {
 
-        // clean system files
         self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
-
-        // clear site(s) cache
         self::each_site( $network_wide, 'self::clear_site_cache' );
     }
 
@@ -249,7 +243,6 @@ final class Cache_Enabler {
 
     public static function on_uninstall() {
 
-        // uninstall backend requirements
         self::each_site( is_multisite(), 'self::uninstall_backend' );
     }
 
@@ -301,24 +294,33 @@ final class Cache_Enabler {
 
     public static function install_later( $new_site ) {
 
-        // check if network activated
         if ( ! is_plugin_active_for_network( CACHE_ENABLER_BASE ) ) {
             return;
         }
 
-        // switch to new site
         switch_to_blog( (int) $new_site->blog_id );
-
-        // add backend requirements, triggering the settings file to be created
         self::update_backend();
-
-        // restore current blog from before new site
         restore_current_blog();
     }
 
 
     /**
-     * add or update backend requirements
+     * update disk and backend requirements
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     */
+
+    public static function update() {
+
+        self::update_disk();
+        self::each_site( is_multisite(), 'self::update_backend' );
+        self::clear_complete_cache();
+    }
+
+
+    /**
+     * add or update backend requirements (triggers creation of settings file)
      *
      * @since   1.5.0
      * @change  1.8.0
@@ -366,6 +368,21 @@ final class Cache_Enabler {
 
 
     /**
+     * update disk requirements
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     */
+
+    public static function update_disk() {
+
+        self::each_site( is_multisite(), 'Cache_Enabler_Disk::clean' );
+
+        Cache_Enabler_Disk::setup();
+    }
+
+
+    /**
      * add or update database option hook
      *
      * @since   1.5.0
@@ -392,10 +409,8 @@ final class Cache_Enabler {
 
     public static function uninstall_later( $old_site ) {
 
-        // clean system files
         Cache_Enabler_Disk::clean();
 
-        // clear site cache of deleted site
         self::clear_page_cache_by_site( (int) $old_site->blog_id );
     }
 
@@ -404,13 +419,13 @@ final class Cache_Enabler {
      * uninstall backend requirements
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.8.0
      */
 
     private static function uninstall_backend() {
 
-        // delete database option
         delete_option( 'cache_enabler' );
+        delete_transient( 'cache_enabler_cache_size' );
     }
 
 
@@ -457,7 +472,6 @@ final class Cache_Enabler {
 
     public static function on_plugin_activation_deactivation() {
 
-        // if setting enabled clear site cache on any plugin activation or deactivation
         if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_changed_plugin'] ) {
             self::clear_site_cache();
         }
@@ -465,22 +479,21 @@ final class Cache_Enabler {
 
 
     /**
-     * get settings from database
+     * get settings from the database for the current site
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @return  array  $settings  current settings from database
      */
 
     public static function get_settings() {
 
-        // get database option value
         $settings = get_option( 'cache_enabler' );
 
-        // if database option does not exist or settings are outdated
         if ( $settings === false || ! isset( $settings['version'] ) || $settings['version'] !== CACHE_ENABLER_VERSION ) {
-            $settings = self::update_backend();
+            self::update();
+            $settings = self::get_settings();
         }
 
         return $settings;
@@ -587,7 +600,7 @@ final class Cache_Enabler {
 
 
     /**
-     * get permalink structure
+     * get permalink structure (deprecated)
      *
      * @since       1.5.0
      * @deprecated  1.8.0
@@ -1987,7 +2000,7 @@ final class Cache_Enabler {
             $url              = str_replace( $url_path, $new_url_path, $url );
 
             $args['subpages']['include'] = $wildcard_subpage;
-            $args['root'] = Cache_Enabler_Disk::$cache_dir . '/' . substr( (string) parse_url( $url, PHP_URL_HOST ) . $url_path, 0, -1 );
+            $args['root'] = CACHE_ENABLER_CACHE_DIR . '/' . substr( (string) parse_url( $url, PHP_URL_HOST ) . $url_path, 0, -1 );
         }
 
         Cache_Enabler_Disk::cache_iterator( $url, $args );
@@ -2125,16 +2138,32 @@ final class Cache_Enabler {
         }
 
         // check advanced-cache.php drop-in
-        if ( ! file_exists( WP_CONTENT_DIR . '/advanced-cache.php' ) ) {
+        if ( ! file_exists( WP_CONTENT_DIR . '/advanced-cache.php' ) && Cache_Enabler_Disk::create_advanced_cache_file() !== false ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Cache Enabler 2. advanced-cache.php 3. wp-content/plugins/cache-enabler 4. wp-content
-                    esc_html__( '%1$s requires the %2$s drop-in. Please deactivate and then activate the plugin to automatically copy this file or manually copy it from the %3$s directory to the %4$s directory.', 'cache-enabler' ),
+                    esc_html__( '%1$s requires the %2$s drop-in. Please deactivate and then activate this plugin to automatically create this file. You can manually create an %2$s file by locating the sample file named %3$s (located in the %4$s directory), editing it as required, and then saving it as %2$s in the %5$s directory.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
                     '<code>advanced-cache.php</code>',
+                    '<code>advanced-cache-sample.php</code>',
                     '<code>' . str_replace( ABSPATH, '', CACHE_ENABLER_DIR ) . '</code>',
                     '<code>' . basename( WP_CONTENT_DIR ) . '</code>'
+                )
+            );
+        }
+
+        // check WordPress installation directory index file
+        if ( ! file_exists( CACHE_ENABLER_INDEX_FILE ) ) {
+            printf(
+                '<div class="notice notice-warning"><p>%s</p></div>',
+                sprintf(
+                    // translators: 1. Cache Enabler 2. /path/to/index.php 3. CACHE_ENABLER_INDEX_FILE 4. wp-config.php
+                    esc_html__( '%1$s was unable to find the WordPress installation directory index file at %2$s. Please define the %3$s constant in your %4$s file as the full path to the location of this file.', 'cache-enabler' ),
+                    '<strong>Cache Enabler</strong>',
+                    '<code>' . CACHE_ENABLER_INDEX_FILE . '</code>',
+                    '<code>CACHE_ENABLER_INDEX_FILE</code>',
+                    '<code>wp-config.php</code>',
                 )
             );
         }
@@ -2157,7 +2186,7 @@ final class Cache_Enabler {
         }
 
         // check file permissions
-        $dirs = array( Cache_Enabler_Disk::$cache_dir, Cache_Enabler_Disk::$settings_dir );
+        $dirs = array( CACHE_ENABLER_CACHE_DIR, CACHE_ENABLER_SETTINGS_DIR );
 
         foreach ( $dirs as $dir ) {
             $parent_dir = dirname( $dir );

@@ -12,12 +12,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Cache_Enabler_Disk {
 
     /**
-     * cache directory
+     * cache directory (deprecated)
      *
-     * @since   1.5.0
-     * @change  1.5.0
-     *
-     * @var     string
+     * @since       1.5.0
+     * @deprecated  1.8.0
      */
 
     public static $cache_dir = WP_CONTENT_DIR . '/cache/cache-enabler';
@@ -36,30 +34,15 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * settings directory
-     *
-     * @since   1.5.0
-     * @change  1.8.0
-     *
-     * @var     string
-     */
-
-    public static $settings_dir = WP_CONTENT_DIR . '/settings/cache-enabler';
-
-
-    /**
      * configure system files
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      */
 
     public static function setup() {
 
-        // add advanced-cache.php drop-in
-        copy( CACHE_ENABLER_DIR . '/advanced-cache.php', WP_CONTENT_DIR . '/advanced-cache.php' );
-
-        // set WP_CACHE constant in config file if not already set
+        self::create_advanced_cache_file();
         self::set_wp_cache_constant();
     }
 
@@ -68,21 +51,17 @@ final class Cache_Enabler_Disk {
      * clean system files
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.8.0
      */
 
     public static function clean() {
 
         self::delete_settings_file();
 
-        if ( ! is_dir( self::$settings_dir ) ) {
-            // delete old advanced cache settings file(s) (1.4.0)
-            array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) );
-            // delete incorrect advanced cache settings file(s) that may have been created in 1.4.0 (1.4.5)
-            array_map( 'unlink', glob( ABSPATH . 'CE_SETTINGS_PATH-*.json' ) );
-            // delete advanced-cache.php drop-in
+        if ( ! is_dir( CACHE_ENABLER_SETTINGS_DIR ) ) {
+            array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) ); // < 1.4.0
+            array_map( 'unlink', glob( ABSPATH . 'CE_SETTINGS_PATH-*.json' ) ); // = 1.4.0
             @unlink( WP_CONTENT_DIR . '/advanced-cache.php' );
-            // unset WP_CACHE constant in config file if set by Cache Enabler
             self::set_wp_cache_constant( false );
         }
     }
@@ -293,6 +272,37 @@ final class Cache_Enabler_Disk {
 
 
     /**
+     * create advanced-cache.php file
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @return  string|bool  file path to the newly created advanced-cache.php file, false on failure
+     */
+
+    public static function create_advanced_cache_file() {
+
+        $advanced_cache_sample_file = CACHE_ENABLER_DIR . '/advanced-cache-sample.php';
+
+        if ( ! is_readable( $advanced_cache_sample_file ) ) {
+            return false;
+        }
+
+        $advanced_cache_file          = WP_CONTENT_DIR . '/advanced-cache.php';
+        $advanced_cache_file_contents = file_get_contents( $advanced_cache_sample_file );
+        $advanced_cache_file_contents = str_replace( '/your/path/to/wp-content/plugins/cache-enabler', CACHE_ENABLER_DIR, $advanced_cache_file_contents );
+
+        if ( ! self::mkdir_p( dirname( $advanced_cache_file ) ) ) {
+            return false;
+        }
+
+        $advanced_cache_file_created = file_put_contents( $advanced_cache_file, $advanced_cache_file_contents, LOCK_EX );
+
+        return ( $advanced_cache_file_created === false ) ? false : $advanced_cache_file;
+    }
+
+
+    /**
      * create file for cache
      *
      * @since   1.5.0
@@ -363,16 +373,16 @@ final class Cache_Enabler_Disk {
      * create settings file
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @param   array   $settings           settings from database
-     * @return  string  $new_settings_file  file path to new settings file
+     * @param   array        $settings           settings from database
+     * @return  string|bool  $new_settings_file  file path to the newly created settings file, false on failure
      */
 
     public static function create_settings_file( $settings ) {
 
         if ( ! is_array( $settings ) || ! function_exists( 'home_url' ) ) {
-            return;
+            return false;
         }
 
         $new_settings_file = self::get_settings_file();
@@ -382,7 +392,7 @@ final class Cache_Enabler_Disk {
         $new_settings_file_contents .= ' * Cache Enabler settings for ' . home_url() . PHP_EOL;
         $new_settings_file_contents .= ' *' . PHP_EOL;
         $new_settings_file_contents .= ' * @since      1.5.0' . PHP_EOL;
-        $new_settings_file_contents .= ' * @change     1.5.0' . PHP_EOL;
+        $new_settings_file_contents .= ' * @change     1.8.0' . PHP_EOL;
         $new_settings_file_contents .= ' *' . PHP_EOL;
         $new_settings_file_contents .= ' * @generated  ' . self::get_current_time() . PHP_EOL;
         $new_settings_file_contents .= ' */' . PHP_EOL;
@@ -390,12 +400,12 @@ final class Cache_Enabler_Disk {
         $new_settings_file_contents .= 'return ' . var_export( $settings, true ) . ';';
 
         if ( ! self::mkdir_p( dirname( $new_settings_file ) ) ) {
-            return;
+            return false;
         }
 
-        file_put_contents( $new_settings_file, $new_settings_file_contents, LOCK_EX );
+        $new_settings_file_created = file_put_contents( $new_settings_file, $new_settings_file_contents, LOCK_EX );
 
-        return $new_settings_file;
+        return ( $new_settings_file_created === false ) ? false : $new_settings_file;
     }
 
 
@@ -446,7 +456,7 @@ final class Cache_Enabler_Disk {
             do_action( 'cache_enabler_site_cache_cleared', $site_cleared_url, $site_cleared_id, $cache_cleared_index );
         }
 
-        if ( in_array( 'cache_enabler_complete_cache_cleared', $hooks_to_fire, true ) && ! is_dir( self::$cache_dir ) ) {
+        if ( in_array( 'cache_enabler_complete_cache_cleared', $hooks_to_fire, true ) && ! is_dir( CACHE_ENABLER_CACHE_DIR ) ) {
             do_action( 'cache_enabler_complete_cache_cleared' );
             do_action( 'ce_action_cache_cleared' ); // deprecated in 1.6.0
         }
@@ -557,7 +567,7 @@ final class Cache_Enabler_Disk {
 
         $cache_dir = sprintf(
             '%s/%s%s',
-            self::$cache_dir,
+            CACHE_ENABLER_CACHE_DIR,
             strtolower( $url_host ),
             $url_path
         );
@@ -814,7 +824,7 @@ final class Cache_Enabler_Disk {
             $dir = self::get_cache_dir( home_url() );
         }
 
-        $cache_url = parse_url( home_url(), PHP_URL_SCHEME ) . '://' . str_replace( self::$cache_dir . '/', '', $dir );
+        $cache_url = parse_url( home_url(), PHP_URL_SCHEME ) . '://' . str_replace( CACHE_ENABLER_CACHE_DIR . '/', '', $dir );
         $cache_url = user_trailingslashit( $cache_url );
 
         return $cache_url;
@@ -825,7 +835,7 @@ final class Cache_Enabler_Disk {
      * get settings file
      *
      * @since   1.4.0
-     * @change  1.5.5
+     * @change  1.8.0
      *
      * @param   boolean  $fallback       whether or not fallback settings file should be returned
      * @return  string   $settings_file  file path to settings file
@@ -835,7 +845,7 @@ final class Cache_Enabler_Disk {
 
         $settings_file = sprintf(
             '%s/%s',
-            self::$settings_dir,
+            CACHE_ENABLER_SETTINGS_DIR,
             self::get_settings_file_name( $fallback )
         );
 
@@ -870,9 +880,9 @@ final class Cache_Enabler_Disk {
 
             $settings_file_name .= '.php';
         // if getting settings from settings file
-        } elseif ( is_dir( self::$settings_dir ) ) {
+        } elseif ( is_dir( CACHE_ENABLER_SETTINGS_DIR ) ) {
             if ( $fallback ) {
-                $settings_files = array_map( 'basename', self::get_dir_objects( self::$settings_dir ) );
+                $settings_files = array_map( 'basename', self::get_dir_objects( CACHE_ENABLER_SETTINGS_DIR ) );
                 $settings_file_regex = '/\.php$/';
 
                 if ( is_multisite() ) {
@@ -918,7 +928,7 @@ final class Cache_Enabler_Disk {
                     $settings_file_name .= '.php';
 
                     // check if main site
-                    if ( ! is_file( self::$settings_dir . '/' . $settings_file_name ) ) {
+                    if ( ! is_file( CACHE_ENABLER_SETTINGS_DIR . '/' . $settings_file_name ) ) {
                         $fallback = false;
                         $skip_blog_path = true;
                         $settings_file_name = self::get_settings_file_name( $fallback, $skip_blog_path );
@@ -934,40 +944,47 @@ final class Cache_Enabler_Disk {
 
 
     /**
-     * get settings from settings file
+     * get settings from the settings file for the current site
      *
      * @since   1.5.0
-     * @change  1.6.0
+     * @change  1.8.0
      *
-     * @return  array  $settings  current settings from settings file
+     * @return  array  $settings  current settings from settings file, empty on failure
      */
 
     public static function get_settings() {
 
-        $settings = array();
-
-        // get settings file
+        $settings      = array();
         $settings_file = self::get_settings_file();
 
-        // include settings file if it exists
         if ( is_file( $settings_file ) ) {
-            $settings = include_once $settings_file;
-        // try to get fallback settings file otherwise
+            $settings = include $settings_file;
         } else {
-            $fallback = true;
-            $fallback_settings_file = self::get_settings_file( $fallback );
+            $fallback      = true;
+            $settings_file = self::get_settings_file( true );
 
-            if ( is_file( $fallback_settings_file ) ) {
-                $settings = include_once $fallback_settings_file;
+            if ( is_file( $settings_file ) ) {
+                $settings = include $settings_file;
             }
         }
 
-        // create settings file if it does not exist and in late engine start
-        if ( empty( $settings ) && class_exists( 'Cache_Enabler' ) ) {
-            $new_settings_file = self::create_settings_file( Cache_Enabler::get_settings() );
+        $outdated_settings = ( ! empty( $settings ) && ( ! defined( 'CACHE_ENABLER_VERSION' ) || ! isset( $settings['version'] ) || $settings['version'] !== CACHE_ENABLER_VERSION ) );
 
-            if ( is_file( $new_settings_file ) ) {
-                $settings = include_once $new_settings_file;
+        if ( $outdated_settings ) {
+            $settings = array();
+        }
+
+        if ( empty( $settings ) && class_exists( 'Cache_Enabler' ) ) {
+            if ( $outdated_settings ) {
+                Cache_Enabler::update();
+                wp_opcache_invalidate( $settings_file );
+                $settings = self::get_settings();
+            } else {
+                $settings_file = self::create_settings_file( Cache_Enabler::get_settings() );
+
+                if ( $settings_file !== false ) {
+                    $settings = include $settings_file;
+                }
             }
         }
 
@@ -1492,11 +1509,9 @@ final class Cache_Enabler_Disk {
             $settings_file = self::get_settings_file();
         }
 
-        // delete settings file
         @unlink( $settings_file );
 
-        // delete settings directory and its parent directory if empty
-        self::rmdir( self::$settings_dir, true );
+        self::rmdir( CACHE_ENABLER_SETTINGS_DIR, true );
     }
 
 
