@@ -2319,7 +2319,7 @@ final class Cache_Enabler {
 
         $validated_settings = array(
             'cache_expires'                      => (int) ( ! empty( $settings['cache_expires'] ) ),
-            'cache_expiry_time'                  => (int) $settings['cache_expiry_time'],
+            'cache_expiry_time'                  => absint( $settings['cache_expiry_time'] ),
             'clear_site_cache_on_saved_post'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_post'] ) ),
             'clear_site_cache_on_saved_comment'  => (int) ( ! empty( $settings['clear_site_cache_on_saved_comment'] ) ),
             'clear_site_cache_on_saved_term'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_term'] ) ),
@@ -2336,10 +2336,8 @@ final class Cache_Enabler {
             'excluded_cookies'                   => (string) self::validate_regex( $settings['excluded_cookies'] ),
         );
 
-        // add default system settings
         $validated_settings = wp_parse_args( $validated_settings, self::get_default_settings( 'system' ) );
 
-        // check if site cache should be cleared
         if ( ! empty( $settings['clear_site_cache_on_saved_settings'] ) ) {
             self::clear_site_cache();
             set_transient( self::get_cache_cleared_transient_name(), 1 );
