@@ -818,14 +818,14 @@ final class Cache_Enabler_Disk {
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $dir        directory path to potentially cached page, defaults to site cache directory if empty
-     * @return  string  $cache_url  full URL to potentially cached page (with trailing slash if the permalink structure has it)
+     * @param   string  $dir        directory path to potentially cached page
+     * @return  string  $cache_url  full URL to potentially cached page (with trailing slash if set), empty if directory path is invalid
      */
 
-    private static function get_cache_url( $dir = null ) {
+    private static function get_cache_url( $dir ) {
 
-        if ( empty( $dir ) ) {
-            $dir = self::get_cache_dir( home_url() );
+        if ( strpos( $dir, CACHE_ENABLER_CACHE_DIR ) !== 0 ) {
+            return '';
         }
 
         $cache_url = parse_url( home_url(), PHP_URL_SCHEME ) . '://' . str_replace( CACHE_ENABLER_CACHE_DIR . '/', '', $dir );
