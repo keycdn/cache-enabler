@@ -516,8 +516,8 @@ final class Cache_Enabler_Disk {
                 if ( substr( $filter_object, -1, 1 ) === '*' ) {
                     $filter_object = substr( $filter_object, 0, -1 );
                 // maybe append trailing slash to force a strict match otherwise
-                } else {
-                    $filter_object = $filter_object . ( ( is_dir( $dir_object ) ) ? '/' : '' );
+                } elseif ( is_dir( $dir_object ) ) {
+                    $filter_object = $filter_object . '/';
                 }
 
                 if ( str_replace( $filter_object, '', $dir_object ) !== $dir_object ) {

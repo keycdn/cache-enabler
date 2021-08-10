@@ -1459,9 +1459,7 @@ final class Cache_Enabler {
 
         if ( empty( $user ) ) {
             $user = wp_get_current_user();
-        }
-
-        if ( is_numeric( $user ) ) {
+        } elseif ( is_numeric( $user ) ) {
             $user = get_userdata( $user );
         }
 
@@ -1739,9 +1737,7 @@ final class Cache_Enabler {
 
         if ( empty( $author ) ) {
             $author = wp_get_current_user();
-        }
-
-        if ( is_numeric( $author ) ) {
+        } elseif ( is_numeric( $author ) ) {
             $author = get_userdata( $author );
         }
 
