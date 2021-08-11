@@ -501,6 +501,38 @@ final class Cache_Enabler {
 
 
     /**
+     * get the blog ID for the current site or of a given site
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   WP_Site|int|string  $site  (optional) site instance or site blog ID, defaults to current site if empty
+     * @return  int                        blog ID of $site if it exists, otherwise 0
+     */
+
+    private static function get_blog_id( $site = null ) {
+
+        if ( empty( $site ) ) {
+            return get_current_blog_id();
+        }
+
+        if ( $site instanceof WP_Site ) {
+            return (int) $site->blog_id;
+        }
+
+        if ( is_numeric( $site ) ) {
+            $blog_id = (int) $site;
+
+            if ( in_array( $blog_id, self::get_blog_ids(), true ) ) {
+                return $blog_id;
+            }
+        }
+
+        return 0;
+    }
+
+
+    /**
      * get blog IDs
      *
      * @since   1.5.0
@@ -1329,19 +1361,7 @@ final class Cache_Enabler {
 
     public static function clear_site_cache( $site = null ) {
 
-        if ( is_multisite() ) {
-            $site = get_site( $site );
-
-            if ( ! $site instanceof WP_Site ) {
-                return;
-            }
-
-            $blog_id = (int) $site->blog_id;
-        } else {
-            $blog_id = get_current_blog_id();
-        }
-
-        self::clear_page_cache_by_site( $blog_id );
+        self::clear_page_cache_by_site( $site );
     }
 
 
@@ -1356,22 +1376,10 @@ final class Cache_Enabler {
 
     public static function clear_expired_cache( $site = null ) {
 
-        if ( is_multisite() ) {
-            $site = get_site( $site );
-
-            if ( ! $site instanceof WP_Site ) {
-                return;
-            }
-
-            $blog_id = (int) $site->blog_id;
-        } else {
-            $blog_id = get_current_blog_id();
-        }
-
         $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
         $args['expired'] = 1;
 
-        self::clear_page_cache_by_site( $blog_id, $args );
+        self::clear_page_cache_by_site( $site, $args );
     }
 
 
@@ -1767,15 +1775,10 @@ final class Cache_Enabler {
 
     public static function clear_page_cache_by_site( $site, $args = array() ) {
 
-        if ( is_multisite() ) {
-            $site    = get_site( $site );
-            $blog_id = ( $site instanceof WP_Site ) ? (int) $site->blog_id : 0;
-        } else {
-            $blog_id = (int) $site;
-        }
+        $blog_id = self::get_blog_id( $site );
 
-        if ( ! in_array( $blog_id, self::get_blog_ids(), true ) ) {
-            return; // blog ID does not exist
+        if ( $blog_id === 0 ) {
+            return; // page cache does not exist
         }
 
         $args['subpages']['exclude'] = self::get_root_blog_exclusions();
