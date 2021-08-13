@@ -70,7 +70,6 @@ final class Cache_Enabler {
         add_action( 'cache_enabler_clear_site_cache_by_blog_id', array( __CLASS__, 'clear_page_cache_by_site' ) ); // deprecated in 1.8.0
 
         // system clear cache hooks
-        add_action( '_core_updated_successfully', array( __CLASS__, 'clear_complete_cache' ) );
         add_action( 'upgrader_process_complete', array( __CLASS__, 'on_upgrade' ), 10, 2 );
         add_action( 'switch_theme', array( __CLASS__, 'clear_site_cache' ) );
         add_action( 'permalink_structure_changed', array( __CLASS__, 'clear_site_cache' ) );
@@ -155,17 +154,20 @@ final class Cache_Enabler {
      * @since   1.4.0
      * @change  1.8.0
      *
-     * @param   WP_Upgrader  $obj   upgrade instance
-     * @param   array        $data  update data
+     * @param   WP_Upgrader  $upgrader  upgrader instance
+     * @param   array        $data      update data
      */
 
-    public static function on_upgrade( $obj, $data ) {
+    public static function on_upgrade( $upgrader, $data ) {
 
         if ( $data['action'] !== 'update' ) {
             return;
         }
 
-        // updated themes
+        if ( $data['type'] === 'core' ) {
+            self::clear_complete_cache();
+        }
+
         if ( $data['type'] === 'theme' && isset( $data['themes'] ) ) {
             $updated_themes = (array) $data['themes'];
             $sites_themes   = self::each_site( is_multisite(), 'wp_get_theme' );
@@ -178,7 +180,6 @@ final class Cache_Enabler {
             }
         }
 
-        // updated plugins
         if ( $data['type'] === 'plugin' && isset( $data['plugins'] ) ) {
             $updated_plugins = (array) $data['plugins'];
             $network_plugins = ( is_multisite() ) ? array_flip( (array) get_site_option( 'active_sitewide_plugins', array() ) ) : array();
