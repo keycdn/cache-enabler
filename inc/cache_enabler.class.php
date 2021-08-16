@@ -275,10 +275,9 @@ final class Cache_Enabler {
             } else {
                 $changed_cache_size = array_sum( current( $index )['versions'] );
                 $new_cache_size     = $current_cache_size + $changed_cache_size; // changed cache size is negative if cache cleared
+                $new_cache_size     = ( $new_cache_size >= 0 ) ? $new_cache_size : 0;
 
-                if ( $new_cache_size >= 0 ) {
-                    set_transient( 'cache_enabler_cache_size', $new_cache_size, HOUR_IN_SECONDS );
-                }
+                set_transient( 'cache_enabler_cache_size', $new_cache_size, DAY_IN_SECONDS );
             }
         }
     }
@@ -716,7 +715,7 @@ final class Cache_Enabler {
             $cache = Cache_Enabler_Disk::cache_iterator( home_url(), $args );
             $cache_size = $cache['size'];
 
-            set_transient( 'cache_enabler_cache_size', $cache_size, HOUR_IN_SECONDS );
+            set_transient( 'cache_enabler_cache_size', $cache_size, DAY_IN_SECONDS );
         }
 
         return $cache_size;
