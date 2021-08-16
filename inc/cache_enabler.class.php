@@ -222,7 +222,7 @@ final class Cache_Enabler {
      * deactivation hook
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.8.0
      *
      * @param   bool   $network_wide  network deactivated
      */
@@ -231,6 +231,7 @@ final class Cache_Enabler {
 
         self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
         self::each_site( $network_wide, 'self::clear_site_cache' );
+        self::each_site( $network_wide, 'self::unschedule_events' );
     }
 
 
@@ -386,7 +387,7 @@ final class Cache_Enabler {
      * add or update database option hook
      *
      * @since   1.5.0
-     * @change  1.5.0
+     * @change  1.8.0
      *
      * @param   mixed  $option            old database option value or name of the option to add
      * @param   mixed  $new_option_value  new database option value
@@ -395,6 +396,8 @@ final class Cache_Enabler {
     public static function on_update_backend( $option, $new_option_value ) {
 
         Cache_Enabler_Disk::create_settings_file( $new_option_value );
+
+        self::unschedule_events();
     }
 
 
@@ -628,6 +631,23 @@ final class Cache_Enabler {
         }
 
         return $blog_paths;
+    }
+
+
+    /**
+     * get WP-Cron events
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @return  array  $events  action hooks and recurrences of the events
+     */
+
+    private static function get_events() {
+
+        $events = array( 'cache_enabler_clear_expired_cache' => 'hourly' );
+
+        return $events;
     }
 
 
@@ -2256,7 +2276,7 @@ final class Cache_Enabler {
 
 
     /**
-     * schedule cron events
+     * schedule WP-Cron events
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -2268,8 +2288,33 @@ final class Cache_Enabler {
             return;
         }
 
-        if ( Cache_Enabler_Engine::$settings['cache_expires'] && ! wp_next_scheduled( 'cache_enabler_clear_expired_cache' ) ) {
-            wp_schedule_event( time(), 'hourly', 'cache_enabler_clear_expired_cache' );
+        $events = self::get_events();
+
+        foreach ( $events as $hook => $recurrence ) {
+            if ( $hook === 'cache_enabler_clear_expired_cache' && ! Cache_Enabler_Engine::$settings['cache_expires'] ) {
+                continue; // skip to next event because cache does not expire
+            }
+
+            if ( ! wp_next_scheduled( $hook ) ) {
+                wp_schedule_event( time(), $recurrence, $hook );
+            }
+        }
+    }
+
+
+    /**
+     * unschedule WP-Cron events
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     */
+
+    public static function unschedule_events() {
+
+        $events = self::get_events();
+
+        foreach ( $events as $hook => $recurrence ) {
+            wp_unschedule_event( wp_next_scheduled( $hook ), $hook );
         }
     }
 
