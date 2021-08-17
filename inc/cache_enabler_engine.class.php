@@ -15,14 +15,15 @@ final class Cache_Enabler_Engine {
      * start engine
      *
      * @since   1.5.2
-     * @change  1.6.0
+     * @change  1.8.0
      *
-     * @return  boolean  true if engine started, false otherwise
+     * @param   bool   whether the engine should be force started
+     * @return  bool   true if the engine has been started, false otherwise
      */
 
-    public static function start() {
+    public static function start( $force = false ) {
 
-        if ( self::should_start() ) {
+        if ( $force || self::should_start() ) {
             new self();
         }
 
@@ -31,12 +32,12 @@ final class Cache_Enabler_Engine {
 
 
     /**
-     * engine status
+     * whether the engine has been started
      *
      * @since   1.5.0
      * @change  1.5.0
      *
-     * @var     boolean
+     * @var     bool
      */
 
     public static $started = false;
@@ -70,29 +71,27 @@ final class Cache_Enabler_Engine {
      * constructor
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      */
 
     public function __construct() {
 
-        // get request headers
+        if ( self::$started ) {
+            global $wp_rewrite;
+            $wp_rewrite->init(); // reinitialize current WP_Rewrite instance in engine restart to pick up correct data
+        }
+
         self::$request_headers = self::get_request_headers();
 
-        // get settings from disk if directory index file
         if ( self::is_index() ) {
             self::$settings = Cache_Enabler_Disk::get_settings();
-        // get settings from database in late engine start otherwise
         } elseif ( class_exists( 'Cache_Enabler' ) ) {
             self::$settings = Cache_Enabler::get_settings();
-            // set deprecated settings
-            Cache_Enabler::$options = self::$settings;
-            Cache_Enabler::$options['webp'] = self::$settings['convert_image_urls_to_webp'];
+            Cache_Enabler::$options = self::$settings; // deprecated in 1.5.0
+            Cache_Enabler::$options['webp'] = self::$settings['convert_image_urls_to_webp']; // deprecated in 1.5.0
         }
 
-        // check engine status
-        if ( ! empty( self::$settings ) ) {
-            self::$started = true;
-        }
+        self::$started = ( empty( self::$settings ) ) ? false : true;
     }
 
 
@@ -100,35 +99,20 @@ final class Cache_Enabler_Engine {
      * check if engine should start
      *
      * @since   1.5.2
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @return  boolean  true if engine should start, false otherwise
+     * @return  bool   true if engine should start, false otherwise
      */
 
     public static function should_start() {
 
-        // check if engine is running already
-        if ( self::$started ) {
-            return false;
-        }
+        $valid_engine_running = ( self::$started && ( ! is_multisite() || ! ms_is_switched() ) );
+        $early_ajax_request   = ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! class_exists( 'Cache_Enabler' ) );
+        $rest_request         = ( defined( 'REST_REQUEST' ) && REST_REQUEST );
+        $xmlrpc_request       = ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST );
+        $bad_request_uri      = ( str_replace( array( '.ico', '.txt', '.xml', '.xsl' ), '', $_SERVER['REQUEST_URI'] ) !== $_SERVER['REQUEST_URI'] );
 
-        // check if Ajax request in early engine start
-        if ( defined( 'DOING_AJAX' ) && DOING_AJAX && ! class_exists( 'Cache_Enabler' ) ) {
-            return false;
-        }
-
-        // check if REST API request
-        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-            return false;
-        }
-
-        // check if XMLRPC request
-        if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
-            return false;
-        }
-
-        // check request URI
-        if ( str_replace( array( '.ico', '.txt', '.xml', '.xsl' ), '', $_SERVER['REQUEST_URI'] ) !== $_SERVER['REQUEST_URI'] ) {
+        if ( $valid_engine_running || $early_ajax_request || $rest_request || $xmlrpc_request || $bad_request_uri ) {
             return false;
         }
 
