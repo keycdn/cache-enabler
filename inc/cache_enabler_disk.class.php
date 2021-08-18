@@ -141,7 +141,7 @@ final class Cache_Enabler_Disk {
      * @change  1.8.0
      * @access  private
      *
-     * @param   string  $url    URL to potentially cached page (with or without scheme)
+     * @param   string  $url    URL to potentially cached page (with or without scheme and wildcard path)
      * @param   array   $args   TODO
      * @return  array   $cache  cache data
      */
@@ -153,7 +153,7 @@ final class Cache_Enabler_Disk {
             'size'  => 0,
         );
 
-        if ( empty( $url ) ) {
+        if ( ! is_string( $url ) || empty( $url ) ) {
             return $cache;
         }
 
@@ -164,20 +164,14 @@ final class Cache_Enabler_Disk {
             return $cache;
         }
 
-        $switch = false;
-        if ( is_multisite() ) {
+        $switched = false;
+        if ( is_multisite() && ! ms_is_switched() ) {
             $blog_domain = (string) parse_url( $url, PHP_URL_HOST );
             $blog_path   = ( is_subdomain_install() ) ? '/' : Cache_Enabler::get_blog_path_from_url( $url );
             $blog_id     = get_blog_id_from_url( $blog_domain, $blog_path );
 
-            if ( $blog_id !== 0 && $blog_id !== get_current_blog_id() ) {
-                $switch = true;
-                switch_to_blog( $blog_id );
-            }
-
-            if ( isset( $GLOBALS['switched'] ) && $GLOBALS['switched'] === true ) {
-                global $wp_rewrite;
-                $wp_rewrite->init(); // reinitialize rewrite rules to pick up correct data for url_to_postid() and user_trailingslashit()
+            if ( $blog_id !== 0 ) {
+                $switched = Cache_Enabler::switch_to_blog( $blog_id, true );
             }
         }
 
@@ -236,8 +230,8 @@ final class Cache_Enabler_Disk {
             self::fire_cache_cleared_hooks( $cache['index'], $args['hooks'] );
         }
 
-        if ( $switch ) {
-            restore_current_blog();
+        if ( $switched ) {
+            Cache_Enabler::restore_current_blog( true );
         }
 
         return $cache;
@@ -549,7 +543,7 @@ final class Cache_Enabler_Disk {
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $url        full URL to potentially cached page, defaults to current URL if empty
+     * @param   string  $url        full URL to potentially cached page (with or without wildcard path), defaults to current URL if empty
      * @return  string  $cache_dir  directory path to new or potentially cached page, empty if URL is invalid
      */
 
@@ -567,6 +561,8 @@ final class Cache_Enabler_Disk {
         $url_path = parse_url( $url, PHP_URL_PATH );
         if ( ! is_string( $url_path ) ) {
             $url_path = '';
+        } elseif ( substr( $url_path, -1, 1 ) === '*' ) {
+            $url_path = dirname( $url_path );
         }
 
         $cache_dir = sprintf(
@@ -576,7 +572,7 @@ final class Cache_Enabler_Disk {
             $url_path
         );
 
-        // remove trailing slash (not using untrailingslashit() because it is not available in early engine start)
+        // remove trailing slash (untrailingslashit() is not available in early engine start)
         $cache_dir = rtrim( $cache_dir, '/\\' );
 
         return $cache_dir;
@@ -589,30 +585,54 @@ final class Cache_Enabler_Disk {
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $url   full URL to potentially cached page
-     * @param   array   $args  cache iterator arguments from query string (precedence) and/or parameter, default otherwise
-     * @return  array   $args  cache iterator arguments
+     * @param   string        $url   full URL to potentially cached page (with or without wildcard path and query string)
+     * @param   array|string  $args  cache iterator arguments or template, default arguments if empty
+     * @return  array         $args  cache iterator arguments
      */
 
     private static function get_cache_iterator_args( $url = null, $args = array() ) {
 
         $default_args = array(
             'clear'    => 0,
-            'subpages' => 0,
-            'keys'     => 0,
             'expired'  => 0,
             'hooks'    => 0,
+            'keys'     => 0,
             'root'     => '',
+            'subpages' => 0,
         );
 
-        // merge arguments defined in query string into arguments defined in parameter
+        if ( ! is_array( $args ) ) {
+            $args_template = $args;
+            $args = array(
+                'clear' => 1,
+                'hooks' => array( 'include' => 'cache_enabler_page_cache_cleared' ),
+            );
+
+            switch ( $args_template ) {
+                case 'pagination':
+                    global $wp_rewrite;
+                    $included_subpages[] = ( isset( $wp_rewrite->pagination_base ) ) ? $wp_rewrite->pagination_base : '';
+                    $included_subpages[] = ( isset( $wp_rewrite->comments_pagination_base ) ) ? $wp_rewrite->comments_pagination_base . '-*' : '';
+                    $args['subpages']['include'] = $included_subpages;
+                    break;
+                case 'subpages':
+                    $args['subpages'] = 1;
+                    break;
+                default:
+                    $args = array();
+            }
+        }
+
+        $url_path = (string) parse_url( $url, PHP_URL_PATH );
+        if ( substr( $url_path, -1, 1 ) === '*' ) {
+            $args['root'] = CACHE_ENABLER_CACHE_DIR . '/' . substr( (string) parse_url( $url, PHP_URL_HOST ) . $url_path, 0, -1 );
+            $args['subpages']['include'] = basename( $url_path );
+        }
+
+        // merge query string arguments into the parameter arguments and then the default arguments
         wp_parse_str( (string) parse_url( $url, PHP_URL_QUERY ), $query_string_args );
         $args = wp_parse_args( $query_string_args, $args );
-
-        // merge defined arguments into default arguments
         $args = wp_parse_args( $args, $default_args );
-
-        // validate arguments
         $args = self::validate_cache_iterator_args( $args );
 
         return $args;

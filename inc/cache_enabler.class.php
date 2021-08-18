@@ -231,7 +231,7 @@ final class Cache_Enabler {
     public static function on_deactivation( $network_wide ) {
 
         self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
-        self::each_site( $network_wide, 'self::clear_site_cache' );
+        self::each_site( $network_wide, 'self::clear_site_cache', array(), true );
         self::each_site( $network_wide, 'self::unschedule_events' );
     }
 
@@ -288,7 +288,7 @@ final class Cache_Enabler {
      * install on new site in multisite network
      *
      * @since   1.0.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @param   WP_Site  $new_site  new site instance
      */
@@ -299,9 +299,9 @@ final class Cache_Enabler {
             return;
         }
 
-        switch_to_blog( (int) $new_site->blog_id );
+        self::switch_to_blog( (int) $new_site->blog_id );
         self::update_backend();
-        restore_current_blog();
+        self::restore_current_blog();
     }
 
 
@@ -436,33 +436,88 @@ final class Cache_Enabler {
      * enter each site
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @param   boolean  $network          whether or not each site in network
-     * @param   string   $callback         callback function
-     * @param   array    $callback_params  callback function parameters
-     * @return  array    $callback_return  returned value(s) from callback function
+     * @param   bool    $network          whether to enter each site in multisite network
+     * @param   string  $callback         callback function
+     * @param   array   $callback_params  callback function parameters
+     * @param   bool    $restart_engine   whether to restart the engine
+     * @return  array   $callback_return  returned value(s) from callback function
      */
 
-    private static function each_site( $network, $callback, $callback_params = array() ) {
+    private static function each_site( $network, $callback, $callback_params = array(), $restart_engine = false ) {
 
         $callback_return = array();
 
         if ( $network ) {
-            $blog_ids = self::get_blog_ids();
+            $blog_ids     = self::get_blog_ids();
+            $last_blog_id = end( $blog_ids );
 
-            // switch to each site in network
             foreach ( $blog_ids as $blog_id ) {
-                switch_to_blog( $blog_id );
+                self::switch_to_blog( $blog_id, $restart_engine );
                 $callback_return[ $blog_id ] = call_user_func_array( $callback, $callback_params );
-                restore_current_blog();
+                $_restart_engine = ( $restart_engine && $blog_id === $last_blog_id ) ? true : false;
+                self::restore_current_blog( $_restart_engine );
             }
         } else {
-            $blog_id = 1;
+            $blog_id = get_current_blog_id();
             $callback_return[ $blog_id ] = call_user_func_array( $callback, $callback_params );
         }
 
         return $callback_return;
+    }
+
+
+    /**
+     * switch the current blog, optionally restarting the engine afterwards
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   int    $blog_id         the ID of the blog to switch to
+     * @param   bool   $restart_engine  (optional) whether to restart the engine, defaults to false
+     * @return  bool                    true if the current blog was switched, false otherwise
+     */
+
+    public static function switch_to_blog( $blog_id, $restart_engine = false ) {
+
+        if ( $blog_id === get_current_blog_id() ) {
+            return false; // prevent unnecessary engine restart
+        }
+
+        switch_to_blog( $blog_id );
+
+        if ( $restart_engine ) {
+            Cache_Enabler_Engine::start();
+        }
+
+        return true;
+    }
+
+
+    /**
+     * restore the current blog after switching, optionally restarting the engine afterwards
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   bool   $restart_engine  (optional) whether to restart the engine, defaults to false
+     * @return  bool                    true if the current blog was restored, false otherwise
+     */
+
+    public static function restore_current_blog( $restart_engine = false ) {
+
+        if ( ! ms_is_switched() ) {
+            return false;
+        }
+
+        restore_current_blog();
+
+        if ( $restart_engine ) {
+            Cache_Enabler_Engine::start( true );
+        }
+
+        return true;
     }
 
 
@@ -1107,7 +1162,7 @@ final class Cache_Enabler {
             self::clear_page_cache_by_url( Cache_Enabler_Engine::$request_headers['Host'] . $_SERVER['REQUEST_URI'] );
         // clear site(s) cache
         } elseif ( $_GET['_action'] === 'clear' ) {
-            self::each_site( ( is_multisite() && is_network_admin() ), 'self::clear_site_cache' );
+            self::each_site( ( is_multisite() && is_network_admin() ), 'self::clear_site_cache', array(), true );
         }
 
         // redirect to same page
@@ -1353,7 +1408,7 @@ final class Cache_Enabler {
 
     public static function clear_complete_cache() {
 
-        self::each_site( is_multisite(), 'self::clear_site_cache' );
+        self::each_site( is_multisite(), 'self::clear_site_cache', array(), true );
     }
 
 
@@ -1396,8 +1451,8 @@ final class Cache_Enabler {
 
     public static function clear_expired_cache( $site = null ) {
 
-        $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
         $args['expired'] = 1;
+        $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
 
         self::clear_page_cache_by_site( $site, $args );
     }
@@ -1790,7 +1845,7 @@ final class Cache_Enabler {
      * @change  1.8.0
      *
      * @param   WP_Site|int|string  $site  site instance or site blog ID
-     * @param   array|string        $args  (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     * @param   array|string        $args  (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
      */
 
     public static function clear_page_cache_by_site( $site, $args = array() ) {
@@ -1801,10 +1856,12 @@ final class Cache_Enabler {
             return; // page cache does not exist
         }
 
-        $args['subpages']['exclude'] = self::get_root_blog_exclusions();
+        if ( is_array( $args ) ) {
+            $args['subpages']['exclude'] = self::get_root_blog_exclusions();
 
-        if ( ! isset( $args['hooks']['include'] ) ) {
-            $args['hooks']['include'] = 'cache_enabler_complete_cache_cleared,cache_enabler_site_cache_cleared';
+            if ( ! isset( $args['hooks']['include'] ) ) {
+                $args['hooks']['include'] = 'cache_enabler_complete_cache_cleared,cache_enabler_site_cache_cleared';
+            }
         }
 
         self::clear_page_cache_by_url( get_home_url( $blog_id ), $args );
@@ -1831,7 +1888,7 @@ final class Cache_Enabler {
      * @change  1.8.0
      *
      * @param   WP_Post|int|string  $post  post instance or post ID
-     * @param   array|string        $args  (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     * @param   array|string        $args  (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
      */
 
     public static function clear_page_cache_by_post( $post, $args = array() ) {
@@ -1859,7 +1916,7 @@ final class Cache_Enabler {
      * @change  1.8.0
      *
      * @param   WP_Comment|int|string  $comment  comment instance or comment ID
-     * @param   array|string           $args     (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     * @param   array|string           $args     (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
      */
 
     public static function clear_page_cache_by_comment( $comment, $args = array() ) {
@@ -1884,7 +1941,7 @@ final class Cache_Enabler {
      *
      * @param   WP_Term|int   $term      term instance or term ID
      * @param   string        $taxonomy  (optional) taxonomy name that $term is part of
-     * @param   array|string  $args      (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     * @param   array|string  $args      (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
      */
 
     public static function clear_page_cache_by_term( $term, $taxonomy = '', $args = array() ) {
@@ -1925,7 +1982,7 @@ final class Cache_Enabler {
      * @change  1.8.0
      *
      * @param   WP_User|int|string  $user  user instance or user ID
-     * @param   array|string        $args  (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     * @param   array|string        $args  (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
      */
 
     public static function clear_page_cache_by_user( $user, $args = array() ) {
@@ -1978,48 +2035,18 @@ final class Cache_Enabler {
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @param   string        $url   URL to potentially cached page (with or without scheme)
-     * @param   array|string  $args  (optional) cache iterator arguments (see Cache_Enabler_Disk::cache_iterator()), 'pagination', or 'subpages'
+     * @param   string        $url   URL to potentially cached page (with or without scheme and wildcard path)
+     * @param   array|string  $args  (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
      */
 
     public static function clear_page_cache_by_url( $url, $args = array() ) {
 
-        if ( ! is_string( $url ) ) {
-            return;
-        }
+        if ( is_array( $args ) ) {
+            $args['clear'] = 1;
 
-        switch ( $args ) {
-            case 'pagination':
-                global $wp_rewrite;
-                $included_subpages[] = ( isset( $wp_rewrite->pagination_base ) ) ? $wp_rewrite->pagination_base : '';
-                $included_subpages[] = ( isset( $wp_rewrite->comments_pagination_base ) ) ? $wp_rewrite->comments_pagination_base . '-*' : '';
-                $args = array( 'subpages' => array( 'include' => $included_subpages ) );
-                break;
-            case 'subpages':
-                $args = array( 'subpages' => 1 );
-                break;
-        }
-
-        if ( ! is_array( $args ) ) {
-            $args = array();
-        }
-
-        $args['clear'] = 1;
-
-        if ( ! isset( $args['hooks']['include'] ) ) {
-            $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
-        }
-
-        $url_path = (string) parse_url( $url, PHP_URL_PATH );
-
-        if ( substr( $url_path, -1, 1 ) === '*' ) {
-            $url_path_pieces  = explode( '/', $url_path );
-            $wildcard_subpage = end( $url_path_pieces );
-            $new_url_path     = substr( $url_path, 0, -strlen( $wildcard_subpage ) );
-            $url              = str_replace( $url_path, $new_url_path, $url );
-
-            $args['subpages']['include'] = $wildcard_subpage;
-            $args['root'] = CACHE_ENABLER_CACHE_DIR . '/' . substr( (string) parse_url( $url, PHP_URL_HOST ) . $url_path, 0, -1 );
+            if ( ! isset( $args['hooks']['include'] ) ) {
+                $args['hooks']['include'] = 'cache_enabler_page_cache_cleared';
+            }
         }
 
         Cache_Enabler_Disk::cache_iterator( $url, $args );
