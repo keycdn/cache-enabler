@@ -71,8 +71,6 @@ final class Cache_Enabler {
 
         // system clear cache hooks
         add_action( 'upgrader_process_complete', array( __CLASS__, 'on_upgrade' ), 10, 2 );
-        add_action( 'switch_theme', array( __CLASS__, 'clear_site_cache' ) );
-        add_action( 'permalink_structure_changed', array( __CLASS__, 'clear_site_cache' ) );
         add_action( 'activated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
         add_action( 'deactivated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
         add_action( 'save_post', array( __CLASS__, 'on_save_trash_post' ) );
@@ -84,9 +82,9 @@ final class Cache_Enabler {
         add_action( 'saved_term', array( __CLASS__, 'on_saved_delete_term' ), 10, 3 );
         add_action( 'edit_terms', array( __CLASS__, 'on_edit_terms' ), 10, 2 );
         add_action( 'delete_term', array( __CLASS__, 'on_saved_delete_term' ), 10, 3 );
-        add_action( 'user_register', array( __CLASS__, 'on_register_update_delete_user' ), 10 );
-        add_action( 'profile_update', array( __CLASS__, 'on_register_update_delete_user' ), 10 );
-        add_action( 'delete_user', array( __CLASS__, 'on_register_update_delete_user' ), 10 );
+        add_action( 'user_register', array( __CLASS__, 'on_register_update_delete_user' ) );
+        add_action( 'profile_update', array( __CLASS__, 'on_register_update_delete_user' ) );
+        add_action( 'delete_user', array( __CLASS__, 'on_register_update_delete_user' ) );
         add_action( 'deleted_user', array( __CLASS__, 'on_deleted_user' ), 10, 2 );
 
         // third party clear cache hooks
@@ -105,10 +103,10 @@ final class Cache_Enabler {
         add_action( 'wp_initialize_site', array( __CLASS__, 'install_later' ) );
         add_action( 'wp_uninitialize_site', array( __CLASS__, 'uninstall_later' ) );
 
-        // settings hooks
-        add_action( 'permalink_structure_changed', array( __CLASS__, 'update_backend' ) );
-        add_action( 'add_option_cache_enabler', array( __CLASS__, 'on_update_backend' ), 10, 2 );
-        add_action( 'update_option_cache_enabler', array( __CLASS__, 'on_update_backend' ), 10, 2 );
+        // option hooks
+        add_action( 'add_option', array( __CLASS__, 'on_add_option' ), 10, 2 );
+        add_action( 'update_option', array( __CLASS__, 'on_update_option' ), 10, 3 );
+        add_action( 'updated_option', array( __CLASS__, 'on_updated_option' ), 10, 3 );
 
         // admin bar hook
         add_action( 'admin_bar_menu', array( __CLASS__, 'add_admin_bar_items' ), 90 );
@@ -326,45 +324,45 @@ final class Cache_Enabler {
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @return  array  $new_option_value  new or current database option value
+     * @return  array  $value  the new or current option value
      */
 
     public static function update_backend() {
 
-        // delete user(s) meta key from deleted publishing action (1.5.0)
+        // delete user(s) meta key from deleted publishing action (< 1.5.0)
         delete_metadata( 'user', 0, '_clear_post_cache_on_update', '', true );
 
-        // maybe rename old database option (1.5.0)
-        $old_option_value = get_option( 'cache-enabler' );
-        if ( $old_option_value !== false ) {
+        // maybe rename old option (< 1.5.0)
+        $old_value = get_option( 'cache-enabler' );
+        if ( $old_value !== false ) {
             delete_option( 'cache-enabler' );
-            add_option( 'cache_enabler', $old_option_value );
+            add_option( 'cache_enabler', $old_value );
         }
 
         // get defined settings, fall back to empty array if not found
-        $old_option_value = get_option( 'cache_enabler', array() );
+        $old_value = get_option( 'cache_enabler', array() );
 
         // maybe convert old settings to new settings
-        $new_option_value = self::convert_settings( $old_option_value );
+        $value = self::convert_settings( $old_value );
 
         // update default system settings
-        $new_option_value = wp_parse_args( self::get_default_settings( 'system' ), $new_option_value );
+        $value = wp_parse_args( self::get_default_settings( 'system' ), $value );
 
         // merge defined settings into default settings
-        $new_option_value = wp_parse_args( $new_option_value, self::get_default_settings() );
+        $value = wp_parse_args( $value, self::get_default_settings() );
 
         // validate settings
-        $new_option_value = self::validate_settings( $new_option_value );
+        $value = self::validate_settings( $value );
 
-        // add or update database option
-        update_option( 'cache_enabler', $new_option_value );
+        // add or update option
+        update_option( 'cache_enabler', $value );
 
         // create settings file if action has not been registered for hook yet, like when in activation hook (even if backend was not actually updated)
-        if ( has_action( 'update_option_cache_enabler', array( __CLASS__, 'on_update_backend' ) ) === false ) {
-            self::on_update_backend( $old_option_value, $new_option_value );
+        if ( has_action( 'update_option', array( __CLASS__, 'on_update_option' ) ) === false ) {
+            self::on_update_backend( 'cache_enabler', $value );
         }
 
-        return $new_option_value;
+        return $value;
     }
 
 
@@ -384,20 +382,145 @@ final class Cache_Enabler {
 
 
     /**
-     * add or update database option hook
+     * add or update 'cache_enabler' option hook
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   mixed  $option            old database option value or name of the option to add
-     * @param   mixed  $new_option_value  new database option value
+     * @param   string  $option  name of the option (for legacy reasons)
+     * @param   array   $value   the new option value
      */
 
-    public static function on_update_backend( $option, $new_option_value ) {
+    public static function on_update_backend( $option, $value ) {
 
-        Cache_Enabler_Disk::create_settings_file( $new_option_value );
+        Cache_Enabler_Disk::create_settings_file( $value );
 
         self::unschedule_events();
+    }
+
+
+    /**
+     * add option hook
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   string  $option  name of the option to add
+     * @param   mixed   $value   value of the option
+     */
+
+    public static function on_add_option( $option, $value ) {
+
+        if ( $option === 'cache_enabler' ) {
+            self::on_update_backend( $option, $value );
+        }
+    }
+
+
+    /**
+     * update option hook
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   string  $option     name of the option to update
+     * @param   mixed   $old_value  the old option value
+     * @param   mixed   $value      the new option value
+     */
+
+    public static function on_update_option( $option, $old_value, $value ) {
+
+        $options = array(
+            // wp-admin/options-general.php?page=cache-enabler
+            'cache_enabler',
+
+            // wp-admin/options-general.php
+            'home',
+
+            // wp-admin/options-reading.php
+            'page_on_front',
+            'page_for_posts',
+        );
+
+        if ( in_array( $option, $options, true ) ) {
+            if ( $option === 'cache_enabler' ) {
+                self::on_update_backend( $option, $value );
+            } else {
+                self::clear_cache_on_option_save( $option, $old_value, $value );
+            }
+        }
+    }
+
+
+    /**
+     * updated option hook
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   string  $option     name of the updated option
+     * @param   mixed   $old_value  the old option value
+     * @param   mixed   $value      the new option value
+     */
+
+    public static function on_updated_option( $option, $old_value, $value ) {
+
+        if ( strpos( $option, 'widget_' ) === 0 ) {
+            $option = 'widget_*';
+        }
+
+        $options = array(
+            // wp-admin/options-general.php
+            'blogname',
+            'blogdescription',
+            'WPLANG',
+            'timezone_string',
+            'gmt_offset',
+            'date_format',
+            'time_format',
+            'start_of_week',
+
+            // wp-admin/options-reading.php
+            'page_on_front',
+            'page_for_posts',
+            'posts_per_page',
+            'blog_public',
+
+            // wp-admin/options-discussion.php
+            'require_name_email',
+            'comment_registration',
+            'close_comments_for_old_posts',
+            'show_comments_cookies_opt_in',
+            'thread_comments',
+            'thread_comments_depth',
+            'page_comments',
+            'comments_per_page',
+            'default_comments_page',
+            'comment_order',
+            'show_avatars',
+            'avatar_rating',
+            'avatar_default',
+
+            // wp-admin/options-permalink.php
+            'permalink_structure',
+            'category_base',
+            'tag_base',
+
+            // wp-admin/themes.php
+            'template',
+            'stylesheet',
+
+            // wp-admin/widgets.php
+            'sidebars_widgets',
+            'widget_*',
+
+            // wp-admin/customize.php
+            'site_icon',
+        );
+
+        if ( in_array( $option, $options, true ) ) {
+            self::clear_cache_on_option_save( $option, $old_value, $value );
+        }
     }
 
 
@@ -438,30 +561,30 @@ final class Cache_Enabler {
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   bool    $network          whether to enter each site in multisite network
+     * @param   bool    $sites            whether to enter all sites or the current site
      * @param   string  $callback         callback function
      * @param   array   $callback_params  callback function parameters
      * @param   bool    $restart_engine   whether to restart the engine
      * @return  array   $callback_return  returned value(s) from callback function
      */
 
-    private static function each_site( $network, $callback, $callback_params = array(), $restart_engine = false ) {
+    private static function each_site( $sites, $callback, $callback_params = array(), $restart_engine = false ) {
 
-        $callback_return = array();
+        $blog_ids          = ( $sites ) ? self::get_blog_ids() : array( get_current_blog_id() );
+        $last_blog_id      = end( $blog_ids );
+        $skip_active_check = ( ! self::is_cache_enabler_active() ); // must-use plugin or when in activation hook
+        $callback_return   = array();
 
-        if ( $network ) {
-            $blog_ids     = self::get_blog_ids();
-            $last_blog_id = end( $blog_ids );
+        foreach ( $blog_ids as $blog_id ) {
+            self::switch_to_blog( $blog_id, $restart_engine, $skip_active_check );
 
-            foreach ( $blog_ids as $blog_id ) {
-                self::switch_to_blog( $blog_id, $restart_engine );
+            if ( $skip_active_check || self::is_cache_enabler_active() ) {
                 $callback_return[ $blog_id ] = call_user_func_array( $callback, $callback_params );
-                $_restart_engine = ( $restart_engine && $blog_id === $last_blog_id ) ? true : false;
-                self::restore_current_blog( $_restart_engine );
             }
-        } else {
-            $blog_id = get_current_blog_id();
-            $callback_return[ $blog_id ] = call_user_func_array( $callback, $callback_params );
+
+            $_restart_engine = ( $restart_engine && $blog_id === $last_blog_id ) ? true : false;
+
+            self::restore_current_blog( $_restart_engine, $skip_active_check );
         }
 
         return $callback_return;
@@ -476,18 +599,19 @@ final class Cache_Enabler {
      *
      * @param   int    $blog_id         the ID of the blog to switch to
      * @param   bool   $restart_engine  (optional) whether to restart the engine, defaults to false
+     * @param   bool   $force_restart   (optional) whether to force restart the engine, defaults to false
      * @return  bool                    true if the current blog was switched, false otherwise
      */
 
-    public static function switch_to_blog( $blog_id, $restart_engine = false ) {
+    public static function switch_to_blog( $blog_id, $restart_engine = false, $force_restart = false ) {
 
-        if ( $blog_id === get_current_blog_id() ) {
-            return false; // prevent unnecessary engine restart
+        if ( ! is_multisite() || $blog_id === get_current_blog_id() ) {
+            return false;
         }
 
         switch_to_blog( $blog_id );
 
-        if ( $restart_engine ) {
+        if ( ( $force_restart || self::is_cache_enabler_active() ) && $restart_engine ) {
             Cache_Enabler_Engine::start();
         }
 
@@ -502,22 +626,51 @@ final class Cache_Enabler {
      * @change  1.8.0
      *
      * @param   bool   $restart_engine  (optional) whether to restart the engine, defaults to false
+     * @param   bool   $force_restart   (optional) whether to force restart the engine, defaults to false
      * @return  bool                    true if the current blog was restored, false otherwise
      */
 
-    public static function restore_current_blog( $restart_engine = false ) {
+    public static function restore_current_blog( $restart_engine = false, $force_restart = false  ) {
 
-        if ( ! ms_is_switched() ) {
+        if ( ! is_multisite() || ! ms_is_switched() ) {
             return false;
         }
 
         restore_current_blog();
 
-        if ( $restart_engine ) {
+        if ( ( $force_restart || self::is_cache_enabler_active() ) && $restart_engine ) {
             Cache_Enabler_Engine::start( true );
         }
 
         return true;
+    }
+
+
+    /**
+     * check if Cache Enabler is active
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @return  bool   true if Cache Enabler is active, false otherwise
+     */
+
+    private static function is_cache_enabler_active() {
+
+        if ( in_array( CACHE_ENABLER_BASE, (array) get_option( 'active_plugins', array() ), true ) ) {
+            return true;
+        }
+
+        if ( ! is_multisite() ) {
+            return false;
+        }
+
+        $plugins = get_site_option( 'active_sitewide_plugins' );
+        if ( isset( $plugins[ CACHE_ENABLER_BASE ] ) ) {
+            return true;
+        }
+
+        return false;
     }
 
 
@@ -2144,6 +2297,30 @@ final class Cache_Enabler {
 
 
     /**
+     * clear the site or page cache when an option is about to be updated or already has been
+     *
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   string  $option     name of the option
+     * @param   string  $old_value  the old option value
+     * @param   string  $value      the new option value
+     */
+
+    public static function clear_cache_on_option_save( $option, $old_value, $value ) {
+
+        switch ( $option ) {
+            case 'page_for_posts':
+            case 'page_on_front':
+                array_map( 'self::clear_page_cache_by_post', array( $old_value, $value ) );
+                break;
+            default:
+                self::clear_site_cache();
+        }
+    }
+
+
+    /**
      * check plugin requirements
      *
      * @since   1.1.0
@@ -2184,7 +2361,7 @@ final class Cache_Enabler {
         }
 
         // check advanced-cache.php drop-in
-        if ( ! file_exists( WP_CONTENT_DIR . '/advanced-cache.php' ) && Cache_Enabler_Disk::create_advanced_cache_file() !== false ) {
+        if ( ! file_exists( WP_CONTENT_DIR . '/advanced-cache.php' ) && Cache_Enabler_Disk::create_advanced_cache_file() === false ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
