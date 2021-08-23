@@ -1,6 +1,6 @@
 <?php
 /**
- * Interact with Cache Enabler.
+ * Interact with Cache Enabler from the command line.
  *
  * @since  1.3.5
  */
@@ -10,7 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Cache_Enabler_CLI {
-
     /**
      * Clear the page cache.
      *
@@ -45,7 +44,6 @@ class Cache_Enabler_CLI {
      *
      * @alias clear
      */
-
     public function clear( $args, $assoc_args ) {
 
         $assoc_args = wp_parse_args(
@@ -60,7 +58,7 @@ class Cache_Enabler_CLI {
         if ( $assoc_args['ids'] === '' && $assoc_args['urls'] === '' && $assoc_args['sites'] === '' ) {
             Cache_Enabler::clear_complete_cache();
 
-            return WP_CLI::success( ( is_multisite() ) ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Site cache cleared.', 'cache-enabler' ) );
+            return WP_CLI::success( is_multisite() ? esc_html__( 'Network cache cleared.', 'cache-enabler' ) : esc_html__( 'Site cache cleared.', 'cache-enabler' ) );
         }
 
         if ( $assoc_args['ids'] !== '' || $assoc_args['urls'] !== '' ) {
@@ -89,5 +87,3 @@ class Cache_Enabler_CLI {
         }
     }
 }
-
-WP_CLI::add_command( 'cache-enabler', 'Cache_Enabler_CLI' );
