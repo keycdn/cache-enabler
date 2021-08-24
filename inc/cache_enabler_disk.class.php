@@ -1397,7 +1397,7 @@ final class Cache_Enabler_Disk {
      * Convert image URL(s) to WebP.
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @param   string[]  $matches  Pattern matches from parsed page contents.
      * @return  string              The image URL(s) after maybe being converted to WebP.
@@ -1408,30 +1408,32 @@ final class Cache_Enabler_Disk {
         $image_extension_regex = '/(\.jpe?g|\.png)/i';
         $image_found           = preg_match( $image_extension_regex, $full_match );
 
-        if ( $image_found ) {
-            $image_urls = explode( ',', $full_match );
+        if ( ! $image_found ) {
+            return $full_match;
+        }
 
-            foreach ( $image_urls as &$image_url ) {
-                $image_url       = trim( $image_url, ' ' );
-                $image_url_webp  = preg_replace( $image_extension_regex, '$1.webp', $image_url ); // Append .webp extension.
+        $image_urls = explode( ',', $full_match );
+
+        foreach ( $image_urls as &$image_url ) {
+            $image_url       = trim( $image_url, ' ' );
+            $image_url_webp  = preg_replace( $image_extension_regex, '$1.webp', $image_url ); // Append .webp extension.
+            $image_path_webp = self::get_image_path( $image_url_webp );
+
+            if ( is_file( $image_path_webp ) ) {
+                $image_url = $image_url_webp;
+            } else {
+                $image_url_webp  = preg_replace( $image_extension_regex, '', $image_url_webp ); // Remove default extension.
                 $image_path_webp = self::get_image_path( $image_url_webp );
 
                 if ( is_file( $image_path_webp ) ) {
                     $image_url = $image_url_webp;
-                } else {
-                    $image_url_webp  = preg_replace( $image_extension_regex, '', $image_url_webp ); // Remove default extension.
-                    $image_path_webp = self::get_image_path( $image_url_webp );
-
-                    if ( is_file( $image_path_webp ) ) {
-                        $image_url = $image_url_webp;
-                    }
                 }
             }
-
-            $conversion = implode( ', ', $image_urls );
-
-            return $conversion;
         }
+
+        $conversion = implode( ', ', $image_urls );
+
+        return $conversion;
     }
 
     /**
