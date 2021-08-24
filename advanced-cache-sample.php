@@ -1,6 +1,6 @@
 <?php
 /**
- * The advanced-cache.php drop-in for Cache Enabler
+ * The advanced-cache.php drop-in file for Cache Enabler.
  *
  * The advanced-cache.php creation method uses this during the disk setup and requirements
  * check. You can copy this file, edit the $cache_enabler_constants_file value, and save it

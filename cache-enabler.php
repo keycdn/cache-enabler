@@ -52,4 +52,5 @@ function cache_enabler_autoload( $class_name ) {
 
 if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
     require_once CACHE_ENABLER_DIR . '/inc/cache_enabler_cli.class.php';
+    WP_CLI::add_command( 'cache-enabler', 'Cache_Enabler_CLI' );
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Cache Enabler base
+ * Class used for handling base plugin operations.
  *
  * @since  1.0.0
  */
@@ -10,72 +10,72 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class Cache_Enabler {
-
     /**
-     * initialize plugin
+     * Initialize the plugin.
      *
      * @since   1.5.0
      * @change  1.5.0
      */
-
     public static function init() {
 
         new self();
     }
 
-
     /**
-     * settings from database (deprecated)
+     * Settings from the database (deprecated).
      *
      * @since       1.0.0
      * @deprecated  1.5.0
      */
-
     public static $options;
 
-
     /**
-     * fire page cache cleared hook (deprecated)
+     * Fire the page cache cleared hook (deprecated).
      *
      * @since       1.6.0
      * @deprecated  1.8.0
      */
-
     public static $fire_page_cache_cleared_hook = true;
 
-
     /**
-     * constructor
+     * Constructor.
+     *
+     * This is called by self::init() and sets up the plugin.
      *
      * @since   1.0.0
      * @change  1.8.0
      */
-
     public function __construct() {
 
-        // init hooks
+        // Init hooks.
         add_action( 'init', array( 'Cache_Enabler_Engine', 'start' ) );
         add_action( 'init', array( __CLASS__, 'process_clear_cache_request' ) );
         add_action( 'init', array( __CLASS__, 'register_textdomain' ) );
         add_action( 'init', array( __CLASS__, 'schedule_events' ) );
 
-        // public clear cache hooks
+        // Option hooks.
+        add_action( 'add_option', array( __CLASS__, 'on_add_option' ), 10, 2 );
+        add_action( 'update_option', array( __CLASS__, 'on_update_option' ), 10, 3 );
+        add_action( 'updated_option', array( __CLASS__, 'on_updated_option' ), 10, 3 );
+
+        // Public clear cache hooks.
         add_action( 'cache_enabler_clear_complete_cache', array( __CLASS__, 'clear_complete_cache' ) );
         add_action( 'cache_enabler_clear_site_cache', array( __CLASS__, 'clear_site_cache' ) );
-        add_action( 'cache_enabler_clear_page_cache_by_post_id', array( __CLASS__, 'clear_page_cache_by_post' ) );
-        add_action( 'cache_enabler_clear_page_cache_by_url', array( __CLASS__, 'clear_page_cache_by_url' ) );
         add_action( 'cache_enabler_clear_expired_cache', array( __CLASS__, 'clear_expired_cache' ) );
-        add_action( 'ce_clear_cache', array( __CLASS__, 'clear_complete_cache' ) ); // deprecated in 1.6.0
-        add_action( 'ce_clear_post_cache', array( __CLASS__, 'clear_page_cache_by_post' ) ); // deprecated in 1.6.0
-        add_action( 'cache_enabler_clear_site_cache_by_blog_id', array( __CLASS__, 'clear_page_cache_by_site' ) ); // deprecated in 1.8.0
+        add_action( 'cache_enabler_clear_page_cache_by_post', array( __CLASS__, 'clear_page_cache_by_post' ) );
+        add_action( 'cache_enabler_clear_page_cache_by_url', array( __CLASS__, 'clear_page_cache_by_url' ) );
+        add_action( 'cache_enabler_clear_site_cache_by_blog_id', array( __CLASS__, 'clear_page_cache_by_site' ) ); // Deprecated in 1.8.0.
+        add_action( 'cache_enabler_clear_page_cache_by_post_id', array( __CLASS__, 'clear_page_cache_by_post' ) ); // Deprecated in 1.8.0.
+        add_action( 'ce_clear_cache', array( __CLASS__, 'clear_complete_cache' ) ); // Deprecated in 1.6.0.
+        add_action( 'ce_clear_post_cache', array( __CLASS__, 'clear_page_cache_by_post' ) ); // Deprecated in 1.6.0.
 
-        // system clear cache hooks
+        // System clear cache hooks.
         add_action( 'upgrader_process_complete', array( __CLASS__, 'on_upgrade' ), 10, 2 );
         add_action( 'activated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
         add_action( 'deactivated_plugin', array( __CLASS__, 'on_plugin_activation_deactivation' ), 10, 2 );
         add_action( 'save_post', array( __CLASS__, 'on_save_trash_post' ) );
-        add_action( 'wp_trash_post', array( __CLASS__, 'on_save_trash_post' ) );
         add_action( 'pre_post_update', array( __CLASS__, 'on_pre_post_update' ), 10, 2 );
+        add_action( 'wp_trash_post', array( __CLASS__, 'on_save_trash_post' ) );
         add_action( 'comment_post', array( __CLASS__, 'on_comment_post' ), 99, 2 );
         add_action( 'edit_comment', array( __CLASS__, 'on_edit_comment' ), 10, 2 );
         add_action( 'transition_comment_status', array( __CLASS__, 'on_transition_comment_status' ), 10, 3 );
@@ -87,57 +87,52 @@ final class Cache_Enabler {
         add_action( 'delete_user', array( __CLASS__, 'on_register_update_delete_user' ) );
         add_action( 'deleted_user', array( __CLASS__, 'on_deleted_user' ), 10, 2 );
 
-        // third party clear cache hooks
+        // Third party clear cache hooks.
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_complete_cache' ) );
         add_action( 'woocommerce_product_set_stock', array( __CLASS__, 'on_woocommerce_stock_update' ) );
         add_action( 'woocommerce_variation_set_stock', array( __CLASS__, 'on_woocommerce_stock_update' ) );
         add_action( 'woocommerce_product_set_stock_status', array( __CLASS__, 'on_woocommerce_stock_update' ) );
         add_action( 'woocommerce_variation_set_stock_status', array( __CLASS__, 'on_woocommerce_stock_update' ) );
 
-        // system cache created/cleared hooks
+        // System cache created/cleared hooks.
         add_action( 'cache_enabler_page_cache_created', array( __CLASS__, 'on_cache_created_cleared' ), 10, 3 );
         add_action( 'cache_enabler_site_cache_cleared', array( __CLASS__, 'on_cache_created_cleared' ), 10, 3 );
         add_action( 'cache_enabler_page_cache_cleared', array( __CLASS__, 'on_cache_created_cleared' ), 10, 3 );
 
-        // multisite hooks
+        // Multisite hooks.
         add_action( 'wp_initialize_site', array( __CLASS__, 'install_later' ) );
         add_action( 'wp_uninitialize_site', array( __CLASS__, 'uninstall_later' ) );
 
-        // option hooks
-        add_action( 'add_option', array( __CLASS__, 'on_add_option' ), 10, 2 );
-        add_action( 'update_option', array( __CLASS__, 'on_update_option' ), 10, 3 );
-        add_action( 'updated_option', array( __CLASS__, 'on_updated_option' ), 10, 3 );
-
-        // admin bar hook
+        // Admin bar hook.
         add_action( 'admin_bar_menu', array( __CLASS__, 'add_admin_bar_items' ), 90 );
 
-        // admin interface hooks
+        // Admin interface hooks.
         if ( is_admin() ) {
-            // settings
             add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
             add_action( 'admin_menu', array( __CLASS__, 'add_settings_page' ) );
             add_action( 'admin_enqueue_scripts', array( __CLASS__, 'add_admin_resources' ) );
-            // dashboard
             add_filter( 'dashboard_glance_items', array( __CLASS__, 'add_dashboard_cache_size' ) );
             add_filter( 'plugin_action_links_' . CACHE_ENABLER_BASE, array( __CLASS__, 'add_plugin_action_links' ) );
             add_filter( 'plugin_row_meta', array( __CLASS__, 'add_plugin_row_meta' ), 10, 2 );
-            // notices
             add_action( 'admin_notices', array( __CLASS__, 'requirements_check' ) );
             add_action( 'admin_notices', array( __CLASS__, 'cache_cleared_notice' ) );
             add_action( 'network_admin_notices', array( __CLASS__, 'cache_cleared_notice' ) );
         }
     }
 
-
     /**
-     * activation hook
+     * When the plugin is activated.
+     *
+     * This runs on the 'activate_cache-enabler/cache-enabler.php' action. It adds or
+     * updates the 'cache_enabler' option in the database for each site Cache Enabler
+     * is activated on, creates the advanced-cache.php file in the wp-content
+     * directory, and then maybe sets the WP_CACHE constant in the wp-config.php file.
      *
      * @since   1.0.0
      * @change  1.6.0
      *
-     * @param   boolean  $network_wide  network activated
+     * @param  bool  $network_wide  True if the plugin was network activated, false otherwise.
      */
-
     public static function on_activation( $network_wide ) {
 
         self::each_site( $network_wide, 'self::update_backend' );
@@ -145,17 +140,18 @@ final class Cache_Enabler {
         Cache_Enabler_Disk::setup();
     }
 
-
     /**
-     * upgrade hook
+     * When the upgrader process is complete.
+     *
+     * This runs on the 'upgrader_process_complete' action. It clears the cache when
+     * the core, themes, or plugins are updated.
      *
      * @since   1.4.0
      * @change  1.8.0
      *
-     * @param   WP_Upgrader  $upgrader  upgrader instance
-     * @param   array        $data      update data
+     * @param  WP_Upgrader  $upgrader  Upgrader instance.
+     * @param  array        $data      Array of bulk item update data.
      */
-
     public static function on_upgrade( $upgrader, $data ) {
 
         if ( $data['action'] !== 'update' ) {
@@ -171,7 +167,7 @@ final class Cache_Enabler {
             $sites_themes   = self::each_site( is_multisite(), 'wp_get_theme' );
 
             foreach ( $sites_themes as $blog_id => $site_theme ) {
-                // if the active or parent theme has been updated clear site cache
+                // Clear the site cache if the active or parent theme has been updated.
                 if ( in_array( $site_theme->stylesheet, $updated_themes, true ) || in_array( $site_theme->template, $updated_themes, true ) ) {
                     self::clear_page_cache_by_site( $blog_id );
                 }
@@ -180,17 +176,16 @@ final class Cache_Enabler {
 
         if ( $data['type'] === 'plugin' && isset( $data['plugins'] ) ) {
             $updated_plugins = (array) $data['plugins'];
-            $network_plugins = ( is_multisite() ) ? array_flip( (array) get_site_option( 'active_sitewide_plugins', array() ) ) : array();
+            $network_plugins = is_multisite() ? array_flip( (array) get_site_option( 'active_sitewide_plugins', array() ) ) : array();
 
-            // if a network activated plugin has been updated clear complete cache
+            // Clear the complete cache if a network activated plugin has been updated.
             if ( ! empty( array_intersect( $updated_plugins, $network_plugins ) ) ) {
                 self::clear_complete_cache();
-            // check each site otherwise
             } else {
                 $sites_plugins = self::each_site( is_multisite(), 'get_option', array( 'active_plugins', array() ) );
 
                 foreach ( $sites_plugins as $blog_id => $site_plugins ) {
-                    // if an activated plugin has been updated clear site cache
+                    // Clear the site cache if an activated plugin has been updated.
                     if ( ! empty( array_intersect( $updated_plugins, (array) $site_plugins ) ) ) {
                         self::clear_page_cache_by_site( $blog_id );
                     }
@@ -199,14 +194,12 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * Cache Enabler update actions (deprecated)
+     * When Cache Enabler is updated (deprecated).
      *
      * @since       1.4.0
      * @deprecated  1.8.0
      */
-
     public static function on_cache_enabler_update() {
 
         self::each_site( is_multisite(), 'Cache_Enabler_Disk::clean' );
@@ -216,16 +209,19 @@ final class Cache_Enabler {
         self::clear_complete_cache();
     }
 
-
     /**
-     * deactivation hook
+     * When the plugin is deactivated.
+     *
+     * This runs on the 'deactivate_cache-enabler/cache-enabler.php' action. It
+     * deletes the settings and advanced-cache.php files and then maybe unsets the
+     * WP_CACHE constant in the wp-config.php file. The site cache is then cleared and
+     * the WP-Cron events unscheduled.
      *
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @param   bool   $network_wide  network deactivated
+     * @param  bool  $network_wide  True if the plugin was network deactivated, false otherwise.
      */
-
     public static function on_deactivation( $network_wide ) {
 
         self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
@@ -233,31 +229,35 @@ final class Cache_Enabler {
         self::each_site( $network_wide, 'self::unschedule_events' );
     }
 
-
     /**
-     * uninstall hook
+     * When the plugin is uninstalled.
+     *
+     * This runs on the 'uninstall_cache-enabler/cache-enabler.php' action. It deletes
+     * the 'cache_enabler' option and 'cache_enabler_cache_size' transient from the
+     * database for each site.
      *
      * @since   1.0.0
      * @change  1.6.0
      */
-
     public static function on_uninstall() {
 
         self::each_site( is_multisite(), 'self::uninstall_backend' );
     }
 
-
     /**
-     * cache created or cleared hook
+     * When the cache is created or cleared.
+     *
+     * This runs on the 'cache_enabler_page_cache_created',
+     * 'cache_enabler_site_cache_cleared', and 'cache_enabler_page_cache_cleared'
+     * actions. It keeps the 'cache_enabler_cache_size' transient up to date.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param  string   $url    site or post URL
-     * @param  integer  $id     blog or post ID
-     * @param  array    $index  cache created or cleared index
+     * @param  string  $url    Site or post URL.
+     * @param  int     $id     Blog or post ID
+     * @param  array   $index  Cache created or cleared index.
      */
-
     public static function on_cache_created_cleared( $url, $id, $index ) {
 
         if ( is_multisite() && ! wp_is_site_initialized( get_current_blog_id() ) ) {
@@ -267,13 +267,15 @@ final class Cache_Enabler {
         $current_cache_size = get_transient( 'cache_enabler_cache_size' );
 
         if ( $current_cache_size === false ) {
-            self::get_cache_size(); // get current cache size from disk and set cache size transient
+            self::get_cache_size();
         } else {
             if ( count( $index ) > 1 ) {
-                delete_transient( 'cache_enabler_cache_size' ); // prevent incorrect cache size being built if cache cleared index is not entire site
+                // Prevent incorrect cache size being built just in case cache cleared index is not entire site.
+                delete_transient( 'cache_enabler_cache_size' );
             } else {
+                // Changed cache size is negative when the cache is cleared.
                 $changed_cache_size = array_sum( current( $index )['versions'] );
-                $new_cache_size     = $current_cache_size + $changed_cache_size; // changed cache size is negative if cache cleared
+                $new_cache_size     = $current_cache_size + $changed_cache_size;
                 $new_cache_size     = ( $new_cache_size >= 0 ) ? $new_cache_size : 0;
 
                 set_transient( 'cache_enabler_cache_size', $new_cache_size, DAY_IN_SECONDS );
@@ -281,16 +283,17 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * install on new site in multisite network
+     * When a site's initialization routine should be executed.
+     *
+     * This runs on the 'wp_initialize_site' action. If the plugin is network
+     * activated the 'cache_enabler' option will be added to the new site's database.
      *
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @param   WP_Site  $new_site  new site instance
+     * @param  WP_Site  $new_site  New site instance.
      */
-
     public static function install_later( $new_site ) {
 
         if ( ! is_plugin_active_for_network( CACHE_ENABLER_BASE ) ) {
@@ -302,14 +305,20 @@ final class Cache_Enabler {
         self::restore_current_blog();
     }
 
-
     /**
-     * update disk and backend requirements
+     * Update the disk and backend requirements.
+     *
+     * This update process begins by first deleting the settings and
+     * advanced-cache.php files and then maybe unsets the WP_CACHE constant in the
+     * wp-config.php file. A new advanced-cache.php file is then created and the
+     * WP_CACHE constant is maybe set. Next, the 'cache_enabler' option is updated in
+     * the database for each site Cache Enabler is considered active, which triggers a
+     * new settings file to be created each time that occurs. Lastly, the complete
+     * cache is cleared.
      *
      * @since   1.8.0
      * @change  1.8.0
      */
-
     public static function update() {
 
         self::update_disk();
@@ -317,62 +326,55 @@ final class Cache_Enabler {
         self::clear_complete_cache();
     }
 
-
     /**
-     * add or update backend requirements (triggers creation of settings file)
+     * Add or update backend requirements.
+     *
+     * This adds or updates the 'cache_enabler' option in the database, which triggers
+     * the creation of the settings file.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @return  array  $value  the new or current option value
+     * @return  array  The new or current option value.
      */
-
     public static function update_backend() {
 
-        // delete user(s) meta key from deleted publishing action (< 1.5.0)
-        delete_metadata( 'user', 0, '_clear_post_cache_on_update', '', true );
+        delete_metadata( 'user', 0, '_clear_post_cache_on_update', '', true ); // < 1.5.0
 
-        // maybe rename old option (< 1.5.0)
-        $old_value = get_option( 'cache-enabler' );
+        $old_value = get_option( 'cache-enabler' ); // < 1.5.0
         if ( $old_value !== false ) {
             delete_option( 'cache-enabler' );
             add_option( 'cache_enabler', $old_value );
         }
 
-        // get defined settings, fall back to empty array if not found
         $old_value = get_option( 'cache_enabler', array() );
+        $value     = self::upgrade_settings( $old_value );
+        $value     = wp_parse_args( self::get_default_settings( 'system' ), $value );
+        $value     = wp_parse_args( $value, self::get_default_settings() );
+        $value     = self::validate_settings( $value );
 
-        // maybe convert old settings to new settings
-        $value = self::convert_settings( $old_value );
-
-        // update default system settings
-        $value = wp_parse_args( self::get_default_settings( 'system' ), $value );
-
-        // merge defined settings into default settings
-        $value = wp_parse_args( $value, self::get_default_settings() );
-
-        // validate settings
-        $value = self::validate_settings( $value );
-
-        // add or update option
         update_option( 'cache_enabler', $value );
 
-        // create settings file if action has not been registered for hook yet, like when in activation hook (even if backend was not actually updated)
         if ( has_action( 'update_option', array( __CLASS__, 'on_update_option' ) ) === false ) {
+            // The plugin actions have not been registered as hooks yet. This can occur when
+            // the plugin is activated. Call what would have been, but in this case even if
+            // the backend was not truly updated.
             self::on_update_backend( 'cache_enabler', $value );
         }
 
         return $value;
     }
 
-
     /**
-     * update disk requirements
+     * Update the disk requirements.
+     *
+     * This deletes the settings and advanced-cache.php files and then maybe unsets
+     * the WP_CACHE constant in the wp-config.php file. A new advanced-cache.php file
+     * is then created and the WP_CACHE constant is maybe set.
      *
      * @since   1.8.0
      * @change  1.8.0
      */
-
     public static function update_disk() {
 
         self::each_site( is_multisite(), 'Cache_Enabler_Disk::clean' );
@@ -380,17 +382,18 @@ final class Cache_Enabler {
         Cache_Enabler_Disk::setup();
     }
 
-
     /**
-     * add or update 'cache_enabler' option hook
+     * When the backend is about to be updated.
+     *
+     * This runs when the 'cache_enabler' option is about to be added or updated in
+     * the database.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   string  $option  name of the option (for legacy reasons)
-     * @param   array   $value   the new option value
+     * @param  string  $option  Name of the option (for legacy reasons).
+     * @param  array   $value   The new option value.
      */
-
     public static function on_update_backend( $option, $value ) {
 
         Cache_Enabler_Disk::create_settings_file( $value );
@@ -398,17 +401,17 @@ final class Cache_Enabler {
         self::unschedule_events();
     }
 
-
     /**
-     * add option hook
+     * Before an option is added.
+     *
+     * This runs on the 'add_option' action.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $option  name of the option to add
-     * @param   mixed   $value   value of the option
+     * @param  string  $option  Name of the option to add.
+     * @param  mixed   $value   Value of the option.
      */
-
     public static function on_add_option( $option, $value ) {
 
         if ( $option === 'cache_enabler' ) {
@@ -416,18 +419,18 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * update option hook
+     * Before an option value is updated.
+     *
+     * This runs on the 'update_option' action.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $option     name of the option to update
-     * @param   mixed   $old_value  the old option value
-     * @param   mixed   $value      the new option value
+     * @param  string  $option     Name of the option to update.
+     * @param  mixed   $old_value  The old option value.
+     * @param  mixed   $value      The new option value.
      */
-
     public static function on_update_option( $option, $old_value, $value ) {
 
         $options = array(
@@ -451,23 +454,19 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * updated option hook
+     * After the value of an option has been successfully updated.
+     *
+     * This runs on the 'updated_option' action.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $option     name of the updated option
-     * @param   mixed   $old_value  the old option value
-     * @param   mixed   $value      the new option value
+     * @param  string  $option     Name of the updated option.
+     * @param  mixed   $old_value  The old option value.
+     * @param  mixed   $value      The new option value.
      */
-
     public static function on_updated_option( $option, $old_value, $value ) {
-
-        if ( strpos( $option, 'widget_' ) === 0 ) {
-            $option = 'widget_*';
-        }
 
         $options = array(
             // wp-admin/options-general.php
@@ -518,21 +517,28 @@ final class Cache_Enabler {
             'site_icon',
         );
 
+        if ( strpos( $option, 'widget_' ) === 0 ) {
+            $option = 'widget_*';
+        }
+
         if ( in_array( $option, $options, true ) ) {
             self::clear_cache_on_option_save( $option, $old_value, $value );
         }
     }
 
-
     /**
-     * uninstall on deleted site in multisite network
+     * When a site's uninitialization routine should be executed.
+     *
+     * This runs on the 'wp_uninitialize_site' action. This deletes the settings file
+     * and then clears the site cache for the deleted site. The advanced-cache.php
+     * file will also be deleted and the WP_CACHE constant maybe unset if it was the
+     * only site that had Cache Enabler activated.
      *
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @param   WP_Site  $old_site  old site instance
+     * @param  WP_Site  $old_site  Deleted site instance.
      */
-
     public static function uninstall_later( $old_site ) {
 
         Cache_Enabler_Disk::clean();
@@ -540,39 +546,36 @@ final class Cache_Enabler {
         self::clear_page_cache_by_site( (int) $old_site->blog_id );
     }
 
-
     /**
-     * uninstall backend requirements
+     * Uninstall backend requirements.
      *
      * @since   1.5.0
      * @change  1.8.0
      */
-
     private static function uninstall_backend() {
 
         delete_option( 'cache_enabler' );
         delete_transient( 'cache_enabler_cache_size' );
     }
 
-
     /**
-     * enter each site
+     * Enter each site and call a callback with an array of parameters.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   bool    $sites            whether to enter all sites or the current site
-     * @param   string  $callback         callback function
-     * @param   array   $callback_params  callback function parameters
-     * @param   bool    $restart_engine   whether to restart the engine
-     * @return  array   $callback_return  returned value(s) from callback function
+     * @param   bool    $sites            Whether to enter all sites or the current site.
+     * @param   string  $callback         Callback function.
+     * @param   array   $callback_params  (Optional) Callback function parameters. Default empty array.
+     * @param   bool    $restart_engine   (Optional) Whether to restart the cache engine. Default false.
+     * @return  array                     An array of callback returns with blog IDs as the keys.
+     *
      */
-
     private static function each_site( $sites, $callback, $callback_params = array(), $restart_engine = false ) {
 
-        $blog_ids          = ( $sites ) ? self::get_blog_ids() : array( get_current_blog_id() );
+        $blog_ids          = $sites ? self::get_blog_ids() : array( get_current_blog_id() );
         $last_blog_id      = end( $blog_ids );
-        $skip_active_check = ( ! self::is_cache_enabler_active() ); // must-use plugin or when in activation hook
+        $skip_active_check = ! self::is_cache_enabler_active(); // Must-use plugin or when being activated and uninstalled.
         $callback_return   = array();
 
         foreach ( $blog_ids as $blog_id ) {
@@ -590,19 +593,20 @@ final class Cache_Enabler {
         return $callback_return;
     }
 
-
     /**
-     * switch the current blog, optionally restarting the engine afterwards
+     * Switch the current blog.
+     *
+     * This is a wrapper for switch_to_blog() that can restart the cache engine,
+     * allowing the correct site data to be picked up after the switch.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   int    $blog_id         the ID of the blog to switch to
-     * @param   bool   $restart_engine  (optional) whether to restart the engine, defaults to false
-     * @param   bool   $force_restart   (optional) whether to force restart the engine, defaults to false
-     * @return  bool                    true if the current blog was switched, false otherwise
+     * @param   int   $blog_id         The ID of the blog to switch to.
+     * @param   bool  $restart_engine  (Optional) Whether to restart the cache engine after the switch. Default false.
+     * @param   bool  $force_restart   (Optional) Whether to force restart the cache engine. Default false.
+     * @return  bool                   True if the current blog was switched, false otherwise.
      */
-
     public static function switch_to_blog( $blog_id, $restart_engine = false, $force_restart = false ) {
 
         if ( ! is_multisite() || $blog_id === get_current_blog_id() ) {
@@ -618,18 +622,19 @@ final class Cache_Enabler {
         return true;
     }
 
-
     /**
-     * restore the current blog after switching, optionally restarting the engine afterwards
+     * Restore the current blog after switching.
+     *
+     * This is a wrapper for restore_current_blog() that can restart the cache engine,
+     * allowing the correct site data to be picked up after the switch.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   bool   $restart_engine  (optional) whether to restart the engine, defaults to false
-     * @param   bool   $force_restart   (optional) whether to force restart the engine, defaults to false
-     * @return  bool                    true if the current blog was restored, false otherwise
+     * @param   bool  $restart_engine  (Optional) Whether to restart the cache engine after the switch. Default false.
+     * @param   bool  $force_restart   (Optional) Whether to force restart the cache engine. Default false.
+     * @return  bool                   True if the current blog was restored, false otherwise.
      */
-
     public static function restore_current_blog( $restart_engine = false, $force_restart = false  ) {
 
         if ( ! is_multisite() || ! ms_is_switched() ) {
@@ -645,16 +650,18 @@ final class Cache_Enabler {
         return true;
     }
 
-
     /**
-     * check if Cache Enabler is active
+     * Whether Cache Enabler is active.
+     *
+     * This checks if Cache Enabler is in the active plugins list. It will not be in
+     * that list when installed as a must-use plugin. This copies is_plugin_active().
+     * That function is not being used directly because of its availability.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @return  bool   true if Cache Enabler is active, false otherwise
+     * @return  bool  True if Cache Enabler is in the active plugins list, false if not.
      */
-
     private static function is_cache_enabler_active() {
 
         if ( in_array( CACHE_ENABLER_BASE, (array) get_option( 'active_plugins', array() ), true ) ) {
@@ -673,14 +680,14 @@ final class Cache_Enabler {
         return false;
     }
 
-
     /**
-     * plugin activation and deactivation hooks
+     * After a plugin has been activated or deactivated.
+     *
+     * This runs on the 'activated_plugin' and 'deactivated_plugin' actions.
      *
      * @since   1.4.0
      * @change  1.6.0
      */
-
     public static function on_plugin_activation_deactivation() {
 
         if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_changed_plugin'] ) {
@@ -688,16 +695,17 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * get settings from the database for the current site
+     * Get the plugin settings from the database for the current site.
+     *
+     * This will update the disk and backend requirements and then clear the complete
+     * cache if the settings do not exist or are outdated.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @return  array  $settings  current settings from database
+     * @return  array  Plugin settings from the database.
      */
-
     public static function get_settings() {
 
         $settings = get_option( 'cache_enabler' );
@@ -710,17 +718,15 @@ final class Cache_Enabler {
         return $settings;
     }
 
-
     /**
-     * get the blog ID for the current site or of a given site
+     * Get the blog ID for the current site or of a given site.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Site|int|string  $site  (optional) site instance or site blog ID, defaults to current site if empty
-     * @return  int                        blog ID of $site if it exists, otherwise 0
+     * @param   WP_Site|int|string  $site  (Optional) Site instance or site blog ID. Default is the current site.
+     * @return  int                        The blog ID or 0 if not found.
      */
-
     private static function get_blog_id( $site = null ) {
 
         if ( empty( $site ) ) {
@@ -742,63 +748,60 @@ final class Cache_Enabler {
         return 0;
     }
 
-
     /**
-     * get blog IDs
+     * Get the blog IDs.
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @return  array  $blog_ids  blog IDs
+     * @global  wpdb  $wpdb  WordPress database abstraction object.
+     *
+     * @return  int[]  Blog IDs.
      */
-
     private static function get_blog_ids() {
-
-        $blog_ids = array( 1 );
 
         if ( is_multisite() ) {
             global $wpdb;
-
             $blog_ids = array_map( 'absint', $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" ) );
+        } else {
+            $blog_ids = array( 1 );
         }
 
         return $blog_ids;
     }
 
-
     /**
-     * get blog path
+     * Get the blog path for the current site.
      *
      * @since   1.6.0
      * @change  1.8.0
      *
-     * @return  string  $blog_path  blog path (with leading and trailing slash) from site address URL if it exists, empty if not
+     * @return  string  Blog path from site address URL (with leading and trailing slashes) or empty
+     *                  string if not found.
      */
-
     public static function get_blog_path() {
 
         $site_url_path        = (string) parse_url( home_url(), PHP_URL_PATH );
         $site_url_path_pieces = explode( '/', trim( $site_url_path, '/' ) );
 
-        // get last piece in case installation is in a nested subdirectory
+        // Get last piece in case installation is in a nested subdirectory.
         $blog_path = end( $site_url_path_pieces );
 
-        // using empty string instead of '/' because it simplifies the blog path check handling
+        // Using empty string instead of '/' because it simplifies checking the blog path
+        // in self::get_root_blog_exclusions().
         $blog_path = ( ! empty( $blog_path ) ) ? '/' . $blog_path . '/' : '';
 
         return $blog_path;
     }
 
-
     /**
-     * get blog path from URL
+     * Get the blog path from a given URL.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @return  string  $blog_path  blog path (with leading and trailing slash) from URL if it exists, empty if not
+     * @return  string  Blog path from URL (with leading and trailing slashes) or empty string if not found.
      */
-
     public static function get_blog_path_from_url( $url ) {
 
         $url_path        = (string) parse_url( $url, PHP_URL_PATH );
@@ -818,39 +821,36 @@ final class Cache_Enabler {
         return $blog_path;
     }
 
-
     /**
-     * get blog paths
+     * Get the blog paths.
      *
      * @since   1.5.0
-     * @change  1.6.0
+     * @change  1.8.0
      *
-     * @return  array  $blog_paths  blog paths
+     * @global  wpdb  $wpdb  WordPress database abstraction object.
+     *
+     * @return  string[]  Blog paths.
      */
-
     public static function get_blog_paths() {
-
-        $blog_paths = array( '/' );
 
         if ( is_multisite() ) {
             global $wpdb;
-
             $blog_paths = $wpdb->get_col( "SELECT path FROM $wpdb->blogs" );
+        } else {
+            $blog_paths = array( '/' );
         }
 
         return $blog_paths;
     }
 
-
     /**
-     * get WP-Cron events
+     * Get the WP-Cron events.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @return  array  $events  action hooks and recurrences of the events
+     * @return  string[]  An array of events with action hooks as the keys and recurrences as the values.
      */
-
     private static function get_events() {
 
         $events = array( 'cache_enabler_clear_expired_cache' => 'hourly' );
@@ -858,44 +858,37 @@ final class Cache_Enabler {
         return $events;
     }
 
-
     /**
-     * get permalink structure (deprecated)
+     * Get the permalink structure (deprecated).
      *
      * @since       1.5.0
      * @deprecated  1.8.0
      */
-
     private static function get_permalink_structure() {
 
         $permalink_structure = get_option( 'permalink_structure' );
 
-        // permalink structure is custom and has a trailing slash
         if ( $permalink_structure && preg_match( '/\/$/', $permalink_structure ) ) {
             return 'has_trailing_slash';
         }
 
-        // permalink structure is custom and does not have a trailing slash
         if ( $permalink_structure && ! preg_match( '/\/$/', $permalink_structure ) ) {
             return 'no_trailing_slash';
         }
 
-        // permalink structure is not custom
         if ( empty( $permalink_structure ) ) {
             return 'plain';
         }
     }
 
-
     /**
-     * get the cache index for the current site
+     * Get the cache index for the current site.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @return  array  $cache_index  cache index from the disk
+     * @return  array[]  Cache index from the disk.
      */
-
     public static function get_cache_index() {
 
         $args['subpages']['exclude'] = self::get_root_blog_exclusions();
@@ -905,16 +898,17 @@ final class Cache_Enabler {
         return $cache_index;
     }
 
-
     /**
-     * get the cache size for the current site
+     * Get the cache size for the current site.
+     *
+     * This sets the 'cache_enabler_cache_size' transient in the database when the
+     * cache size is retrieved from the disk.
      *
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @return  int    $cache_size  cache size in bytes, either from the database or disk
+     * @return  int  Cache size in bytes, either from the database or disk.
      */
-
     public static function get_cache_size() {
 
         $cache_size = get_transient( 'cache_enabler_cache_size' );
@@ -930,16 +924,14 @@ final class Cache_Enabler {
         return $cache_size;
     }
 
-
     /**
-     * get the cache cleared transient name used for the clear notice
+     * Get the name of the transient that is used in the cache clear notice.
      *
      * @since   1.5.0
      * @change  1.5.0
      *
-     * @return  string  $transient_name  transient name
+     * @return  string  Name of the transient.
      */
-
     private static function get_cache_cleared_transient_name() {
 
         $transient_name = 'cache_enabler_cache_cleared_' . get_current_user_id();
@@ -947,23 +939,21 @@ final class Cache_Enabler {
         return $transient_name;
     }
 
-
     /**
-     * get default settings
+     * Get the default plugin settings.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   string  $settings_type                              default 'system' settings, defaults to all default settings if empty
-     * @return  array   $system_default_settings|$default_settings  only default system settings or all default settings
+     * @param   string  $settings_type  (Optional) The default 'system' settings or all default settings if empty.
+     * @return  array                   Default plugin settings.
      */
-
     private static function get_default_settings( $settings_type = null ) {
 
         $system_default_settings = array(
             'version'              => (string) CACHE_ENABLER_VERSION,
             'use_trailing_slashes' => (int) ( substr( get_option( 'permalink_structure' ), -1, 1 ) === '/' ),
-            'permalink_structure'  => (string) self::get_permalink_structure(), // deprecated in 1.8.0
+            'permalink_structure'  => (string) self::get_permalink_structure(), // Deprecated in 1.8.0.
         );
 
         if ( $settings_type === 'system' ) {
@@ -994,16 +984,15 @@ final class Cache_Enabler {
         return $default_settings;
     }
 
-
     /**
-     * get subpages that do not belong to root blog in subdirectory network
+     * Get the subpages that do not belong to the root blog in a subdirectory network.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @return  array  blog paths to other sites in network if current site is root blog in subdirectory network, empty otherwise
+     * @return  string[]  Blog paths to the other sites in a network if the current site is the root blog
+     *                    in a subdirectory network, empty otherwise.
      */
-
     private static function get_root_blog_exclusions() {
 
         if ( ! is_multisite() || is_subdomain_install() ) {
@@ -1020,35 +1009,34 @@ final class Cache_Enabler {
         return array();
     }
 
-
     /**
-     * convert settings to new structure
+     * Upgrade the plugin settings.
      *
-     * @since   1.5.0
-     * @change  1.6.1
+     * This runs when self::update_backend() is called.
      *
-     * @param   array  $settings  settings
-     * @return  array  $settings  converted settings if applicable, unchanged otherwise
+     * @since   1.8.0
+     * @change  1.8.0
+     *
+     * @param   array  $settings  Plugin settings.
+     * @return  array             The plugin settings after maybe being upgraded.
      */
+    private static function upgrade_settings( $settings ) {
 
-    private static function convert_settings( $settings ) {
-
-        // check if there are any settings to convert
         if ( empty( $settings ) ) {
             return $settings;
         }
 
-        // updated settings
+        // > 1.5.0
         if ( isset( $settings['expires'] ) && $settings['expires'] > 0 ) {
             $settings['cache_expires'] = 1;
         }
 
+        // > 1.5.0
         if ( isset( $settings['minify_html'] ) && $settings['minify_html'] === 2 ) {
             $settings['minify_html'] = 1;
             $settings['minify_inline_css_js'] = 1;
         }
 
-        // renamed or removed settings
         $settings_names = array(
             // 1.4.0
             'excl_regexp'                            => 'excluded_page_paths',
@@ -1088,25 +1076,23 @@ final class Cache_Enabler {
         return $settings;
     }
 
-
     /**
-     * add plugin action links in the plugins list table
+     * Add the plugin action links in the plugins list table.
+     *
+     * This runs on the 'plugin_action_links_cache-enabler/cache-enabler.php' action.
      *
      * @since   1.5.0
      * @change  1.7.0
      *
-     * @param   array  $action_links  action links
-     * @return  array  $action_links  updated action links if applicable, unchanged otherwise
+     * @param   string[]  $action_links  Action links.
+     * @return  string[]                 The action links after maybe being updated.
      */
-
     public static function add_plugin_action_links( $action_links ) {
 
-        // check user role
         if ( ! current_user_can( 'manage_options' ) ) {
             return $action_links;
         }
 
-        // prepend action link
         array_unshift( $action_links, sprintf(
             '<a href="%s">%s</a>',
             admin_url( 'options-general.php?page=cache-enabler' ),
@@ -1116,26 +1102,25 @@ final class Cache_Enabler {
         return $action_links;
     }
 
-
     /**
-     * add plugin metadata in the plugins list table
+     * Add the plugin metadata in the plugins list table.
+     *
+     * This runs on the 'plugin_row_meta' action.
      *
      * @since   1.5.0
      * @change  1.7.2
      *
-     * @param   array   $plugin_meta  plugin metadata, including the version, author, author URI, and plugin URI
-     * @param   string  $plugin_file  path to the plugin file relative to the plugins directory
-     * @return  array   $plugin_meta  updated action links if applicable, unchanged otherwise
+     * @param   string[]  $plugin_meta  An array of the plugin's metadata, including the version, author, author URI,
+     *                                  and plugin URI.
+     * @param   string    $plugin_file  Path to the plugin file relative to the plugins directory.
+     * @return  string[]                An array of the plugin's metadata after maybe being updated.
      */
-
     public static function add_plugin_row_meta( $plugin_meta, $plugin_file ) {
 
-        // check if Cache Enabler row
         if ( $plugin_file !== CACHE_ENABLER_BASE ) {
             return $plugin_meta;
         }
 
-        // append metadata
         $plugin_meta = wp_parse_args(
             array(
                 '<a href="https://www.keycdn.com/support/wordpress-cache-enabler-plugin" target="_blank" rel="nofollow noopener">' . esc_html__( 'Documentation', 'cache-enabler' ) . '</a>',
@@ -1146,27 +1131,25 @@ final class Cache_Enabler {
         return $plugin_meta;
     }
 
-
     /**
-     * add dashboard cache size count
+     * Add the cache size to the 'At a Glance' dashboard widget.
+     *
+     * This runs on the 'dashboard_glance_items' action.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   array  $items  extra 'At a Glance' widget items
-     * @return  array  $items  extra 'At a Glance' widget items with cache size maybe added
+     * @param   string[]  $items  Extra 'At a Glance' widget items.
+     * @return  string[]          Extra 'At a Glance' widget items after maybe being updated.
      */
-
     public static function add_dashboard_cache_size( $items ) {
 
-        // check user role
         if ( ! current_user_can( 'manage_options' ) ) {
             return $items;
         }
 
         $cache_size = self::get_cache_size();
 
-        // add cache size as new widget item
         $items[] = sprintf(
             '<a href="%s">%s %s</a>',
             admin_url( 'options-general.php?page=cache-enabler' ),
@@ -1177,27 +1160,25 @@ final class Cache_Enabler {
         return $items;
     }
 
-
     /**
-     * add admin bar items
+     * Add the admin bar items.
+     *
+     * This runs on the 'admin_bar_menu' action. It adds the clear cache buttons to
+     * the admin bar.
      *
      * @since   1.6.0
      * @change  1.6.0
      *
-     * @param   object  $wp_admin_bar  menu properties
+     * @param  WP_Admin_Bar  $wp_admin_bar  Admin bar instance, passed by reference.
      */
-
     public static function add_admin_bar_items( $wp_admin_bar ) {
 
-        // check user role
         if ( ! self::user_can_clear_cache() ) {
             return;
         }
 
-        // set clear cache button title
         $title = ( is_multisite() && is_network_admin() ) ? esc_html__( 'Clear Network Cache', 'cache-enabler' ) : esc_html__( 'Clear Site Cache', 'cache-enabler' );
 
-        // add "Clear Network Cache" or "Clear Site Cache" button in admin bar
         $wp_admin_bar->add_menu(
             array(
                 'id'     => 'cache_enabler_clear_cache',
@@ -1211,7 +1192,6 @@ final class Cache_Enabler {
             )
         );
 
-        // add "Clear Page Cache" button in admin bar
         if ( ! is_admin() ) {
             $wp_admin_bar->add_menu(
                 array(
@@ -1228,14 +1208,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * enqueue styles and scripts
+     * Add the admin resources.
+     *
+     * This runs on the 'admin_enqueue_scripts' action.
      *
      * @since   1.0.0
      * @change  1.7.0
      */
-
     public static function add_admin_resources( $hook ) {
 
         if ( $hook === 'settings_page_cache-enabler' ) {
@@ -1243,14 +1223,16 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * add settings page
+     * Add the settings page.
+     *
+     * This runs on the 'admin_menu' action. It updates the admin panel's menu
+     * structure by adding the plugin settings page as a submenu page in the Settings
+     * main menu.
      *
      * @since   1.0.0
      * @change  1.0.0
      */
-
     public static function add_settings_page() {
 
         add_options_page(
@@ -1262,18 +1244,25 @@ final class Cache_Enabler {
         );
     }
 
-
     /**
-     * check if user can clear cache
+     * Whether the current user can clear the cache.
      *
      * @since   1.6.0
      * @change  1.6.0
      *
-     * @return  boolean  true if user can clear cache, false otherwise
+     * @return  bool  True if the current user can clear the cache, false otherwise.
      */
-
     private static function user_can_clear_cache() {
 
+        /**
+         * Filters whether the current user can clear the cache.
+         *
+         * @since   1.6.0
+         * @change  1.6.0
+         *
+         * @param  bool  $can_clear_cache  Whether the current user can clear the cache. Default is whether the current
+         *                                 user has the 'manage_options' capability.
+         */
         if ( apply_filters( 'cache_enabler_user_can_clear_cache', current_user_can( 'manage_options' ) ) ) {
             return true;
         }
@@ -1285,59 +1274,53 @@ final class Cache_Enabler {
         return false;
     }
 
-
     /**
-     * process clear cache request
+     * Process a clear cache request.
+     *
+     * This runs on the 'init' action. It clears the cache when a clear cache button
+     * is clicked in the admin bar.
      *
      * @since   1.5.0
      * @change  1.8.0
      */
-
     public static function process_clear_cache_request() {
 
-        // check if clear cache request
         if ( empty( $_GET['_cache'] ) || empty( $_GET['_action'] ) || $_GET['_cache'] !== 'cache-enabler' || ( $_GET['_action'] !== 'clear' && $_GET['_action'] !== 'clearurl' ) ) {
             return;
         }
 
-        // validate nonce
         if ( empty( $_GET['_wpnonce'] ) || ! wp_verify_nonce( $_GET['_wpnonce'], 'cache_enabler_clear_cache_nonce' ) ) {
             return;
         }
 
-        // check user role
         if ( ! self::user_can_clear_cache() ) {
             return;
         }
 
-        // clear page cache
         if ( $_GET['_action'] === 'clearurl' ) {
             self::clear_page_cache_by_url( Cache_Enabler_Engine::$request_headers['Host'] . $_SERVER['REQUEST_URI'] );
-        // clear site(s) cache
         } elseif ( $_GET['_action'] === 'clear' ) {
             self::each_site( ( is_multisite() && is_network_admin() ), 'self::clear_site_cache', array(), true );
         }
 
-        // redirect to same page
+        // Redirect to the same page.
         wp_safe_redirect( remove_query_arg( array( '_cache', '_action', '_wpnonce' ) ) );
 
-        // set transient for clear notice
         if ( is_admin() ) {
             set_transient( self::get_cache_cleared_transient_name(), 1 );
         }
 
-        // clear cache request completed
         exit;
     }
 
-
     /**
-     * admin notice after cache has been cleared
+     * Display an admin notice after the cache has been cleared.
+     *
+     * This runs on the 'admin_notices' action.
      *
      * @since   1.5.0
      * @change  1.7.0
      */
-
     public static function cache_cleared_notice() {
 
         if ( ! self::user_can_clear_cache() ) {
@@ -1354,121 +1337,121 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * save or trash post hook
+     * When a post has been saved or before it is sent to the trash.
+     *
+     * This runs on the 'save_post' and 'wp_trash_post' actions. It will clear the
+     * cache when any published post type has been created, updated, or about to be
+     * trashed.
      *
      * @since   1.5.0
      * @change  1.7.0
      *
-     * @param   integer  $post_id  post ID
+     * @param  int  $post_id  Post ID.
      */
-
     public static function on_save_trash_post( $post_id ) {
 
         $post_status = get_post_status( $post_id );
 
-        // if any published post type has been created, updated, or about to be trashed
         if ( $post_status === 'publish' ) {
             self::clear_cache_on_post_save( $post_id );
         }
     }
 
-
     /**
-     * pre post update hook
+     * Before an existing post is updated in the database.
+     *
+     * This runs on the 'pre_post_update' action. It will clear the cache when any
+     * published post type is about to be updated but not trashed.
      *
      * @since   1.7.0
      * @change  1.7.0
      *
-     * @param   integer  $post_id    post ID
-     * @param   array    $post_data  unslashed post data
+     * @param  int    $post_id    Post ID.
+     * @param  array  $post_data  Array of unslashed post data.
      */
-
     public static function on_pre_post_update( $post_id, $post_data ) {
 
         $old_post_status = get_post_status( $post_id );
         $new_post_status = $post_data['post_status'];
 
-        // if any published post type is about to be updated but not trashed
         if ( $old_post_status === 'publish' && $new_post_status !== 'trash' ) {
             self::clear_cache_on_post_save( $post_id );
         }
     }
 
-
     /**
-     * comment post hook
+     * After a comment is inserted into the database.
+     *
+     * This runs on the 'comment_post' action. It will clear the cache when a new
+     * approved comment is posted.
      *
      * @since   1.6.0
      * @change  1.8.0
      *
-     * @param   integer         $comment_id        comment ID
-     * @param   integer|string  $comment_approved  comment approval status
+     * @param  int         $comment_id        Comment ID.
+     * @param  int|string  $comment_approved  1 if the comment is approved, 0 if not, 'spam' if spam.
      */
-
     public static function on_comment_post( $comment_id, $comment_approved ) {
 
-        // if new approved comment is posted
         if ( $comment_approved === 1 ) {
             self::clear_cache_on_comment_save( $comment_id );
         }
     }
 
-
     /**
-     * edit comment hook
+     * After a comment is updated in the database.
+     *
+     * This runs on the 'edit_comment' action. It will clear the cache when an
+     * approved comment is edited.
      *
      * @since   1.6.0
      * @change  1.8.0
      *
-     * @param   integer  $comment_id    comment ID
-     * @param   array    $comment_data  comment data
+     * @param  int    $comment_id    Comment ID.
+     * @param  array  $comment_data  Comment data.
      */
-
     public static function on_edit_comment( $comment_id, $comment_data ) {
 
         $comment_approved = (int) $comment_data['comment_approved'];
 
-        // if approved comment is edited
         if ( $comment_approved === 1 ) {
             self::clear_cache_on_comment_save( $comment_id );
         }
     }
 
-
     /**
-     * transition comment status hook
+     * When the comment status is in transition.
+     *
+     * This runs on the 'transition_comment_status' action. It will clear the cache
+     * when a comment's status has changed from or to 'approved'.
      *
      * @since   1.6.0
      * @change  1.8.0
      *
-     * @param   integer|string  $new_status  new comment status
-     * @param   integer|string  $old_status  old comment status
-     * @param   WP_Comment      $comment     comment instance
+     * @param  int|string  $new_status  The new comment status.
+     * @param  int|string  $old_status  The old comment status.
+     * @param  WP_Comment  $comment     Comment instance.
      */
-
     public static function on_transition_comment_status( $new_status, $old_status, $comment ) {
 
-        // if comment status has changed from or to approved
         if ( $old_status === 'approved' || $new_status === 'approved' ) {
             self::clear_cache_on_comment_save( $comment );
         }
     }
 
-
     /**
-     * edit terms hook
+     * Before the given terms are edited.
      *
-     * runs just before the term is updated in the database
+     * This runs on the 'edit_terms' action. It will clear the cache before a term is
+     * updated in the database and its taxonomy is viewable.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   integer  $term_id   term ID
-     * @param   string   $taxonomy  taxonomy name that $term_id is part of
+     * @param  int     $term_id   Term ID
+     * @param  string  $taxonomy  Taxonomy name that $term_id is part of.
      */
-
     public static function on_edit_terms( $term_id, $taxonomy ) {
 
         if ( is_taxonomy_viewable( $taxonomy ) ) {
@@ -1476,20 +1459,20 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * saved or delete term hook
+     * After a term has been saved or deleted and the term cache has been cleaned.
      *
-     * runs after the term has been updated in the database
+     * This runs on the 'saved_term' and 'delete_term' actions. It will clear the
+     * cache after a term has been updated or deleted from the database and its
+     * taxonomy is viewable.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   integer  $term_id   term ID
-     * @param   integer  $tt_id     term taxonomy ID
-     * @param   string   $taxonomy  taxonomy name that $term_id is part of
+     * @param  int     $term_id   Term ID.
+     * @param  int     $tt_id     Term taxonomy ID.
+     * @param  string  $taxonomy  Taxonomy name that $term_id is part of.
      */
-
     public static function on_saved_delete_term( $term_id, $tt_id, $taxonomy ) {
 
         if ( is_taxonomy_viewable( $taxonomy ) ) {
@@ -1497,32 +1480,35 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * register, update, or delete user hook
+     * After a user is registered or updated and before a user is deleted.
+     *
+     * This runs on the 'user_register', 'profile_update', and 'delete_user' actions.
+     * It will clear the cache after a new user is registered or an existing user is
+     * updated and before a user is deleted from the database.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   int    $user_id  ID of the newly registered, updated, or about to be deleted user
+     * @param  int  $user_id  ID of the newly registered, updated, or about to be deleted user.
      */
-
     public static function on_register_update_delete_user( $user_id ) {
 
         self::clear_cache_on_user_save( $user_id );
     }
 
-
     /**
-     * deleted user hook
+     * After a user is deleted from the database.
+     *
+     * This runs on the 'deleted_user' action. It will clear the cache after a user is
+     * deleted from the database and the old posts of that user were reassigned.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   int       $user_id   ID of the deleted user
-     * @param   int|null  $reassign  ID of the user reassigned to the old posts of $user_id
+     * @param  int       $user_id   ID of the deleted user
+     * @param  int|null  $reassign  ID of the user reassigned to the old posts of $user_id
      */
-
     public static function on_deleted_user( $user_id, $reassign ) {
 
         if ( $reassign ) {
@@ -1530,16 +1516,19 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * WooCommerce stock hooks
+     * When the WooCommerce stock is updated.
+     *
+     * This runs on the 'woocommerce_product_set_stock',
+     * 'woocommerce_variation_set_stock', 'woocommerce_product_set_stock_status', and
+     * 'woocommerce_variation_set_stock_status' actions. It will clear the cache after
+     * a product's stock is updated.
      *
      * @since   1.4.0
      * @change  1.6.1
      *
-     * @param   WC_Product|int  $product  product instance or product ID
+     * @param  WC_Product|int  $product  Product instance or product ID.
      */
-
     public static function on_woocommerce_stock_update( $product ) {
 
         if ( is_int( $product ) ) {
@@ -1551,57 +1540,49 @@ final class Cache_Enabler {
         self::clear_cache_on_post_save( $product_id );
     }
 
-
     /**
-     * clear the site cache of a single site or all sites in a multisite network
+     * Clear the site cache of a single site or all sites in a multisite network.
      *
      * @since   1.5.0
      * @change  1.8.0
      */
-
     public static function clear_complete_cache() {
 
         self::each_site( is_multisite(), 'self::clear_site_cache', array(), true );
     }
 
-
     /**
-     * clear complete cache (deprecated)
+     * Clear the complete cache (deprecated).
      *
      * @since       1.0.0
      * @deprecated  1.5.0
      */
-
     public static function clear_total_cache() {
 
         self::clear_complete_cache();
     }
 
-
     /**
-     * clear the site cache for the current site or of a given site
+     * Clear the site cache for the current site or of a given site.
      *
      * @since   1.6.0
      * @change  1.8.0
      *
-     * @param   WP_Site|int|string  $site  (optional) site instance or site blog ID, defaults to current site if empty
+     * @param  WP_Site|int|string  $site  (Optional) Site instance or site blog ID. Default is the current site.
      */
-
     public static function clear_site_cache( $site = null ) {
 
         self::clear_page_cache_by_site( $site );
     }
 
-
     /**
-     * clear the expired cache for the current site or of a given site
+     * Clear the expired cache for the current site or of a given site.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Site|int|string  $site  (optional) site instance or site blog ID, defaults to current site if empty
+     * @param  WP_Site|int|string  $site  (Optional) Site instance or site blog ID. Default is the current site.
      */
-
     public static function clear_expired_cache( $site = null ) {
 
         $args['expired'] = 1;
@@ -1610,16 +1591,14 @@ final class Cache_Enabler {
         self::clear_page_cache_by_site( $site, $args );
     }
 
-
     /**
-     * clear the post cache for the current post (if it is set) or of a given post
+     * Clear the post cache for the current post or of a given post.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
-
     public static function clear_post_cache( $post = null ) {
 
         $post = get_post( $post );
@@ -1636,16 +1615,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the comment cache for the current comment (if it is set) or of a given comment
+     * Clear the comment cache for the current comment or of a given comment.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Comment|int|string  $comment  (optional) comment instance or comment ID, maybe defaults to current comment if empty
+     * @param  WP_Comment|int|string  $comment  (Optional) Comment instance or comment ID. Default is the current comment if set.
      */
-
     public static function clear_comment_cache( $comment = null ) {
 
         $comment = get_comment( $comment );
@@ -1655,23 +1632,21 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the term cache for the current term (if it is set) or of a given term
+     * Clear the term cache of a given term.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Term|int  $term      term instance or term ID
-     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
+     * @param  WP_Term|int  $term      Term instance or term ID.
+     * @param  string       $taxonomy  (Optional) Taxonomy name that $term is part of. Default empty string.
      */
-
     public static function clear_term_cache( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
 
         if ( $term instanceof WP_Term ) {
-            self::clear_page_cache_by_term( $term, '', 'pagination' ); // clear the page cache for all posts that have the term set
+            self::clear_page_cache_by_term( $term, '', 'pagination' );
             self::clear_term_archive_cache( $term );
 
             if ( is_taxonomy_hierarchical( $term->taxonomy ) ) {
@@ -1681,16 +1656,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the user cache for the current user (if logged in) or of a given user
+     * Clear the user cache for the current user or of a given user.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_User|int|string  $user  (optional) user instance or user ID, maybe defaults to current user if empty
+     * @param  WP_User|int|string  $user  (Optional) User instance or user ID. Default is the current user if logged in.
      */
-
     public static function clear_user_cache( $user = null ) {
 
         if ( empty( $user ) ) {
@@ -1700,19 +1673,17 @@ final class Cache_Enabler {
         }
 
         if ( $user instanceof WP_User ) {
-            self::clear_page_cache_by_user( $user, 'pagination' ); // clear the page cache for all posts that the user is the author or has commented on
+            self::clear_page_cache_by_user( $user, 'pagination' );
             self::clear_author_archive_cache( $user );
         }
     }
 
-
     /**
-     * clear cached pages that might have changed from any new or updated post (deprecated)
+     * Clear the cache for pages associated with new or updated post (deprecated).
      *
      * @since       1.5.0
      * @deprecated  1.8.0
      */
-
     public static function clear_associated_cache( $post ) {
 
         self::clear_post_type_archive_cache( $post );
@@ -1724,14 +1695,12 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear post type archives page cache (deprecated)
+     * Clear post type archives page cache (deprecated).
      *
      * @since       1.5.0
      * @deprecated  1.8.0
      */
-
     public static function clear_post_type_archives_cache( $post_type ) {
 
         $post_type_archives_url = get_post_type_archive_link( $post_type );
@@ -1741,16 +1710,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the post type archive cache for the current post (if it is set) or of a given post
+     * Clear the post type archive cache for the current post or of a given post.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
-
     public static function clear_post_type_archive_cache( $post = null ) {
 
         $post = get_post( $post );
@@ -1764,16 +1731,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the post terms archives cache for the current post (if it is set) or of a given post
+     * Clear the post terms archives cache for the current post or of a given post.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
-
     public static function clear_post_terms_archives_cache( $post = null ) {
 
         $post = get_post( $post );
@@ -1793,16 +1758,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the post author archive cache for the current post (if it is set) or of a given post
+     * Clear the post author archive cache for the current post or of a given post.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
-
     public static function clear_post_author_archive_cache( $post = null ) {
 
         $post = get_post( $post );
@@ -1812,16 +1775,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the post date archives cache for the current post (if it is set) or of a given post
+     * Clear the post date archives cache for the current post or of a given post.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Post|int|string  $post  (optional) post instance or post ID, maybe defaults to current post if empty
+     * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
-
     public static function clear_post_date_archives_cache( $post = null ) {
 
         $post = get_post( $post );
@@ -1842,63 +1803,55 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear taxonomies archives cache by post ID (deprecated)
+     * Clear the taxonomies archives cache by post ID (deprecated).
      *
      * @since       1.5.0
      * @deprecated  1.8.0
      */
-
     public static function clear_taxonomies_archives_cache_by_post_id( $post_id ) {
 
         self::clear_post_terms_archives_cache( $post_id );
     }
 
-
     /**
-     * clear author archives page cache by user ID (deprecated)
+     * Clear the author archives page cache by user ID (deprecated).
      *
      * @since       1.5.0
      * @deprecated  1.8.0
      */
-
     public static function clear_author_archives_cache_by_user_id( $user_id ) {
 
         self::clear_author_archive_cache( $user_id );
     }
 
-
     /**
-     * clear date archives cache by post ID (deprecated)
+     * Clear the date archives cache by post ID (deprecated).
      *
      * @since       1.5.0
      * @deprecated  1.8.0
      */
-
     public static function clear_date_archives_cache_by_post_id( $post_id ) {
 
         self::clear_post_date_archives_cache( $post_id );
     }
 
-
     /**
-     * clear the term archive cache of a given term
+     * Clear the term archive cache of a given term.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Term|int  $term      term instance or term ID
-     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
+     * @param  WP_Term|int  $term      Term instance or term ID.
+     * @param  string       $taxonomy  (Optional) Taxonomy name that $term is part of. Default empty string.
      */
-
     public static function clear_term_archive_cache( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
 
         if ( $term instanceof WP_Term ) {
             if ( ! is_taxonomy_viewable( $term->taxonomy ) ) {
-                return; // term archive cache does not exist
+                return; // Term archive cache does not exist.
             }
 
             $term_archive_url = get_term_link( $term );
@@ -1909,17 +1862,15 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the term children archives cache of a given term
+     * Clear the term children archives cache of a given term.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Term|int  $term      term instance or term ID
-     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
+     * @param  WP_Term|int  $term      Term instance or term ID.
+     * @param  string       $taxonomy  (Optional) Taxonomy name that $term is part of. Default empty string.
      */
-
     public static function clear_term_children_archives_cache( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
@@ -1935,17 +1886,15 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the term parents archives cache of a given term
+     * Clear the term parents archives cache of a given term.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Term|int  $term      term instance or term ID
-     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
+     * @param  WP_Term|int  $term      Term instance or term ID.
+     * @param  string       $taxonomy  (Optional) Taxonomy name that $term is part of. Default empty string.
      */
-
     public static function clear_term_parents_archives_cache( $term, $taxonomy = '' ) {
 
         $term = get_term( $term, $taxonomy );
@@ -1959,16 +1908,15 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the author archive cache for the current user (if logged in) or of a given user
+     * Clear the author archive cache for the current user or of a given user.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_User|int|string  $author  (optional) author user instance or author user ID, maybe defaults to current user if empty
+     * @param  WP_User|int|string  $author  (Optional) User instance or user ID of author. Default is the current user if
+     *                                      logged in.
      */
-
     public static function clear_author_archive_cache( $author = null ) {
 
         if ( empty( $author ) ) {
@@ -1979,7 +1927,7 @@ final class Cache_Enabler {
 
         if ( $author instanceof WP_User ) {
             if ( empty( $author->user_nicename ) ) {
-                return; // author archive cache does not exist
+                return; // Author archive cache does not exist.
             }
 
             $author_archive_url = get_author_posts_url( $author->ID, $author->user_nicename );
@@ -1990,23 +1938,22 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the page cache associated with a given site
+     * Clear the page cache associated with a given site.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Site|int|string  $site  site instance or site blog ID
-     * @param   array|string        $args  (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
+     * @param  WP_Site|int|string  $site  Site instance or site blog ID.
+     * @param  array|string        $args  (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
+     *                                    arguments. Default empty array.
      */
-
     public static function clear_page_cache_by_site( $site, $args = array() ) {
 
         $blog_id = self::get_blog_id( $site );
 
         if ( $blog_id === 0 ) {
-            return; // page cache does not exist
+            return; // Page cache does not exist.
         }
 
         if ( is_array( $args ) ) {
@@ -2020,37 +1967,34 @@ final class Cache_Enabler {
         self::clear_page_cache_by_url( get_home_url( $blog_id ), $args );
     }
 
-
     /**
-     * clear page cache by post ID (deprecated)
+     * Clear the page cache by post ID (deprecated).
      *
      * @since       1.0.0
      * @deprecated  1.8.0
      */
-
     public static function clear_page_cache_by_post_id( $post_id, $args = array() ) {
 
         self::clear_page_cache_by_post( $post_id, $args );
     }
 
-
     /**
-     * clear the page cache of a given post
+     * Clear the page cache of a given post.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Post|int|string  $post  post instance or post ID
-     * @param   array|string        $args  (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
+     * @param  WP_Post|int|string  $post  Post instance or post ID.
+     * @param  array|string        $args  (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
+     *                                    arguments. Default empty array.
      */
-
     public static function clear_page_cache_by_post( $post, $args = array() ) {
 
         $post = get_post( $post );
 
         if ( $post instanceof WP_Post ) {
             if ( $post->post_status !== 'publish' ) {
-                return; // page cache does not exist
+                return; // Page cache does not exist.
             }
 
             $post_url = get_permalink( $post );
@@ -2061,42 +2005,40 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the page cache of the post associated with a given comment
+     * Clear the page cache of the post associated with a given comment.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Comment|int|string  $comment  comment instance or comment ID
-     * @param   array|string           $args     (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
+     * @param  WP_Comment|int|string  $comment  Comment instance or comment ID.
+     * @param  array|string           $args     (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
+     *                                          arguments. Default empty array.
      */
-
     public static function clear_page_cache_by_comment( $comment, $args = array() ) {
 
         $comment = get_comment( $comment );
 
         if ( $comment instanceof WP_Comment ) {
             if ( $comment->comment_approved !== '1' ) {
-                return; // page cache does not exist
+                return; // Page cache does not exist.
             }
 
             self::clear_page_cache_by_post( (int) $comment->comment_post_ID, $args );
         }
     }
 
-
     /**
-     * clear the page cache of the posts associated with a given term
+     * Clear the page cache of the posts associated with a given term.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Term|int   $term      term instance or term ID
-     * @param   string        $taxonomy  (optional) taxonomy name that $term is part of
-     * @param   array|string  $args      (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
+     * @param  WP_Term|int   $term      Term instance or term ID.
+     * @param  string        $taxonomy  (Optional) Taxonomy name that $term is part of. Default empty string.
+     * @param  array|string  $args      (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
+     *                                  arguments. Default empty array.
      */
-
     public static function clear_page_cache_by_term( $term, $taxonomy = '', $args = array() ) {
 
         $term = get_term( $term, $taxonomy );
@@ -2127,17 +2069,18 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the page cache of the posts associated with a given user
+     * Clear the page cache of the posts associated with a given user.
+     *
+     * This will clear the pages that the user is the author of or has commented on.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_User|int|string  $user  user instance or user ID
-     * @param   array|string        $args  (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
+     * @param  WP_User|int|string  $user  User instance or user ID.
+     * @param  array|string        $args  (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
+     *                                    arguments. Default empty array.
      */
-
     public static function clear_page_cache_by_user( $user, $args = array() ) {
 
         if ( is_numeric( $user ) ) {
@@ -2181,17 +2124,16 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the page cache of a given URL
+     * Clear the page cache of a given URL.
      *
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @param   string        $url   URL to potentially cached page (with or without scheme and wildcard path)
-     * @param   array|string  $args  (optional) see Cache_Enabler_Disk::cache_iterator() for available arguments
+     * @param  string        $url   URL to a cached page (with or without scheme and wildcard path).
+     * @param  array|string  $args  (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
+     *                              arguments. Default empty array.
      */
-
     public static function clear_page_cache_by_url( $url, $args = array() ) {
 
         if ( is_array( $args ) ) {
@@ -2205,29 +2147,25 @@ final class Cache_Enabler {
         Cache_Enabler_Disk::cache_iterator( $url, $args );
     }
 
-
     /**
-     * clear site cache by blog ID (deprecated)
+     * Clear the site cache by blog ID (deprecated).
      *
      * @since       1.4.0
      * @deprecated  1.8.0
      */
-
     public static function clear_site_cache_by_blog_id( $blog_id, $deprecated = null ) {
 
         self::clear_page_cache_by_site( $blog_id );
     }
 
-
     /**
-     * clear the site or post cache when any post type has been published, updated, or trashed
+     * Clear the cache when any post type has been published, updated, or trashed.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   WP_Post|int|string  $post  post instance or post ID
+     * @param  WP_Post|int|string  $post  Post instance or post ID.
      */
-
     public static function clear_cache_on_post_save( $post ) {
 
         if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_post'] ) {
@@ -2237,16 +2175,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the site or comment cache when a comment been posted, updated, spammed, or trashed
+     * Clear the cache when a comment been posted, updated, spammed, or trashed.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Comment|int|string  $comment  comment instance or comment ID
+     * @param  WP_Comment|int|string  $comment  Comment instance or comment ID.
      */
-
     public static function clear_cache_on_comment_save( $comment ) {
 
         if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_comment'] ) {
@@ -2256,17 +2192,15 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the site or term cache when any term has been added, updated, or deleted
+     * Clear the cache when any term has been added, updated, or deleted.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_Term|int  $term      term instance or term ID
-     * @param   string       $taxonomy  (optional) taxonomy name that $term is part of
+     * @param  WP_Term|int  $term      Term instance or term ID.
+     * @param  string       $taxonomy  (Optional) Taxonomy name that $term is part of. Default empty string.
      */
-
     public static function clear_cache_on_term_save( $term, $taxonomy = '' ) {
 
         if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_term'] ) {
@@ -2276,16 +2210,14 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the site or user cache when any user has been added, updated, or deleted
+     * Clear the cache when any user has been added, updated, or deleted.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   WP_User|int|string  $user  user instance or user ID
+     * @param  WP_User|int|string  $user  User instance or user ID.
      */
-
     public static function clear_cache_on_user_save( $user ) {
 
         if ( Cache_Enabler_Engine::$settings['clear_site_cache_on_saved_user'] ) {
@@ -2295,18 +2227,16 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * clear the site or page cache when an option is about to be updated or already has been
+     * Clear the cache when an option is about to be updated or already has been.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $option     name of the option
-     * @param   string  $old_value  the old option value
-     * @param   string  $value      the new option value
+     * @param  string  $option     Name of the option.
+     * @param  mixed   $old_value  The old option value.
+     * @param  mixed   $value      The new option value.
      */
-
     public static function clear_cache_on_option_save( $option, $old_value, $value ) {
 
         switch ( $option ) {
@@ -2319,22 +2249,21 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * check plugin requirements
+     * Check plugin's requirements.
      *
      * @since   1.1.0
      * @change  1.8.0
+     *
+     * @global  string  $wp_version  WordPress version.
      */
-
     public static function requirements_check() {
 
-        // check user role
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
 
-        // check PHP version
+        // Check the PHP version.
         if ( version_compare( PHP_VERSION, CACHE_ENABLER_MIN_PHP, '<' ) ) {
             printf(
                 '<div class="notice notice-error"><p>%s</p></div>',
@@ -2347,7 +2276,7 @@ final class Cache_Enabler {
             );
         }
 
-        // check WordPress version
+        // Check the WordPress version.
         if ( version_compare( $GLOBALS['wp_version'], CACHE_ENABLER_MIN_WP . 'alpha', '<' ) ) {
             printf(
                 '<div class="notice notice-error"><p>%s</p></div>',
@@ -2360,7 +2289,7 @@ final class Cache_Enabler {
             );
         }
 
-        // check advanced-cache.php drop-in
+        // Check the advanced-cache.php drop-in file.
         if ( ! file_exists( WP_CONTENT_DIR . '/advanced-cache.php' ) && Cache_Enabler_Disk::create_advanced_cache_file() === false ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
@@ -2376,7 +2305,7 @@ final class Cache_Enabler {
             );
         }
 
-        // check WordPress installation directory index file
+        // Check the WordPress installation directory index file.
         if ( ! file_exists( CACHE_ENABLER_INDEX_FILE ) ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
@@ -2391,7 +2320,7 @@ final class Cache_Enabler {
             );
         }
 
-        // check permalink structure
+        // Check the permalink structure.
         if ( empty( get_option( 'permalink_structure' ) ) ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
@@ -2408,7 +2337,7 @@ final class Cache_Enabler {
             );
         }
 
-        // check file permissions
+        // Check the file permissions.
         $dirs = array( CACHE_ENABLER_CACHE_DIR, CACHE_ENABLER_SETTINGS_DIR );
 
         foreach ( $dirs as $dir ) {
@@ -2433,7 +2362,7 @@ final class Cache_Enabler {
             }
         }
 
-        // check Autoptimize HTML optimization
+        // Check the Autoptimize HTML optimization.
         if ( defined( 'AUTOPTIMIZE_PLUGIN_DIR' ) && Cache_Enabler_Engine::$settings['minify_html'] && get_option( 'autoptimize_html', '' ) !== '' ) {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
@@ -2451,41 +2380,34 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * register textdomain
+     * Load plugin's translated strings.
      *
      * @since   1.0.0
      * @change  1.0.0
      */
-
     public static function register_textdomain() {
 
-        // load translated strings
         load_plugin_textdomain( 'cache-enabler', false, 'cache-enabler/lang' );
     }
 
-
     /**
-     * register settings
+     * Register plugin's settings.
      *
      * @since   1.0.0
      * @change  1.5.0
      */
-
     public static function register_settings() {
 
         register_setting( 'cache_enabler', 'cache_enabler', array( __CLASS__, 'validate_settings' ) );
     }
 
-
     /**
-     * schedule WP-Cron events
+     * Schedule WP-Cron events.
      *
      * @since   1.8.0
      * @change  1.8.0
      */
-
     public static function schedule_events() {
 
         if ( ! Cache_Enabler_Engine::$started ) {
@@ -2496,7 +2418,7 @@ final class Cache_Enabler {
 
         foreach ( $events as $hook => $recurrence ) {
             if ( $hook === 'cache_enabler_clear_expired_cache' && ! Cache_Enabler_Engine::$settings['cache_expires'] ) {
-                continue; // skip to next event because cache does not expire
+                continue; // Skip to next event because cache does not expire.
             }
 
             if ( ! wp_next_scheduled( $hook ) ) {
@@ -2505,14 +2427,12 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * unschedule WP-Cron events
+     * Unschedule WP-Cron events.
      *
      * @since   1.8.0
      * @change  1.8.0
      */
-
     public static function unschedule_events() {
 
         $events = self::get_events();
@@ -2522,17 +2442,15 @@ final class Cache_Enabler {
         }
     }
 
-
     /**
-     * validate regex
+     * Validate regex.
      *
      * @since   1.2.3
      * @change  1.5.0
      *
-     * @param   string  $regex            string containing regex
-     * @return  string  $validated_regex  string containing regex or empty string if input is invalid
+     * @param   string  $regex  String containing regex.
+     * @return  string          String containing regex or empty string if input is invalid.
      */
-
     public static function validate_regex( $regex ) {
 
         if ( ! empty( $regex ) ) {
@@ -2552,17 +2470,15 @@ final class Cache_Enabler {
         return '';
     }
 
-
     /**
-     * validate settings
+     * Validate plugin settings.
      *
      * @since   1.0.0
      * @change  1.8.0
      *
-     * @param   array  $settings            user defined settings
-     * @return  array  $validated_settings  validated settings
+     * @param   array  $settings  Plugin settings.
+     * @return  array             Validated plugin settings.
      */
-
     public static function validate_settings( $settings ) {
 
         $validated_settings = array(
@@ -2594,14 +2510,12 @@ final class Cache_Enabler {
         return $validated_settings;
     }
 
-
     /**
-     * settings page
+     * Plugin settings page.
      *
      * @since   1.0.0
      * @change  1.8.0
      */
-
     public static function settings_page() {
 
         ?>

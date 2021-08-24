@@ -1,6 +1,6 @@
 <?php
 /**
- * Cache Enabler disk handling
+ * Class used for handling disk-related operations.
  *
  * @since  1.0.0
  */
@@ -10,50 +10,42 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class Cache_Enabler_Disk {
-
     /**
-     * cache directory (deprecated)
+     * Plugin cache directory (deprecated).
      *
      * @since       1.5.0
      * @deprecated  1.8.0
      */
-
     public static $cache_dir = WP_CONTENT_DIR . '/cache/cache-enabler';
 
-
     /**
-     * file path to the cached page for the current request
+     * File path to the cached page for the current URL.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @var     string
+     * @var  string
      */
-
     private static $cache_file;
 
-
     /**
-     * configure system files
+     * Add and configure files required by plugin.
      *
      * @since   1.5.0
      * @change  1.8.0
      */
-
     public static function setup() {
 
         self::create_advanced_cache_file();
         self::set_wp_cache_constant();
     }
 
-
     /**
-     * clean system files
+     * Delete and unconfigure files required by plugin.
      *
      * @since   1.5.0
      * @change  1.8.0
      */
-
     public static function clean() {
 
         self::delete_settings_file();
@@ -66,86 +58,79 @@ final class Cache_Enabler_Disk {
         }
     }
 
-
     /**
-     * store cached page
+     * Create a static HTML file from the page contents received from the cache engine.
      *
      * @since   1.5.0
      * @change  1.7.0
      *
-     * @param   string  $page_contents  contents of a page from the output buffer
+     * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
      */
-
     public static function cache_page( $page_contents ) {
 
-        // page contents before store hook
+        /**
+         * Filters the page contents before a static HTML file is created.
+         *
+         * @since   1.6.0
+         * @change  1.6.0
+         *
+         * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
+         */
         $page_contents = apply_filters( 'cache_enabler_page_contents_before_store', $page_contents );
-
-        // deprecated page contents before store hook
         $page_contents = apply_filters_deprecated( 'cache_enabler_before_store', array( $page_contents ), '1.6.0', 'cache_enabler_page_contents_before_store' );
 
-        // create cached page to be stored
         self::create_cache_file( $page_contents );
     }
 
-
     /**
-     * check if cached page exists
+     * Whether a cached page exists.
      *
      * @since   1.5.0
      * @change  1.7.0
      *
-     * @param   string   $cache_file  file path to potentially cached page
-     * @return  boolean               true if cached page exists and is readable, false otherwise
+     * @param   string  $cache_file  File path to the cached page.
+     * @return  bool                 True if the cached page exists and is readable, false otherwise.
      */
-
     public static function cache_exists( $cache_file ) {
 
         return is_readable( $cache_file );
     }
 
-
     /**
-     * check if cached page expired
+     * Whether a cached page is expired.
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @param   string   $cache_file  file path to existing cached page
-     * @return  boolean               true if cached page expired, false otherwise
+     * @param   string  $cache_file  File path to the existing cached page.
+     * @return  bool                 True if the cached page is expired, false otherwise.
      */
-
     public static function cache_expired( $cache_file ) {
 
-        // check if cached pages are set to expire
         if ( ! Cache_Enabler_Engine::$settings['cache_expires'] || Cache_Enabler_Engine::$settings['cache_expiry_time'] === 0 ) {
             return false;
         }
 
-        $now = time();
-        $expires_seconds = 60 * 60 * Cache_Enabler_Engine::$settings['cache_expiry_time'];
+        $expires_seconds = 3600 * Cache_Enabler_Engine::$settings['cache_expiry_time'];
 
-        // check if cached page has expired
-        if ( ( filemtime( $cache_file ) + $expires_seconds ) <= $now ) {
+        if ( ( filemtime( $cache_file ) + $expires_seconds ) <= time() ) {
             return true;
         }
 
         return false;
     }
 
-
     /**
-     * iterate over cache objects to perform actions and/or gather data
+     * Iterate over cache objects to perform actions and/or gather data.
      *
      * @since   1.8.0
      * @change  1.8.0
      * @access  private
      *
-     * @param   string  $url    URL to potentially cached page (with or without scheme and wildcard path)
-     * @param   array   $args   TODO
-     * @return  array   $cache  cache data
+     * @param   string        $url   URL to a cached page (with or without scheme and wildcard path).
+     * @param   array|string  $args  TODO
+     * @return  array                Cache data.
      */
-
     public static function cache_iterator( $url, $args = array() ) {
 
         $cache = array(
@@ -167,7 +152,7 @@ final class Cache_Enabler_Disk {
         $switched = false;
         if ( is_multisite() && ! ms_is_switched() ) {
             $blog_domain = (string) parse_url( $url, PHP_URL_HOST );
-            $blog_path   = ( is_subdomain_install() ) ? '/' : Cache_Enabler::get_blog_path_from_url( $url );
+            $blog_path   = is_subdomain_install() ? '/' : Cache_Enabler::get_blog_path_from_url( $url );
             $blog_id     = get_blog_id_from_url( $blog_domain, $blog_path );
 
             if ( $blog_id !== 0 ) {
@@ -184,17 +169,17 @@ final class Cache_Enabler_Disk {
         foreach ( $cache_objects as $cache_object ) {
             if ( is_file( $cache_object ) ) {
                 if ( $args['root'] && strpos( $cache_object, $args['root'] ) !== 0 ) {
-                    continue; // skip to next object because file does not start with provided root path
+                    continue; // Skip to next object because file does not start with provided root path.
                 }
 
                 $cache_object_name = basename( $cache_object );
 
                 if ( $cache_keys_regex && ! preg_match( $cache_keys_regex, $cache_object_name ) ) {
-                    continue; // skip to next object because file name does not match provided cache keys
+                    continue; // Skip to next object because file name does not match provided cache keys.
                 }
 
                 if ( $args['expired'] && ! self::cache_expired( $cache_object ) ) {
-                    continue; // skip to next object because file is not expired
+                    continue; // Skip to next object because file is not expired.
                 }
 
                 $cache_object_dir  = dirname( $cache_object );
@@ -202,16 +187,16 @@ final class Cache_Enabler_Disk {
 
                 if ( $args['clear'] ) {
                     if ( ! @unlink( $cache_object ) ) {
-                        continue; // skip to next object because file deletion failed
+                        continue; // Skip to next object because file deletion failed.
                     }
 
-                    $cache_object_size = -$cache_object_size; // cache size is negative when cleared
+                    $cache_object_size = -$cache_object_size; // Cache size is negative when cleared.
 
-                    self::rmdir( $cache_object_dir, true ); // remove containing directory if empty along with any of its empty parents
+                    self::rmdir( $cache_object_dir, true ); // Remove containing directory if empty along with any of its empty parents.
                 }
 
                 if ( strpos( $cache_object_name, 'index' ) === false ) {
-                    continue; // skip to next object because file is not a cache version and no longer needs to be handled (e.g. hidden file)
+                    continue; // Skip to next object because file is not a cache version and no longer needs to be handled (e.g. hidden file).
                 }
 
                 if ( ! isset( $cache['index'][ $cache_object_dir ]['url'] ) ) {
@@ -224,7 +209,7 @@ final class Cache_Enabler_Disk {
             }
         }
 
-        uksort( $cache['index'], 'self::sort_dir_objects' ); // sort cache index so path with least amount of slashes is first
+        uksort( $cache['index'], 'self::sort_dir_objects' ); // Sort cache index so path with least amount of slashes is first.
 
         if ( $args['clear'] ) {
             self::fire_cache_cleared_hooks( $cache['index'], $args['hooks'] );
@@ -237,47 +222,36 @@ final class Cache_Enabler_Disk {
         return $cache;
     }
 
-
     /**
-     * get cache size (deprecated)
+     * Get the cache size (deprecated).
      *
      * @since       1.0.0
      * @deprecated  1.7.0
      */
-
     public static function cache_size( $dir = null ) {
 
         return self::get_cache_size( $dir );
     }
 
-
     /**
-     * clear cached page(s) (deprecated)
+     * Clear the cache (deprecated).
      *
      * @since       1.0.0
      * @deprecated  1.8.0
      */
-
     public static function clear_cache( $clear_url = null, $clear_type = 'page' ) {
-
-        // check if URL has been provided for legacy reasons
-        if ( empty( $clear_url ) ) {
-            return;
-        }
 
         Cache_Enabler::clear_page_cache_by_url( $clear_url, $clear_type );
     }
 
-
     /**
-     * create advanced-cache.php file
+     * Create the advanced-cache.php drop-in file.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @return  string|bool  file path to the newly created advanced-cache.php file, false on failure
+     * @return  string|bool  Path to the created file, false on failure.
      */
-
     public static function create_advanced_cache_file() {
 
         $advanced_cache_sample_file = CACHE_ENABLER_DIR . '/advanced-cache-sample.php';
@@ -299,16 +273,14 @@ final class Cache_Enabler_Disk {
         return ( $advanced_cache_file_created === false ) ? false : $advanced_cache_file;
     }
 
-
     /**
-     * create file for cache
+     * Create a static HTML file.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   string  $page_contents  contents of a page from the output buffer
+     * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
      */
-
     private static function create_cache_file( $page_contents ) {
 
         if ( ! is_string( $page_contents ) || strlen( $page_contents ) === 0 ) {
@@ -339,7 +311,7 @@ final class Cache_Enabler_Disk {
         }
 
         if ( $page_contents === false ) {
-            return; // compression failed
+            return; // Compression failed.
         }
 
         if ( ! self::mkdir_p( $new_cache_file_dir ) ) {
@@ -362,21 +334,29 @@ final class Cache_Enabler_Disk {
             $cache_created_index[ $new_cache_file_dir ]['id']  = $page_created_id;
             $cache_created_index[ $new_cache_file_dir ]['versions'][ $new_cache_file_name ] = $new_cache_file_created;
 
+            /**
+             * Fires after the page cache has been created.
+             *
+             * @since   1.8.0
+             * @change  1.8.0
+             *
+             * @param  string   $page_created_url     Full URL of the page created.
+             * @param  int      $page_created_id      Post ID of the page created.
+             * @param  array[]  $cache_created_index  Index of the cache created.
+             */
             do_action( 'cache_enabler_page_cache_created', $page_created_url, $page_created_id, $cache_created_index );
         }
     }
 
-
     /**
-     * create settings file
+     * Create a settings file.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   array        $settings           settings from database
-     * @return  string|bool  $new_settings_file  file path to the newly created settings file, false on failure
+     * @param   array        $settings  Plugin settings from the database.
+     * @return  string|bool             Path to the created file, false on failure.
      */
-
     public static function create_settings_file( $settings ) {
 
         if ( ! is_array( $settings ) || ! function_exists( 'home_url' ) ) {
@@ -389,10 +369,9 @@ final class Cache_Enabler_Disk {
         $new_settings_file_contents .= '/**' . PHP_EOL;
         $new_settings_file_contents .= ' * Cache Enabler settings for ' . home_url() . PHP_EOL;
         $new_settings_file_contents .= ' *' . PHP_EOL;
-        $new_settings_file_contents .= ' * @since      1.5.0' . PHP_EOL;
-        $new_settings_file_contents .= ' * @change     1.8.0' . PHP_EOL;
-        $new_settings_file_contents .= ' *' . PHP_EOL;
-        $new_settings_file_contents .= ' * @generated  ' . self::get_current_time() . PHP_EOL;
+        $new_settings_file_contents .= ' * @since    1.5.0' . PHP_EOL;
+        $new_settings_file_contents .= ' * @change   1.8.0' . PHP_EOL;
+        $new_settings_file_contents .= ' * @created  ' . self::get_current_time() . PHP_EOL;
         $new_settings_file_contents .= ' */' . PHP_EOL;
         $new_settings_file_contents .= PHP_EOL;
         $new_settings_file_contents .= 'return ' . var_export( $settings, true ) . ';';
@@ -406,17 +385,15 @@ final class Cache_Enabler_Disk {
         return ( $new_settings_file_created === false ) ? false : $new_settings_file;
     }
 
-
     /**
-     * fire cache cleared hooks
+     * Fire the cache cleared hooks.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   array  $cache_cleared_index  index of cache that was cleared
-     * @param   array  $hooks                cache cleared hooks to 'include' and/or 'exclude' from being fired
+     * @param  array[]  $cache_cleared_index  Index of the cache cleared.
+     * @param  array[]  $hooks                Cache cleared hooks to 'include' and/or 'exclude' from being fired.
      */
-
     private static function fire_cache_cleared_hooks( $cache_cleared_index, $hooks ) {
 
         if ( empty( $cache_cleared_index ) || empty( $hooks ) ) {
@@ -443,7 +420,7 @@ final class Cache_Enabler_Disk {
                 $page_cleared_id  = $cache_cleared_data['id'];
 
                 do_action( 'cache_enabler_page_cache_cleared', $page_cleared_url, $page_cleared_id, $cache_cleared_index );
-                do_action( 'ce_action_cache_by_url_cleared', $page_cleared_url ); // deprecated in 1.6.0
+                do_action( 'ce_action_cache_by_url_cleared', $page_cleared_url ); // Deprecated in 1.6.0.
             }
         }
 
@@ -456,22 +433,20 @@ final class Cache_Enabler_Disk {
 
         if ( in_array( 'cache_enabler_complete_cache_cleared', $hooks_to_fire, true ) && ! is_dir( CACHE_ENABLER_CACHE_DIR ) ) {
             do_action( 'cache_enabler_complete_cache_cleared' );
-            do_action( 'ce_action_cache_cleared' ); // deprecated in 1.6.0
+            do_action( 'ce_action_cache_cleared' ); // Deprecated in 1.6.0.
         }
     }
 
-
     /**
-     * filter directory object
+     * Filters whether a file or directory should be included or excluded.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string   $dir_object  file or directory path to filter (without trailing slash)
-     * @param   array[]  $filter      file or directory path(s) to 'include' and/or 'exclude' (without trailing slash)
-     * @return  boolean               true if directory object should be included, false if excluded
+     * @param   string   $dir_object  File or directory path to filter (without trailing slash).
+     * @param   array[]  $filter      File or directory path(s) to 'include' and/or 'exclude' (without trailing slash).
+     * @return  bool                  True if directory object should be included, false if excluded.
      */
-
     private static function filter_dir_object( $dir_object, $filter ) {
 
         if ( isset( $filter['exclude'] ) ) {
@@ -494,10 +469,10 @@ final class Cache_Enabler_Disk {
             return true;
         }
 
-        ksort( $filter ); // sort keys in alphabetical order to check for an exclusion first
+        ksort( $filter ); // Sort keys in alphabetical order to check for an exclusion first.
 
         if ( is_dir( $dir_object ) ) {
-            $dir_object = $dir_object . '/'; // append trailing slash to prevent a false match
+            $dir_object = $dir_object . '/'; // Append trailing slash to prevent a false match.
         }
 
         foreach ( $filter as $filter_type => $filter_value ) {
@@ -506,10 +481,10 @@ final class Cache_Enabler_Disk {
             }
 
             foreach ( $filter_value as $filter_object ) {
-                // if trailing asterisk exists remove it to allow a wildcard match
+                // If a trailing asterisk exists remove it to allow a wildcard match.
                 if ( substr( $filter_object, -1, 1 ) === '*' ) {
                     $filter_object = substr( $filter_object, 0, -1 );
-                // maybe append trailing slash to force a strict match otherwise
+                // Otherwise, maybe append a trailing slash to force a strict match.
                 } elseif ( is_dir( $dir_object ) ) {
                     $filter_object = $filter_object . '/';
                 }
@@ -517,36 +492,37 @@ final class Cache_Enabler_Disk {
                 if ( str_replace( $filter_object, '', $dir_object ) !== $dir_object ) {
                     switch ( $filter_type ) {
                         case 'include':
-                            return true; // past inclusion or present wildcard inclusion
+                            return true; // Past inclusion or present wildcard inclusion.
                         case 'exclude':
-                            return false; // present wildcard exclusion
+                            return false; // Present wildcard exclusion.
                     }
                 }
 
                 if ( strpos( $filter_object, $dir_object ) === 0 && $filter_type === 'include' ) {
-                    return true; // future strict or wildcard inclusion
+                    return true; // Future strict or wildcard inclusion.
                 }
             }
         }
 
         if ( isset( $filter['include'] ) ) {
-            return false; // match not found
+            return false; // Match not found.
         }
 
         return true;
     }
 
-
     /**
-     * get cache directory path from URL
+     * Get the cache directory path for the current URL or from a given URL.
+     *
+     * This does not check whether the returned cache directory path exists.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $url        full URL to potentially cached page (with or without wildcard path), defaults to current URL if empty
-     * @return  string  $cache_dir  directory path to new or potentially cached page, empty if URL is invalid
+     * @param   string  $url  (Optional) Full URL to a cached page (with or without wildcard path). Default
+     *                        is the current URL.
+     * @return  string        Cache directory path (without trailing slash), empty string if the URL is invalid.
      */
-
     private static function get_cache_dir( $url = null ) {
 
         if ( empty ( $url ) ) {
@@ -572,24 +548,26 @@ final class Cache_Enabler_Disk {
             $url_path
         );
 
-        // remove trailing slash (untrailingslashit() is not available in early engine start)
+        // Remove trailing slash. Not using the untrailingslashit() function because it is
+        // not available in the early cache engine start.
         $cache_dir = rtrim( $cache_dir, '/\\' );
 
         return $cache_dir;
     }
 
-
     /**
-     * get cache iterator arguments
+     * Get the cache iterator arguments.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string        $url   full URL to potentially cached page (with or without wildcard path and query string)
-     * @param   array|string  $args  cache iterator arguments or template, default arguments if empty
-     * @return  array         $args  cache iterator arguments
+     * @global  WP_Rewrite  $wp_rewrite  WordPress rewrite component.
+     *
+     * @param   string        $url   (Optional) Full URL to a cached page (with or without wildcard path and query
+     *                               string). Default null.
+     * @param   array|string  $args  (Optional) Cache iterator arguments or an arguments template. Default empty array.
+     * @return  array                Cache iterator arguments.
      */
-
     private static function get_cache_iterator_args( $url = null, $args = array() ) {
 
         $default_args = array(
@@ -611,8 +589,8 @@ final class Cache_Enabler_Disk {
             switch ( $args_template ) {
                 case 'pagination':
                     global $wp_rewrite;
-                    $included_subpages[] = ( isset( $wp_rewrite->pagination_base ) ) ? $wp_rewrite->pagination_base : '';
-                    $included_subpages[] = ( isset( $wp_rewrite->comments_pagination_base ) ) ? $wp_rewrite->comments_pagination_base . '-*' : '';
+                    $included_subpages[] = isset( $wp_rewrite->pagination_base ) ? $wp_rewrite->pagination_base : '';
+                    $included_subpages[] = isset( $wp_rewrite->comments_pagination_base ) ? $wp_rewrite->comments_pagination_base . '-*' : '';
                     $args['subpages']['include'] = $included_subpages;
                     break;
                 case 'subpages':
@@ -629,7 +607,7 @@ final class Cache_Enabler_Disk {
             $args['subpages']['include'] = basename( $url_path );
         }
 
-        // merge query string arguments into the parameter arguments and then the default arguments
+        // Merge query string arguments into the parameter arguments and then the default arguments.
         wp_parse_str( (string) parse_url( $url, PHP_URL_QUERY ), $query_string_args );
         $args = wp_parse_args( $query_string_args, $args );
         $args = wp_parse_args( $args, $default_args );
@@ -638,16 +616,16 @@ final class Cache_Enabler_Disk {
         return $args;
     }
 
-
     /**
-     * get the cache file for the current request
+     * Get the path to the cache file for the current URL.
+     *
+     * This does not check whether the returned cache file exists.
      *
      * @since   1.7.0
      * @change  1.8.0
      *
-     * @return  string  file path to new or potentially cached page
+     * @return  string  Path to the cache file.
      */
-
     public static function get_cache_file() {
 
         if ( ! empty( self::$cache_file ) ) {
@@ -663,37 +641,32 @@ final class Cache_Enabler_Disk {
         return self::$cache_file;
     }
 
-
     /**
-     * get cache file name
+     * Get the name of the cache file for the current URL.
      *
      * @since   1.7.0
      * @change  1.7.0
      *
-     * @return  string  $cache_file_name  file name for new or potentially cached page
+     * @return  string  Name of the cache file.
      */
-
     private static function get_cache_file_name() {
 
-        $cache_keys = self::get_cache_keys();
+        $cache_keys      = self::get_cache_keys();
         $cache_file_name = $cache_keys['scheme'] . 'index' . $cache_keys['device'] . $cache_keys['webp'] . '.html' . $cache_keys['compression'];
 
         return $cache_file_name;
     }
 
-
     /**
-     * get cache keys
+     * Get the cache keys from the request headers for the cache file name.
      *
      * @since   1.7.0
      * @change  1.7.0
      *
-     * @return  array  $cache_keys  cache keys to new or potentially cached page
+     * @return  string[]  An array of cache keys with names as the keys and keys as the values.
      */
-
     private static function get_cache_keys() {
 
-        // set default cache keys
         $cache_keys = array(
             'scheme'      => 'http-',
             'device'      => '',
@@ -701,16 +674,16 @@ final class Cache_Enabler_Disk {
             'compression' => '',
         );
 
-        // scheme cache key
         if ( isset( $_SERVER['HTTPS'] ) && ( strtolower( $_SERVER['HTTPS'] ) === 'on' || $_SERVER['HTTPS'] == '1' ) ) {
             $cache_keys['scheme'] = 'https-';
         } elseif ( isset( $_SERVER['SERVER_PORT'] ) && $_SERVER['SERVER_PORT'] == '443' ) {
             $cache_keys['scheme'] = 'https-';
-        } elseif ( Cache_Enabler_Engine::$request_headers['X-Forwarded-Proto'] === 'https' || Cache_Enabler_Engine::$request_headers['X-Forwarded-Scheme'] === 'https' ) {
+        } elseif ( Cache_Enabler_Engine::$request_headers['X-Forwarded-Proto'] === 'https'
+            || Cache_Enabler_Engine::$request_headers['X-Forwarded-Scheme'] === 'https'
+        ) {
             $cache_keys['scheme'] = 'https-';
         }
 
-        // device cache key
         if ( Cache_Enabler_Engine::$settings['mobile_cache'] ) {
             if ( strpos( Cache_Enabler_Engine::$request_headers['User-Agent'], 'Mobile' ) !== false
                 || strpos( Cache_Enabler_Engine::$request_headers['User-Agent'], 'Android' ) !== false
@@ -724,14 +697,12 @@ final class Cache_Enabler_Disk {
             }
         }
 
-        // webp cache key
         if ( Cache_Enabler_Engine::$settings['convert_image_urls_to_webp'] ) {
             if ( strpos( Cache_Enabler_Engine::$request_headers['Accept'], 'image/webp' ) !== false ) {
                 $cache_keys['webp'] = '-webp';
             }
         }
 
-        // compression cache key
         if ( Cache_Enabler_Engine::$settings['compress_cache'] ) {
             if ( function_exists( 'brotli_compress' )
                 && $cache_keys['scheme'] === 'https-'
@@ -746,17 +717,21 @@ final class Cache_Enabler_Disk {
         return $cache_keys;
     }
 
-
     /**
-     * get cache keys regex (e.g. #^(?=.*https)(?=.*webp).+$#, #^(?=.*https)(?!.*webp).+$#, or #^.+$#)
+     * Get the cache keys regex for the cache iterator.
+     *
+     * This uses positive and negative lookaheads to create a regex that will be used
+     * to check the name of the cache file in the cache iterator, for example:
+     *     * #^(?=.*https)(?=.*webp).+$#
+     *     * #^(?=.*https)(?!.*webp).+$#
+     *     * #^.+$#
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   array   $cache_keys        cache keys to include or exclude
-     * @return  string  $cache_keys_regex  cache keys regex if valid array, false if not
+     * @param   array[]  $cache_keys  Cache keys to 'include' and/or 'exclude'.
+     * @return  string                Cache keys regex, false on failure.
      */
-
     private static function get_cache_keys_regex( $cache_keys ) {
 
         if ( ! is_array( $cache_keys ) ) {
@@ -774,7 +749,7 @@ final class Cache_Enabler_Disk {
                     $lookahead = '?!';
                     break;
                 default:
-                    continue 2; // skip to next filter value
+                    continue 2; // Skip to the next filter value.
             }
 
             foreach ( $filter_value as $cache_key ) {
@@ -787,17 +762,17 @@ final class Cache_Enabler_Disk {
         return $cache_keys_regex;
     }
 
-
     /**
-     * get cache signature
+     * Get the cache signature.
+     *
+     * This gets an HTML comment to insert at the bottom of a new static HTML file.
      *
      * @since   1.7.0
      * @change  1.7.0
      *
-     * @param   string  $cache_file_name  file name for new cached page
-     * @return  string  $cache_signature  cache signature
+     * @param   string  $cache_file_name  Name of the new cache file.
+     * @return  string                    HTML comment with the current time in HTTP-date format and the new cache file name.
      */
-
     private static function get_cache_signature( $cache_file_name ) {
 
         $cache_signature = sprintf(
@@ -810,14 +785,12 @@ final class Cache_Enabler_Disk {
         return $cache_signature;
     }
 
-
     /**
-     * get cache size from disk (deprecated)
+     * Get the cache size from the disk (deprecated).
      *
      * @since       1.7.0
      * @deprecated  1.8.0
      */
-
     public static function get_cache_size( $dir = null ) {
 
         if ( empty( $dir ) ) {
@@ -831,17 +804,20 @@ final class Cache_Enabler_Disk {
         return $cache_size;
     }
 
-
     /**
-     * get cache URL from directory path
+     * Get the cache URL for a given directory path.
+     *
+     * This only checks if the given directory path is in the plugin cache directory.
+     * It does not check whether the URL returned is from a cache directory that
+     * exists.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string  $dir        directory path to potentially cached page
-     * @return  string  $cache_url  full URL to potentially cached page (with trailing slash if set), empty if directory path is invalid
+     * @param   string  $dir  Directory path to a cached page.
+     * @return  string        Full cache URL (with trailing slash if set), empty string if the directory path
+     *                        is invalid.
      */
-
     private static function get_cache_url( $dir ) {
 
         if ( strpos( $dir, CACHE_ENABLER_CACHE_DIR ) !== 0 ) {
@@ -854,17 +830,15 @@ final class Cache_Enabler_Disk {
         return $cache_url;
     }
 
-
     /**
-     * get settings file
+     * Get the path to the settings file for the current site.
      *
      * @since   1.4.0
      * @change  1.8.0
      *
-     * @param   boolean  $fallback       whether or not fallback settings file should be returned
-     * @return  string   $settings_file  file path to settings file
+     * @param   bool     $fallback  (Optional) Whether the fallback settings file should be returned. Default false.
+     * @return  string              Path to the settings file.
      */
-
     private static function get_settings_file( $fallback = false ) {
 
         $settings_file = sprintf(
@@ -876,44 +850,41 @@ final class Cache_Enabler_Disk {
         return $settings_file;
     }
 
-
     /**
-     * get settings file name
+     * Get the name of the settings file for the current site.
      *
      * @since   1.5.5
      * @change  1.8.0
      *
-     * @param   boolean  $fallback            whether or not fallback settings file name should be returned
-     * @param   boolean  $skip_blog_path      whether or not blog path should be included in settings file name
-     * @return  string   $settings_file_name  file name for settings file
+     * @param   bool    $fallback        (Optional) Whether the fallback settings file name should be returned. Default false.
+     * @param   bool    $skip_blog_path  (Optional) Whether the blog path should be included in the settings file name.
+     *                                   Default false.
+     * @return  string                   Name of the settings file.
      */
-
     private static function get_settings_file_name( $fallback = false, $skip_blog_path = false ) {
 
         $settings_file_name = '';
 
-        // if creating or deleting settings file
+        // When creating or deleting the settings file.
         if ( function_exists( 'home_url' ) ) {
             $settings_file_name = parse_url( home_url(), PHP_URL_HOST );
 
-            // subdirectory network
             if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL ) {
                 $blog_path = Cache_Enabler::get_blog_path();
                 $settings_file_name .= ( ! empty( $blog_path ) ) ? '.' . trim( $blog_path, '/' ) : '';
             }
 
             $settings_file_name .= '.php';
-        // if getting settings from settings file
+        // When getting the plugin settings from the settings file.
         } elseif ( is_dir( CACHE_ENABLER_SETTINGS_DIR ) ) {
             if ( $fallback ) {
-                $settings_files = array_map( 'basename', self::get_dir_objects( CACHE_ENABLER_SETTINGS_DIR ) );
+                $settings_files      = array_map( 'basename', self::get_dir_objects( CACHE_ENABLER_SETTINGS_DIR ) );
                 $settings_file_regex = '/\.php$/';
 
                 if ( is_multisite() ) {
                     $settings_file_regex = '/^' . strtolower( Cache_Enabler_Engine::$request_headers['Host'] );
                     $settings_file_regex = str_replace( '.', '\.', $settings_file_regex );
 
-                    // subdirectory network
                     if ( defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_blog_path ) {
                         $url_path = trim( parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ), '/' );
 
@@ -939,7 +910,6 @@ final class Cache_Enabler_Disk {
             } else {
                 $settings_file_name = strtolower( Cache_Enabler_Engine::$request_headers['Host'] );
 
-                // subdirectory network
                 if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_blog_path ) {
                     $url_path = $_SERVER['REQUEST_URI'];
                     $url_path_pieces = explode( '/', $url_path, 3 );
@@ -951,7 +921,7 @@ final class Cache_Enabler_Disk {
 
                     $settings_file_name .= '.php';
 
-                    // check if main site
+                    // Check if the main site in a subdirectory network.
                     if ( ! is_file( CACHE_ENABLER_SETTINGS_DIR . '/' . $settings_file_name ) ) {
                         $fallback = false;
                         $skip_blog_path = true;
@@ -966,16 +936,20 @@ final class Cache_Enabler_Disk {
         return $settings_file_name;
     }
 
-
     /**
-     * get settings from the settings file for the current site
+     * Get the plugin settings from the settings file for the current site.
+     *
+     * This will create the settings file if it does not exist and the cache engine
+     * was started late. It will also update the disk and backend requirements and
+     * then clear the complete cache if the settings are outdated. Having the backend
+     * updated will trigger a new settings file to be created, which would result in
+     * this returning the settings from that new file afterward.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @return  array  $settings  current settings from settings file, empty on failure
+     * @return  array  Plugin settings from the settings file, empty array on failure.
      */
-
     public static function get_settings() {
 
         $settings      = array();
@@ -1015,19 +989,19 @@ final class Cache_Enabler_Disk {
         return $settings;
     }
 
-
     /**
-     * get directory file system objects (files and directories)
+     * Get the files and directories inside of a given directory.
      *
      * @since   1.4.7
      * @change  1.8.0
      *
-     * @param   string   $dir          directory path to scan (without trailing slash)
-     * @param   boolean  $recursive    whether to recursively include directory objects in nested directories
-     * @param   array    $filter       directory path(s) relative to $dir to 'include' and/or 'exclude' (without leading and/or trailing slashes)
-     * @return  array    $dir_objects  path(s) to directory objects if valid directory, empty if not
+     * @param   string    $dir        Directory path to scan (without trailing slash).
+     * @param   bool      $recursive  (Optional) Whether to recursively include directory objects in nested
+     *                                directories. Default false.
+     * @param   array[]   $filter     (Optional) Directory paths relative to $dir (without leading and/or trailing
+     *                                slashes) to 'include' and/or 'exclude'. Default null.
+     * @return  string[]              File and directory paths to objects found, empty array if the directory path is invalid.
      */
-
     private static function get_dir_objects( $dir, $recursive = false, $filter = null ) {
 
         $dir_objects = array();
@@ -1036,7 +1010,7 @@ final class Cache_Enabler_Disk {
             return $dir_objects;
         }
 
-        $dir_object_names = scandir( $dir ); // sorted order is alphabetical in ascending order
+        $dir_object_names = scandir( $dir ); // Sorted order is alphabetical in ascending order.
 
         if ( is_array( $filter ) && empty( $filter['full_path'] ) ) {
             $filter['full_path'] = 1;
@@ -1052,14 +1026,14 @@ final class Cache_Enabler_Disk {
 
         foreach ( $dir_object_names as $dir_object_name ) {
             if ( $dir_object_name === '.' || $dir_object_name === '..' ) {
-                continue; // skip object because it is current or parent folder link
+                continue; // Skip object because it is the current or parent folder link.
             }
 
             $dir_object = $dir . '/' . $dir_object_name;
 
             if ( is_dir( $dir_object ) ) {
                 if ( ! empty( $filter['full_path'] ) && ! self::filter_dir_object( $dir_object, $filter ) ) {
-                    continue; // skip object because it is excluded
+                    continue; // Skip object because it is excluded.
                 }
 
                 if ( $recursive ) {
@@ -1073,38 +1047,32 @@ final class Cache_Enabler_Disk {
         return $dir_objects;
     }
 
-
     /**
-     * get site file system objects (deprecated)
+     * Get the site objects (deprecated).
      *
      * @since       1.6.0
      * @deprecated  1.8.0
      */
-
     public static function get_site_objects( $site_url ) {
 
         $site_objects = array();
+        $dir          = self::get_cache_dir( $site_url );
 
-        // get directory
-        $dir = self::get_cache_dir( $site_url );
-
-        // check if directory exists
         if ( ! is_dir( $dir ) ) {
             return $site_objects;
         }
 
-        // get site objects
         $site_objects = array_map( 'basename', self::get_dir_objects( $dir ) );
 
-        // maybe filter subdirectory network site objects
+        // Maybe filter the site objects.
         if ( is_multisite() && ! is_subdomain_install() ) {
             $blog_path  = Cache_Enabler::get_blog_path();
             $blog_paths = Cache_Enabler::get_blog_paths();
 
-            // check if main site in subdirectory network
+            // Check if the main site in a subdirectory network.
             if ( ! in_array( $blog_path, $blog_paths, true ) ) {
                 foreach ( $site_objects as $key => $site_object ) {
-                    // delete site object if it does not belong to main site
+                    // Delete the site object if it does not belong to the main site.
                     if ( in_array( '/' . $site_object . '/', $blog_paths, true ) ) {
                         unset( $site_objects[ $key ] );
                     }
@@ -1115,16 +1083,14 @@ final class Cache_Enabler_Disk {
         return $site_objects;
     }
 
-
     /**
-     * get current time
+     * Get the current time.
      *
      * @since   1.7.0
      * @change  1.7.0
      *
-     * @return  string  $current_time  current time in HTTP-date format
+     * @return  string  Current time in HTTP-date format.
      */
-
     private static function get_current_time() {
 
         $current_time = current_time( 'D, d M Y H:i:s', true ) . ' GMT';
@@ -1132,52 +1098,54 @@ final class Cache_Enabler_Disk {
         return $current_time;
     }
 
-
     /**
-     * get image path
+     * Get the image path from an image URL.
+     *
+     * This does not check whether the returned image exists.
      *
      * @since   1.4.8
-     * @change  1.7.0
+     * @change  1.8.0
      *
-     * @param   string  $image_url   full or relative URL with or without intrinsic width or density descriptor
-     * @return  string  $image_path  file path to image
+     * @param   string  $image_url  Full or relative URL maybe with an intrinsic width or density descriptor.
+     * @return  string              File path to the image.
      */
-
     private static function get_image_path( $image_url ) {
 
-        // in case image has intrinsic width or density descriptor
-        $image_parts = explode( ' ', $image_url );
-        $image_url = $image_parts[0];
+        // In case there is an intrinsic width or density descriptor.
+        $image_pieces = explode( ' ', $image_url );
+        $image_url    = $image_pieces[0];
 
-        // in case installation is in a subdirectory
-        $image_url_path = ltrim( parse_url( $image_url, PHP_URL_PATH ), '/' );
+        // In case installation is in a subdirectory.
+        $image_url_path   = ltrim( parse_url( $image_url, PHP_URL_PATH ), '/' );
         $installation_dir = ltrim( parse_url( site_url( '/' ), PHP_URL_PATH ), '/' );
-        $image_path = str_replace( $installation_dir, '', ABSPATH ) . $image_url_path;
+        $image_path       = str_replace( $installation_dir, '', ABSPATH ) . $image_url_path;
 
         return $image_path;
     }
 
-
     /**
-     * get current WP Filesystem instance
+     * Get the current WordPress filesystem instance.
+     *
+     * This will initialize the WordPress filesystem if it has not yet been and will
+     * cache the result afterward.
      *
      * @since   1.7.0
      * @change  1.7.1
      *
-     * @throws  \RuntimeException                   if WordPress filesystem could not be initialized
-     * @return  WP_Filesystem_Base  $wp_filesystem  WordPress filesystem instance
+     * @throws  \RuntimeException  If the WordPress filesystem could not be initialized.
+     *
+     * @global  WP_Filesystem_Base  $wp_filesystem  WordPress filesystem subclass.
+     *
+     * @return  WP_Filesystem_Base  WordPress filesystem.
      */
-
     public static function get_filesystem() {
 
         global $wp_filesystem;
 
-        // check if we already have a filesystem instance
         if ( $wp_filesystem instanceof WP_Filesystem_Base ) {
             return $wp_filesystem;
         }
 
-        // try initializing filesystem instance and cache the result
         try {
             require_once ABSPATH . 'wp-admin/includes/file.php';
 
@@ -1191,7 +1159,7 @@ final class Cache_Enabler_Disk {
                 if ( is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
                     throw new \RuntimeException(
                         $wp_filesystem->errors->get_error_message(),
-                        ( is_numeric( $wp_filesystem->errors->get_error_code() ) ) ? (int) $wp_filesystem->errors->get_error_code() : 0
+                        is_numeric( $wp_filesystem->errors->get_error_code() ) ? (int) $wp_filesystem->errors->get_error_code() : 0
                     );
                 }
 
@@ -1212,40 +1180,47 @@ final class Cache_Enabler_Disk {
         return $wp_filesystem;
     }
 
-
     /**
-     * make directory recursively based on directory path
+     * Make a directory recursively based on the directory path.
+     *
+     * This assumes that the directory (and its parent) should have 755 permissions,
+     * and will attempt to update any existing directories accordingly.
      *
      * @since   1.7.0
      * @change  1.7.2
      *
-     * @param   string   $dir  directory path to create
-     * @return  boolean        true if the directory either already exists or was created and has the correct permissions, false otherwise
+     * @param   string  $dir  Directory path to create.
+     * @return  bool          True if the directory either already exists or was created *and* has the
+     *                        correct permissions, false otherwise.
      */
-
     private static function mkdir_p( $dir ) {
 
-        $fs          = self::get_filesystem();
+        /**
+         * Filters the mode assigned to directories on creation.
+         *
+         * @since   1.7.2
+         * @change  1.7.2
+         *
+         * @param  int  $mode  Mode that defines the access permissions for the created directory. The mode
+         *                     must be an octal number, which means it should have a leading zero. Default is 0755.
+         */
         $mode_octal  = apply_filters( 'cache_enabler_mkdir_mode', 0755 );
-        $mode_string = decoct( $mode_octal ); // get last three digits (e.g. '755')
+        $mode_string = decoct( $mode_octal ); // Get the last three digits (e.g. '755').
         $parent_dir  = dirname( $dir );
+        $fs          = self::get_filesystem();
 
-        // check if directory and its parent have correct permissions
         if ( $fs->is_dir( $dir ) && $fs->getchmod( $dir ) === $mode_string && $fs->getchmod( $parent_dir ) === $mode_string ) {
             return true;
         }
 
-        // create any directories that do not exist yet
         if ( ! wp_mkdir_p( $dir ) ) {
             return false;
         }
 
-        // check parent directory permissions
         if ( $fs->getchmod( $parent_dir ) !== $mode_string ) {
             return $fs->chmod( $parent_dir, $mode_octal, true );
         }
 
-        // check directory permissions
         if ( $fs->getchmod( $dir ) !== $mode_string ) {
             return $fs->chmod( $dir, $mode_octal );
         }
@@ -1253,18 +1228,22 @@ final class Cache_Enabler_Disk {
         return true;
     }
 
-
     /**
-     * remove empty directory based on directory path with the option to remove empty parent directories
+     * Remove an empty directory based on the directory path.
+     *
+     * This is a wrapper for rmdir() that can delete empty parent directories and will
+     * call clearstatcache() when necessary. It suppresses errors on failure.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param    string         $dir          directory path to remove
-     * @param    boolean        $parents      whether or not empty parent directories should be removed
-     * @return   array|boolean  $removed_dir  directory path(s) that were removed, false if directory was not removed
+     * @param   string         $dir      Directory path to remove.
+     * @param   bool           $parents  (Optional) Whether empty parent directories should also be removed. Default false.
+     * @return  array[]|bool             An array of removed directories with paths as the keys and objects as the
+     *                                   values. There are no directory objects because a directory has to be empty to
+     *                                   be removed, which is why it will always be an empty array. False if no
+     *                                   directories were removed.
      */
-
     private static function rmdir( $dir, $parents = false ) {
 
         $removed_dir = @rmdir( $dir );
@@ -1288,46 +1267,38 @@ final class Cache_Enabler_Disk {
         return $removed_dir;
     }
 
-
     /**
-     * set or unset WP_CACHE constant in wp-config.php
+     * Set or unset the WP_CACHE constant in the wp-config.php file.
      *
      * @since   1.5.0
      * @change  1.7.0
      *
-     * @param   boolean  $set  true to set WP_CACHE constant, false to unset
+     * @param  bool  $set  (Optional) True to set the WP_CACHE constant, false to unset. Default true.
      */
-
     private static function set_wp_cache_constant( $set = true ) {
 
-        // get config file
         if ( file_exists( ABSPATH . 'wp-config.php' ) ) {
-            // config file resides in ABSPATH
+            // The config file resides in ABSPATH.
             $wp_config_file = ABSPATH . 'wp-config.php';
         } elseif ( @file_exists( dirname( ABSPATH ) . '/wp-config.php' ) && ! @file_exists( dirname( ABSPATH ) . '/wp-settings.php' ) ) {
-            // config file resides one level above ABSPATH but is not part of another installation
+            // The config file resides one level above ABSPATH but is not part of another installation.
             $wp_config_file = dirname( ABSPATH ) . '/wp-config.php';
         } else {
             $wp_config_file = false;
         }
 
-        // check if config file can be written to
         if ( ! $wp_config_file || ! is_writable( $wp_config_file ) ) {
             return;
         }
 
-        // get config file contents
         $wp_config_file_contents = file_get_contents( $wp_config_file );
 
-        // validate config file
         if ( ! is_string( $wp_config_file_contents ) ) {
             return;
         }
 
-        // search for WP_CACHE constant
         $found_wp_cache_constant = preg_match( '/define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,.+\);/', $wp_config_file_contents );
 
-        // if not found set WP_CACHE constant when config file is default (must be before WordPress sets up)
         if ( $set && ! $found_wp_cache_constant ) {
             $ce_wp_config_lines  = '/** Enables page caching for Cache Enabler. */' . PHP_EOL;
             $ce_wp_config_lines .= "if ( ! defined( 'WP_CACHE' ) ) {" . PHP_EOL;
@@ -1337,28 +1308,26 @@ final class Cache_Enabler_Disk {
             $wp_config_file_contents = preg_replace( '/(\/\*\* Sets up WordPress vars and included files\. \*\/)/', $ce_wp_config_lines . '$1', $wp_config_file_contents );
         }
 
-        // unset WP_CACHE constant if set by Cache Enabler
         if ( ! $set ) {
             $wp_config_file_contents = preg_replace( '/.+Added by Cache Enabler\r\n/', '', $wp_config_file_contents ); // < 1.5.0
             $wp_config_file_contents = preg_replace( '/\/\*\* Enables page caching for Cache Enabler\. \*\/' . PHP_EOL . '.+' . PHP_EOL . '.+' . PHP_EOL . '\}' . PHP_EOL . PHP_EOL . '/', '', $wp_config_file_contents );
         }
 
-        // update config file
         file_put_contents( $wp_config_file, $wp_config_file_contents, LOCK_EX );
     }
 
-
     /**
-     * sort directory objects so path with least amount of slashes is first
+     * Sort file and directory paths by the number of slashes.
+     *
+     * This sorts paths by the lowest amount of slashes to the highest.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   string   $a  file or directory path to compare in sort
-     * @param   string   $b  file or directory path to compare in sort
-     * @return  integer      1 if $a has more slashes than $b, 0 if equal, and -1 if less
+     * @param   string  $a  File or directory path to compare in sort.
+     * @param   string  $b  File or directory path to compare in sort.
+     * @return  int         1 if $a has more slashes than $b, 0 if equal, and -1 if less.
      */
-
     private static function sort_dir_objects( $a, $b ) {
 
         $a = substr_count( $a, '/' );
@@ -1371,76 +1340,88 @@ final class Cache_Enabler_Disk {
         return ( $a > $b ) ? 1 : -1;
     }
 
-
     /**
-     * convert page contents
+     * Convert the page contents.
+     *
+     * This handles converting inline image URLs for the WebP cache.
      *
      * @since   1.7.0
      * @change  1.7.0
      *
-     * @param   string  $page_contents            contents of a page from the output buffer
-     * @return  string  $converted_page_contents  converted contents of a page from the output buffer
+     * @param   string  $page_contents  Page contents from the cache engine as raw HTML.
+     * @return  string                  Page contents after maybe being converted.
      */
-
     private static function converter( $page_contents ) {
 
-        // attributes to convert during WebP conversion hook
-        $attributes = (array) apply_filters( 'cache_enabler_convert_webp_attributes', array( 'src', 'srcset', 'data-[^=]+' ) );
-
-        // stringify
+        /**
+         * Filters the HTML attributes to convert during the WebP conversion.
+         *
+         * @since   1.6.1
+         * @change  1.6.1
+         *
+         * @param  string[]  $attributes  HTML attributes to convert during the WebP conversion. Default are 'src',
+         *                                'srcset', and 'data-*'.
+         */
+        $attributes       = (array) apply_filters( 'cache_enabler_convert_webp_attributes', array( 'src', 'srcset', 'data-[^=]+' ) );
         $attributes_regex = implode( '|', $attributes );
-
-        // magic regex rule
         $image_urls_regex = '#(?:(?:(' . $attributes_regex . ')\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
 
-        // ignore query strings during WebP conversion hook
+        /**
+         * Filters whether inline image URLs with query strings should be ignored during the WebP conversion.
+         *
+         * @since   1.6.1
+         * @change  1.6.1
+         *
+         * @param  bool  $ignore_query_strings  True if inline image URLs with query strings should be ignored during the WebP
+         *                                      conversion, false if not. Default true.
+         */
         if ( ! apply_filters( 'cache_enabler_convert_webp_ignore_query_strings', true ) ) {
             $image_urls_regex = '#(?:(?:(' . $attributes_regex . ')\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\?\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
         }
 
-        // page contents after WebP conversion hook
+        /**
+         * Filters the page contents after the inline image URLs were maybe converted to WebP.
+         *
+         * @since   1.6.0
+         * @change  1.6.0
+         *
+         * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
+         */
         $converted_page_contents = apply_filters( 'cache_enabler_page_contents_after_webp_conversion', preg_replace_callback( $image_urls_regex, 'self::convert_webp', $page_contents ) );
-
-        // deprecated page contents after WebP conversion hook
         $converted_page_contents = apply_filters_deprecated( 'cache_enabler_disk_webp_converted_data', array( $converted_page_contents ), '1.6.0', 'cache_enabler_page_contents_after_webp_conversion' );
 
         return $converted_page_contents;
     }
 
-
     /**
-     * convert image URL(s) to WebP
+     * Convert image URL(s) to WebP.
      *
      * @since   1.5.0
      * @change  1.7.0
      *
-     * @param   array   $matches     pattern matches from parsed page contents
-     * @return  string  $conversion  converted image URL(s) to WebP if applicable, default URL(s) otherwise
+     * @param   string[]  $matches  Pattern matches from parsed page contents.
+     * @return  string              The image URL(s) after maybe being converted to WebP.
      */
-
     private static function convert_webp( $matches ) {
 
-        $full_match = $matches[0];
+        $full_match            = $matches[0];
         $image_extension_regex = '/(\.jpe?g|\.png)/i';
-        $image_found = preg_match( $image_extension_regex, $full_match );
+        $image_found           = preg_match( $image_extension_regex, $full_match );
 
         if ( $image_found ) {
-            // set image URL(s)
             $image_urls = explode( ',', $full_match );
 
             foreach ( $image_urls as &$image_url ) {
-                $image_url = trim( $image_url, ' ' );
-                $image_url_webp = preg_replace( $image_extension_regex, '$1.webp', $image_url ); // append .webp extension
+                $image_url       = trim( $image_url, ' ' );
+                $image_url_webp  = preg_replace( $image_extension_regex, '$1.webp', $image_url ); // Append .webp extension.
                 $image_path_webp = self::get_image_path( $image_url_webp );
 
-                // check if WebP image exists
                 if ( is_file( $image_path_webp ) ) {
                     $image_url = $image_url_webp;
                 } else {
-                    $image_url_webp = preg_replace( $image_extension_regex, '', $image_url_webp ); // remove default extension
+                    $image_url_webp  = preg_replace( $image_extension_regex, '', $image_url_webp ); // Remove default extension.
                     $image_path_webp = self::get_image_path( $image_url_webp );
 
-                    // check if WebP image exists
                     if ( is_file( $image_path_webp ) ) {
                         $image_url = $image_url_webp;
                     }
@@ -1453,48 +1434,50 @@ final class Cache_Enabler_Disk {
         }
     }
 
-
     /**
-     * minify HTML
+     * Minify HTML.
+     *
+     * This removes HTML, CSS, and JavaScript comments. Whitespaces of any size are
+     * replaced with a single space.
      *
      * @since   1.5.0
      * @change  1.7.0
      *
-     * @param   string  $page_contents                 contents of a page from the output buffer
-     * @return  string  $page_contents|$minified_html  minified page contents if applicable, unchanged otherwise
+     * @param   string  $html  Page contents from the cache engine as raw HTML.
+     * @return  string         Page contents after maybe being minified.
      */
+    private static function minify_html( $html ) {
 
-    private static function minify_html( $page_contents ) {
-
-        // HTML character limit
-        if ( strlen( $page_contents ) > 700000 ) {
-            return $page_contents;
+        if ( strlen( $html ) > 700000 ) {
+            return $html;
         }
 
-        // HTML tags to ignore hook
+        /**
+         * Filters the HTML tags to ignore during HTML minification.
+         *
+         * @since   1.6.0
+         * @change  1.6.0
+         *
+         * @param  string[]  $ignore_tags  The names of HTML tags to ignore. Default are 'textarea', 'pre', and 'code'.
+         */
         $ignore_tags = (array) apply_filters( 'cache_enabler_minify_html_ignore_tags', array( 'textarea', 'pre', 'code' ) );
-
-        // deprecated HTML tags to ignore hook
         $ignore_tags = (array) apply_filters_deprecated( 'cache_minify_ignore_tags', array( $ignore_tags ), '1.6.0', 'cache_enabler_minify_html_ignore_tags' );
 
-        // if setting selected exclude inline CSS and JavaScript
         if ( ! Cache_Enabler_Engine::$settings['minify_inline_css_js'] ) {
             array_push( $ignore_tags, 'style', 'script' );
         }
 
-        // check if there are ignore tags
         if ( ! $ignore_tags ) {
-            return $page_contents;
+            return $html; // At least one HTML tag is required.
         }
 
-        // stringify
         $ignore_tags_regex = implode( '|', $ignore_tags );
 
-        // remove HTML comments
-        $minified_html = preg_replace( '#<!--[^\[><].*?-->#s', '', $page_contents );
+        // Remove HTML comments.
+        $minified_html = preg_replace( '#<!--[^\[><].*?-->#s', '', $html );
 
-        // if setting selected remove CSS and JavaScript comments
         if ( Cache_Enabler_Engine::$settings['minify_inline_css_js'] ) {
+            // Remove CSS and JavaScript comments.
             $minified_html = preg_replace(
                 '#/\*(?!!)[\s\S]*?\*/|(?:^[ \t]*)//.*$|((?<!\()[ \t>;,{}[\]])//[^;\n]*$#m',
                 '$1',
@@ -1502,50 +1485,49 @@ final class Cache_Enabler_Disk {
             );
         }
 
-        // minify HTML
+        // Replace whitespaces of any size with a single space.
         $minified_html = preg_replace(
             '#(?>[^\S ]\s*|\s{2,})(?=[^<]*+(?:<(?!/?(?:' . $ignore_tags_regex . ')\b)[^<]*+)*+(?:<(?>' . $ignore_tags_regex . ')\b|\z))#ix',
             ' ',
             $minified_html
         );
 
-        // something went wrong
         if ( strlen( $minified_html ) <= 1 ) {
-            return $page_contents;
+            return $html; // HTML minification failed.
         }
 
         return $minified_html;
     }
 
-
     /**
-     * delete settings file
+     * Delete a settings file based on a given settings file path.
+     *
+     * This will try to remove the settings file directory and any of its empty parent
+     * directories. It suppresses errors on failure.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   string  file path to settings file, defaults to settings file path of current site if empty
+     * @param  string  (Optional) Path to the settings file. Default is the settings file for the
+     *                 current site.
      */
-
     private static function delete_settings_file( $settings_file = null ) {
 
         if ( empty( $settings_file ) ) {
             $settings_file = self::get_settings_file();
         }
 
-        @unlink( $settings_file );
-
-        self::rmdir( CACHE_ENABLER_SETTINGS_DIR, true );
+        if ( @unlink( $settings_file ) ) {
+            self::rmdir( CACHE_ENABLER_SETTINGS_DIR, true );
+        }
     }
 
-
     /**
-     * delete asset (deprecated)
+     * Delete an asset (deprecated).
      *
      * @since       1.0.0
      * @deprecated  1.5.0
      */
-
     public static function delete_asset( $url ) {
 
         if ( empty( $url ) ) {
@@ -1555,17 +1537,15 @@ final class Cache_Enabler_Disk {
         Cache_Enabler::clear_page_cache_by_url( $url, 'subpages' );
     }
 
-
     /**
-     * validate cache iterator arguments
+     * Validate the cache iterator arguments.
      *
      * @since   1.8.0
      * @change  1.8.0
      *
-     * @param   array  $args            see self::cache_iterator() for available arguments
-     * @return  array  $validated_args  validated cache iterator arguments
+     * @param   array  $args  Cache iterator arguments.
+     * @return  array         Validated cache iterator arguments.
      */
-
     private static function validate_cache_iterator_args( $args ) {
 
         $validated_args = array();
@@ -1578,7 +1558,7 @@ final class Cache_Enabler_Disk {
                     if ( is_string( $filter_value ) ) {
                         $filter_value = ( substr_count( $filter_value, '|' ) > 0 ) ? explode( '|', $filter_value ) : explode( ',', $filter_value );
                     } elseif ( ! is_array( $filter_value ) ) {
-                        $filter_value = array(); // not converting type to avoid unwanted values
+                        $filter_value = array(); // Not converting type to avoid unwanted values.
                     }
 
                     foreach ( $filter_value as $filter_value_key => &$filter_value_item ) {
