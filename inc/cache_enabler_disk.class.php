@@ -19,7 +19,7 @@ final class Cache_Enabler_Disk {
     public static $cache_dir = WP_CONTENT_DIR . '/cache/cache-enabler';
 
     /**
-     * File path to the cached page for the current URL.
+     * File path to the cached page for the current request.
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -72,7 +72,6 @@ final class Cache_Enabler_Disk {
          * Filters the page contents before a static HTML file is created.
          *
          * @since   1.6.0
-         * @change  1.6.0
          *
          * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
          */
@@ -88,7 +87,7 @@ final class Cache_Enabler_Disk {
      * @since   1.5.0
      * @change  1.7.0
      *
-     * @param   string  $cache_file  File path to the cached page.
+     * @param   string  $cache_file  File path to a cached page.
      * @return  bool                 True if the cached page exists and is readable, false otherwise.
      */
     public static function cache_exists( $cache_file ) {
@@ -97,12 +96,12 @@ final class Cache_Enabler_Disk {
     }
 
     /**
-     * Whether a cached page is expired.
+     * Whether an existing cached page is expired.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @param   string  $cache_file  File path to the existing cached page.
+     * @param   string  $cache_file  File path to an existing cached page.
      * @return  bool                 True if the cached page is expired, false otherwise.
      */
     public static function cache_expired( $cache_file ) {
@@ -123,12 +122,32 @@ final class Cache_Enabler_Disk {
     /**
      * Iterate over cache objects to perform actions and/or gather data.
      *
+     * The $args parameter either takes an associative array of arguments or a
+     * template string. The templates 'pagination' and 'subpages' are mainly for
+     * backward compatibility but are also helpful shortcuts.
+     *
+     * Array of arguments for iterating over cache objects:
+     *
+     *     @type  int                   $clear      Whether to clear the cache files iterated over.
+     *                                              Default 0.
+     *     @type  int                   $expired    Whether to only iterate over expired cache files.
+     *                                              Default 0.
+     *     @type  int|string[]|array[]  $hooks      The cache hooks to fire.
+     *                                              Default 0.
+     *     @type  int|string[]|array[]  $keys       The cache file versions to iterate over.
+     *                                              Default 0.
+     *     @type  string                $root       The root path all cache files iterated over must have.
+     *                                              Default ''.
+     *     @type  int|string[]|array[]  $subpages   The subpages to iterate over.
+     *
+     * Until this can be improved, see PR #237 for more information.
+     *
      * @since   1.8.0
      * @change  1.8.0
      * @access  private
      *
      * @param   string        $url   URL to a cached page (with or without scheme and wildcard path).
-     * @param   array|string  $args  TODO
+     * @param   array|string  $args  See description.
      * @return  array                Cache data.
      */
     public static function cache_iterator( $url, $args = array() ) {
@@ -169,17 +188,20 @@ final class Cache_Enabler_Disk {
         foreach ( $cache_objects as $cache_object ) {
             if ( is_file( $cache_object ) ) {
                 if ( $args['root'] && strpos( $cache_object, $args['root'] ) !== 0 ) {
-                    continue; // Skip to next object because file does not start with provided root path.
+                    // Skip to the next object because the file does not start with the provided root path.
+                    continue;
                 }
 
                 $cache_object_name = basename( $cache_object );
 
                 if ( $cache_keys_regex && ! preg_match( $cache_keys_regex, $cache_object_name ) ) {
-                    continue; // Skip to next object because file name does not match provided cache keys.
+                    // Skip to the next object because the file name does not match the provided cache keys.
+                    continue;
                 }
 
                 if ( $args['expired'] && ! self::cache_expired( $cache_object ) ) {
-                    continue; // Skip to next object because file is not expired.
+                    // Skip to the next object because the file is not expired.
+                    continue;
                 }
 
                 $cache_object_dir  = dirname( $cache_object );
@@ -187,16 +209,21 @@ final class Cache_Enabler_Disk {
 
                 if ( $args['clear'] ) {
                     if ( ! @unlink( $cache_object ) ) {
-                        continue; // Skip to next object because file deletion failed.
+                        // Skip to the next object because the file deletion failed.
+                        continue;
                     }
 
-                    $cache_object_size = -$cache_object_size; // Cache size is negative when cleared.
+                    // The cache size is negative when cleared.
+                    $cache_object_size = -$cache_object_size;
 
-                    self::rmdir( $cache_object_dir, true ); // Remove containing directory if empty along with any of its empty parents.
+                    // Remove the containing directory if empty along with any of its empty parents.
+                    self::rmdir( $cache_object_dir, true );
                 }
 
                 if ( strpos( $cache_object_name, 'index' ) === false ) {
-                    continue; // Skip to next object because file is not a cache version and no longer needs to be handled (e.g. hidden file).
+                    // Skip to the next object because the file is not a cache version and no longer
+                    // needs to be handled, such as a hidden file.
+                    continue;
                 }
 
                 if ( ! isset( $cache['index'][ $cache_object_dir ]['url'] ) ) {
@@ -209,7 +236,8 @@ final class Cache_Enabler_Disk {
             }
         }
 
-        uksort( $cache['index'], 'self::sort_dir_objects' ); // Sort cache index so path with least amount of slashes is first.
+        // Sort the cache index so that the path with the least amount of slashes is first.
+        uksort( $cache['index'], 'self::sort_dir_objects' );
 
         if ( $args['clear'] ) {
             self::fire_cache_cleared_hooks( $cache['index'], $args['hooks'] );
@@ -337,8 +365,7 @@ final class Cache_Enabler_Disk {
             /**
              * Fires after the page cache has been created.
              *
-             * @since   1.8.0
-             * @change  1.8.0
+             * @since  1.8.0
              *
              * @param  string   $page_created_url     Full URL of the page created.
              * @param  int      $page_created_id      Post ID of the page created.
@@ -419,6 +446,16 @@ final class Cache_Enabler_Disk {
                 $page_cleared_url = $cache_cleared_data['url'];
                 $page_cleared_id  = $cache_cleared_data['id'];
 
+                /**
+                 * Fires after the page cache has been cleared.
+                 *
+                 * @since  1.6.0
+                 * @since  1.8.0  The `$cache_cleared_index` parameter was added.
+                 *
+                 * @param  string   $page_cleared_url     Full URL of the page cleared.
+                 * @param  int      $page_cleared_id      Post ID of the page cleared.
+                 * @param  array[]  $cache_cleared_index  Index of the cache cleared.
+                 */
                 do_action( 'cache_enabler_page_cache_cleared', $page_cleared_url, $page_cleared_id, $cache_cleared_index );
                 do_action( 'ce_action_cache_by_url_cleared', $page_cleared_url ); // Deprecated in 1.6.0.
             }
@@ -428,10 +465,25 @@ final class Cache_Enabler_Disk {
             $site_cleared_url = user_trailingslashit( home_url() );
             $site_cleared_id  = get_current_blog_id();
 
+            /**
+             * Fires after the site cache has been cleared.
+             *
+             * @since  1.6.0
+             * @since  1.8.0  The `$cache_cleared_index` parameter was added.
+             *
+             * @param  string   $site_cleared_url     Full URL of the site cleared.
+             * @param  int      $site_cleared_id      Post ID of the site cleared.
+             * @param  array[]  $cache_cleared_index  Index of the cache cleared.
+             */
             do_action( 'cache_enabler_site_cache_cleared', $site_cleared_url, $site_cleared_id, $cache_cleared_index );
         }
 
         if ( in_array( 'cache_enabler_complete_cache_cleared', $hooks_to_fire, true ) && ! is_dir( CACHE_ENABLER_CACHE_DIR ) ) {
+            /**
+             * Fires after the complete cache has been cleared.
+             *
+             * @since  1.6.0
+             */
             do_action( 'cache_enabler_complete_cache_cleared' );
             do_action( 'ce_action_cache_cleared' ); // Deprecated in 1.6.0.
         }
@@ -514,7 +566,9 @@ final class Cache_Enabler_Disk {
     /**
      * Get the cache directory path for the current URL or from a given URL.
      *
-     * This does not check whether the returned cache directory path exists.
+     * This does not check whether the returned cache directory path exists. The
+     * untrailingslashit() function is not being used to remove the trailing slash
+     * because it is not available when the cache engine is started early.
      *
      * @since   1.8.0
      * @change  1.8.0
@@ -548,8 +602,6 @@ final class Cache_Enabler_Disk {
             $url_path
         );
 
-        // Remove trailing slash. Not using the untrailingslashit() function because it is
-        // not available in the early cache engine start.
         $cache_dir = rtrim( $cache_dir, '/\\' );
 
         return $cache_dir;
@@ -617,9 +669,13 @@ final class Cache_Enabler_Disk {
     }
 
     /**
-     * Get the path to the cache file for the current URL.
+     * Get the path to the cache file for the current request.
      *
-     * This does not check whether the returned cache file exists.
+     * This does not check whether the returned cache file exists. It sets the
+     * $cache_file property to prevent different paths being returned on the same
+     * request. This can occur because the $_SERVER['REQUEST_URI'] superglobal can be
+     * updated by, like by other plugins, between trying to deliver a cached page and
+     * then actually creating it.
      *
      * @since   1.7.0
      * @change  1.8.0
@@ -642,7 +698,7 @@ final class Cache_Enabler_Disk {
     }
 
     /**
-     * Get the name of the cache file for the current URL.
+     * Get the name of the cache file for the current request.
      *
      * @since   1.7.0
      * @change  1.7.0
@@ -660,8 +716,10 @@ final class Cache_Enabler_Disk {
     /**
      * Get the cache keys from the request headers for the cache file name.
      *
+     * This has some functionality copied from is_ssl() and wp_is_mobile().
+     *
      * @since   1.7.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @return  string[]  An array of cache keys with names as the keys and keys as the values.
      */
@@ -765,7 +823,7 @@ final class Cache_Enabler_Disk {
     /**
      * Get the cache signature.
      *
-     * This gets an HTML comment to insert at the bottom of a new static HTML file.
+     * This gets the HTML comment that is inserted at the bottom of a new cache file.
      *
      * @since   1.7.0
      * @change  1.7.0
@@ -1199,7 +1257,6 @@ final class Cache_Enabler_Disk {
          * Filters the mode assigned to directories on creation.
          *
          * @since   1.7.2
-         * @change  1.7.2
          *
          * @param  int  $mode  Mode that defines the access permissions for the created directory. The mode
          *                     must be an octal number, which means it should have a leading zero. Default is 0755.
@@ -1343,7 +1400,7 @@ final class Cache_Enabler_Disk {
     /**
      * Convert the page contents.
      *
-     * This handles converting inline image URLs for the WebP cache.
+     * This handles converting inline image URLs for the WebP cache version.
      *
      * @since   1.7.0
      * @change  1.8.0
@@ -1356,8 +1413,7 @@ final class Cache_Enabler_Disk {
         /**
          * Filters the HTML attributes to convert during the WebP conversion.
          *
-         * @since   1.6.1
-         * @change  1.6.1
+         * @since  1.6.1
          *
          * @param  string[]  $attributes  HTML attributes to convert during the WebP conversion. Default are 'src',
          *                                'srcset', and 'data-*'.
@@ -1368,8 +1424,7 @@ final class Cache_Enabler_Disk {
         /**
          * Filters whether inline image URLs with query strings should be ignored during the WebP conversion.
          *
-         * @since   1.6.1
-         * @change  1.6.1
+         * @since  1.6.1
          *
          * @param  bool  $ignore_query_strings  True if inline image URLs with query strings should be ignored during the WebP
          *                                      conversion, false if not. Default true.
@@ -1383,8 +1438,7 @@ final class Cache_Enabler_Disk {
         /**
          * Filters the page contents after the inline image URLs were maybe converted to WebP.
          *
-         * @since   1.6.0
-         * @change  1.6.0
+         * @since  1.6.0
          *
          * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
          */
@@ -1459,7 +1513,6 @@ final class Cache_Enabler_Disk {
          * Filters the HTML tags to ignore during HTML minification.
          *
          * @since   1.6.0
-         * @change  1.6.0
          *
          * @param  string[]  $ignore_tags  The names of HTML tags to ignore. Default are 'textarea', 'pre', and 'code'.
          */
@@ -1532,10 +1585,6 @@ final class Cache_Enabler_Disk {
      * @deprecated  1.5.0
      */
     public static function delete_asset( $url ) {
-
-        if ( empty( $url ) ) {
-            return;
-        }
 
         Cache_Enabler::clear_page_cache_by_url( $url, 'subpages' );
     }
