@@ -1,6 +1,6 @@
 <?php
 /**
- * Cache Enabler constants
+ * Plugin constants.
  *
  * @since   1.8.0
  * @change  1.8.0
@@ -13,8 +13,8 @@ $cache_enabler_constants = array(
     'CACHE_ENABLER_DIR'          => __DIR__,
     'CACHE_ENABLER_FILE'         => __DIR__ . '/cache-enabler.php',
     'CACHE_ENABLER_BASE'         => ( function_exists( 'wp_normalize_path' ) ) ? plugin_basename( __DIR__ . '/cache-enabler.php' ) : null,
-    'CACHE_ENABLER_CACHE_DIR'    => WP_CONTENT_DIR . '/cache/cache-enabler', // without trailing slash
-    'CACHE_ENABLER_SETTINGS_DIR' => WP_CONTENT_DIR . '/settings/cache-enabler', // without trailing slash
+    'CACHE_ENABLER_CACHE_DIR'    => WP_CONTENT_DIR . '/cache/cache-enabler', // Without a trailing slash.
+    'CACHE_ENABLER_SETTINGS_DIR' => WP_CONTENT_DIR . '/settings/cache-enabler', // Without a trailing slash.
     'CACHE_ENABLER_INDEX_FILE'   => ABSPATH . 'index.php',
 );
 
@@ -24,7 +24,7 @@ foreach ( $cache_enabler_constants as $cache_enabler_constant_name => $cache_ena
     }
 }
 
-// deprecated in 1.7.0
+// Deprecated in 1.7.0.
 if ( defined( 'CACHE_ENABLER_BASE' ) ) {
     define( 'CE_VERSION', CACHE_ENABLER_VERSION );
     define( 'CE_MIN_PHP', CACHE_ENABLER_MIN_PHP );

@@ -51,8 +51,8 @@ final class Cache_Enabler_Engine {
     /**
      * Plugin settings from the disk or database.
      *
-     * This will be from the disk when a frontend page is loaded and from the database
-     * when an admin page is loaded.
+     * The settings will be from the disk when a frontend page is loaded and from the
+     * database when an admin page is loaded.
      *
      * @since   1.5.0
      * @change  1.5.0
@@ -64,7 +64,10 @@ final class Cache_Enabler_Engine {
     /**
      * Constructor.
      *
-     * This is called by self::start() and starts up the cache engine.
+     * This is called by self::start() and starts up the cache engine. In a cache
+     * engine restart the WordPress rewrite component will be reinitialized. This is
+     * to pick up the correct data for url_to_postid(), user_trailingslashit(), and
+     * the pagination bases.
      *
      * @since   1.5.0
      * @change  1.8.0
@@ -74,8 +77,6 @@ final class Cache_Enabler_Engine {
     public function __construct() {
 
         if ( self::$started ) {
-            // Pick up the correct data in the cache engine restart. This is for
-            // url_to_postid(), user_trailingslashit(), and the pagination bases.
             global $wp_rewrite;
             $wp_rewrite->init();
         }
@@ -220,7 +221,7 @@ final class Cache_Enabler_Engine {
      * Whether the permalink structure is wrong.
      *
      * This checks whether the current site uses trailing slashes and then whether the
-     * request URI matches what is set. The root index and file extensions are ignored.
+     * request URI matches what is set. It ignores the root index and file extensions.
      *
      * @since   1.5.0
      * @change  1.8.0
@@ -241,24 +242,20 @@ final class Cache_Enabler_Engine {
     }
 
     /**
-     * Whether the request is excluded from the cache.
+     * Whether the current request is excluded from the cache.
      *
      * @since   1.5.0
      * @change  1.8.0
      *
-     * @return  bool  True if the request is excluded from the cache, false otherwise.
+     * @return  bool  True if the current request is excluded from the cache, false otherwise.
      */
     private static function is_excluded() {
 
-        if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GET' ) {
-            return true;
-        }
+        $bad_request_method = ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GET' );
+        $bad_response_code  = ( http_response_code() !== 200 );
+        $donotcachepage     = ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE );
 
-        if ( http_response_code() !== 200 ) {
-            return true;
-        }
-
-        if ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE ) {
+        if ( $bad_request_method || $bad_response_code || $donotcachepage || self::is_wrong_permalink_structure() ) {
             return true;
         }
 
@@ -313,7 +310,7 @@ final class Cache_Enabler_Engine {
 
         // When the output buffering is ending.
         if ( class_exists( 'WP' ) ) {
-            if ( is_admin() || self::is_search() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() ) {
+            if ( is_admin() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() || self::exclude_search() ) {
                 return true;
             }
         }
@@ -322,29 +319,30 @@ final class Cache_Enabler_Engine {
     }
 
     /**
-     * Whether the query is for a search.
+     * Whether to exclude search queries from the cache.
      *
-     * @since   1.6.0
-     * @change  1.6.0
+     * @since   1.8.0
+     * @change  1.8.0
      *
-     * @return  bool  True if the query is for a search, false if not.
+     * @return  bool  True if search queries should be excluded from the cache, false if not.
      */
-    private static function is_search() {
+    private static function exclude_search() {
 
         /**
          * Filters whether search queries should be excluded from the cache.
          *
-         * @since   1.6.0
-         * @change  1.6.0
+         * This requires pretty search URLs. For example, https://example.com/search/query/
+         * instead of https://example.com/?s=query. The search cache will not be
+         * automatically cleared.
+         *
+         * @since  1.6.0
          *
          * @param  bool  $exclude_search  True if search queries should be excluded from the cache, false if not. Default
          *                                is the value returned by is_search().
          */
-        if ( apply_filters( 'cache_enabler_exclude_search', is_search() ) ) {
-            return true;
-        }
+        $exclude_search = apply_filters( 'cache_enabler_exclude_search', is_search() );
 
-        return false;
+        return $exclude_search;
     }
 
     /**
@@ -360,24 +358,20 @@ final class Cache_Enabler_Engine {
         /**
          * Filters whether the cache should be bypassed.
          *
-         * @since   1.6.0
-         * @change  1.6.0
+         * @since  1.6.0
+         * @since  1.8.0  The default value for `$bypass_cache` was updated.
          *
-         * @param  bool  $bypass_cache  True if the cache should be bypassed, false if not. Default false.
+         * @param  bool  $bypass_cache  True if the cache should be bypassed, false if not. Default is the value
+         *                              returned by Cache_Enabler_Engine::is_excluded().
          */
-        if ( apply_filters( 'cache_enabler_bypass_cache', false ) || apply_filters_deprecated( 'bypass_cache', array( false ), '1.6.0', 'cache_enabler_bypass_cache' ) ) {
-            return true;
-        }
+        $bypass_cache = apply_filters( 'cache_enabler_bypass_cache', self::is_excluded() );
+        $bypass_cache = apply_filters_deprecated( 'bypass_cache', array( $bypass_cache ), '1.6.0', 'cache_enabler_bypass_cache' );
 
-        if ( self::is_wrong_permalink_structure() || self::is_excluded() ) {
-            return true;
-        }
-
-        return false;
+        return $bypass_cache;
     }
 
     /**
-     * Deliver the cached page for the current URL.
+     * Deliver the cached page for the current request.
      *
      * @since   1.5.0
      * @change  1.8.0
