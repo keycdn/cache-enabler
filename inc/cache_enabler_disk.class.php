@@ -1346,7 +1346,7 @@ final class Cache_Enabler_Disk {
      * This handles converting inline image URLs for the WebP cache.
      *
      * @since   1.7.0
-     * @change  1.7.0
+     * @change  1.8.0
      *
      * @param   string  $page_contents  Page contents from the cache engine as raw HTML.
      * @return  string                  Page contents after maybe being converted.
@@ -1364,7 +1364,6 @@ final class Cache_Enabler_Disk {
          */
         $attributes       = (array) apply_filters( 'cache_enabler_convert_webp_attributes', array( 'src', 'srcset', 'data-[^=]+' ) );
         $attributes_regex = implode( '|', $attributes );
-        $image_urls_regex = '#(?:(?:(' . $attributes_regex . ')\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
 
         /**
          * Filters whether inline image URLs with query strings should be ignored during the WebP conversion.
@@ -1375,7 +1374,9 @@ final class Cache_Enabler_Disk {
          * @param  bool  $ignore_query_strings  True if inline image URLs with query strings should be ignored during the WebP
          *                                      conversion, false if not. Default true.
          */
-        if ( ! apply_filters( 'cache_enabler_convert_webp_ignore_query_strings', true ) ) {
+        if ( apply_filters( 'cache_enabler_convert_webp_ignore_query_strings', true ) ) {
+            $image_urls_regex = '#(?:(?:(' . $attributes_regex . ')\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\?\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
+        } else {
             $image_urls_regex = '#(?:(?:(' . $attributes_regex . ')\s*=|(url)\()\s*[\'\"]?\s*)\K(?:[^\"\'\s>]+)(?:\.jpe?g|\.png)(?:\s\d+[wx][^\"\'>]*)?(?=\/?[\?\"\'\s\)>])(?=[^<{]*(?:\)[^<{]*\}|>))#i';
         }
 
