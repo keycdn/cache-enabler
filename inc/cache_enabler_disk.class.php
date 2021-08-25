@@ -998,17 +998,20 @@ final class Cache_Enabler_Disk {
      * Get the plugin settings from the settings file for the current site.
      *
      * This will create the settings file if it does not exist and the cache engine
-     * was started late. It will also update the disk and backend requirements and
-     * then clear the complete cache if the settings are outdated. Having the backend
-     * updated will trigger a new settings file to be created, which would result in
-     * this returning the settings from that new file afterward.
+     * was started late. It can update the disk and backend requirements and then
+     * clear the complete cache if the settings are outdated. Having the backend
+     * updated will trigger a new settings file to be created, which if created would
+     * result in this returning the settings from that new file.
      *
      * @since   1.5.0
+     * @since   1.8.0  The `$update` parameter was added.
      * @change  1.8.0
      *
-     * @return  array  Plugin settings from the settings file, empty array on failure.
+     * @param   bool   $update  Whether to update the disk and backend requirements if the settings are
+     *                          outdated. Default true.
+     * @return  array           Plugin settings from the settings file, empty array on failure.
      */
-    public static function get_settings() {
+    public static function get_settings( $update = true ) {
 
         $settings      = array();
         $settings_file = self::get_settings_file();
@@ -1032,9 +1035,11 @@ final class Cache_Enabler_Disk {
 
         if ( empty( $settings ) && class_exists( 'Cache_Enabler' ) ) {
             if ( $outdated_settings ) {
-                Cache_Enabler::update();
-                wp_opcache_invalidate( $settings_file );
-                $settings = self::get_settings();
+                if ( $update ) {
+                    Cache_Enabler::update();
+                    wp_opcache_invalidate( $settings_file );
+                    $settings = self::get_settings( false );
+                }
             } else {
                 $settings_file = self::create_settings_file( Cache_Enabler::get_settings() );
 
