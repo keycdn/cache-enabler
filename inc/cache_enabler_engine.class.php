@@ -64,10 +64,12 @@ final class Cache_Enabler_Engine {
     /**
      * Constructor.
      *
-     * This is called by self::start() and starts up the cache engine. In a cache
-     * engine restart the WordPress rewrite component will be reinitialized. This is
-     * to pick up the correct data for url_to_postid(), user_trailingslashit(), and
-     * the pagination bases.
+     * This is called by self::start() and starts up the cache engine. If the cache
+     * engine is already started that means it is being restarted. If that occurs the
+     * WordPress rewrite component will be reinitialized. This is to pick up the
+     * correct data for url_to_postid(), user_trailingslashit(), and the pagination
+     * bases. The disk and backend requirements will not be updated if the cache
+     * engine is being restarted and the settings do not exist or are outdated.
      *
      * @since   1.5.0
      * @change  1.8.0
@@ -84,9 +86,9 @@ final class Cache_Enabler_Engine {
         self::$request_headers = self::get_request_headers();
 
         if ( self::is_index() ) {
-            self::$settings = Cache_Enabler_Disk::get_settings();
+            self::$settings = Cache_Enabler_Disk::get_settings( ! self::$started );
         } elseif ( class_exists( 'Cache_Enabler' ) ) {
-            self::$settings = Cache_Enabler::get_settings();
+            self::$settings = Cache_Enabler::get_settings( ! self::$started );
             Cache_Enabler::$options = self::$settings; // Deprecated in 1.5.0.
             Cache_Enabler::$options['webp'] = self::$settings['convert_image_urls_to_webp']; // Deprecated in 1.5.0.
         }

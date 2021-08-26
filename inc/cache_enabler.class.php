@@ -700,22 +700,27 @@ final class Cache_Enabler {
     /**
      * Get the plugin settings from the database for the current site.
      *
-     * This will update the disk and backend requirements and then clear the complete
+     * This can update the disk and backend requirements and then clear the complete
      * cache if the settings do not exist or are outdated. If that occurs, the
      * settings after the update will be returned.
      *
      * @since   1.5.0
+     * @since   1.8.0  The `$update` parameter was added.
      * @change  1.8.0
      *
-     * @return  array  Plugin settings from the database.
+     * @param   bool   $update  Whether to update the disk and backend requirements if the settings are
+     *                          outdated. Default true.
+     * @return  array           Plugin settings from the database.
      */
-    public static function get_settings() {
+    public static function get_settings( $update = true ) {
 
         $settings = get_option( 'cache_enabler' );
 
         if ( $settings === false || ! isset( $settings['version'] ) || $settings['version'] !== CACHE_ENABLER_VERSION ) {
-            self::update();
-            $settings = self::get_settings();
+            if ( $update ) {
+                self::update();
+                $settings = self::get_settings( false );
+            }
         }
 
         return $settings;
