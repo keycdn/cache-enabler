@@ -523,6 +523,10 @@ final class Cache_Enabler {
 
         if ( in_array( $option, $options, true ) ) {
             self::clear_cache_on_option_save( $option, $old_value, $value );
+
+            if ( $option === 'permalink_structure' ) {
+                self::update_backend();
+            }
         }
     }
 
