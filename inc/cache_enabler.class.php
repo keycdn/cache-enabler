@@ -451,6 +451,10 @@ final class Cache_Enabler {
             } else {
                 self::clear_cache_on_option_save( $option, $old_value, $value );
             }
+
+            if ( $option === 'home' ) {
+                Cache_Enabler_Disk::delete_settings_file();
+            }
         }
     }
 
