@@ -1572,7 +1572,7 @@ final class Cache_Enabler_Disk {
      * @param  string  (Optional) Path to the settings file. Default is the settings file for the
      *                 current site.
      */
-    private static function delete_settings_file( $settings_file = null ) {
+    public static function delete_settings_file( $settings_file = null ) {
 
         if ( empty( $settings_file ) ) {
             $settings_file = self::get_settings_file();
