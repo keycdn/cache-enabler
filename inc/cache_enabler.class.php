@@ -2432,8 +2432,10 @@ final class Cache_Enabler {
         $events = self::get_events();
 
         foreach ( $events as $hook => $recurrence ) {
-            if ( $hook === 'cache_enabler_clear_expired_cache' && ! Cache_Enabler_Engine::$settings['cache_expires'] ) {
-                continue; // Skip to next event because cache does not expire.
+            if ( $hook === 'cache_enabler_clear_expired_cache' ) {
+                if ( ! Cache_Enabler_Engine::$settings['cache_expires'] || Cache_Enabler_Engine::$settings['cache_expiry_time'] === 0 ) {
+                    continue;
+                }
             }
 
             if ( ! wp_next_scheduled( $hook ) ) {
