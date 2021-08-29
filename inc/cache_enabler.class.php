@@ -13,8 +13,7 @@ final class Cache_Enabler {
     /**
      * Initialize the plugin.
      *
-     * @since   1.5.0
-     * @change  1.5.0
+     * @since  1.5.0
      */
     public static function init() {
 
@@ -251,8 +250,7 @@ final class Cache_Enabler {
      * 'cache_enabler_site_cache_cleared', and 'cache_enabler_page_cache_cleared'
      * actions. It keeps the 'cache_enabler_cache_size' transient up to date.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  string  $url    Site or post URL.
      * @param  int     $id     Blog or post ID
@@ -317,8 +315,7 @@ final class Cache_Enabler {
      * new settings file to be created each time that occurs. Lastly, the complete
      * cache is cleared.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      */
     public static function update() {
 
@@ -331,7 +328,7 @@ final class Cache_Enabler {
      * Add or update backend requirements.
      *
      * This adds or updates the 'cache_enabler' option in the database, which triggers
-     * the creation of the settings file. It will call self::on_update_backend when
+     * the creation of the settings file. It will call self::on_update_backend() when
      * the plugin actions have not been registered as hooks yet, like when the plugin
      * is activated, but in this case even if the backend was not truly updated.
      *
@@ -372,8 +369,7 @@ final class Cache_Enabler {
      * the WP_CACHE constant in the wp-config.php file. A new advanced-cache.php file
      * is then created and the WP_CACHE constant is maybe set.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      */
     public static function update_disk() {
 
@@ -406,8 +402,7 @@ final class Cache_Enabler {
      *
      * This runs on the 'add_option' action.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  string  $option  Name of the option to add.
      * @param  mixed   $value   Value of the option.
@@ -424,8 +419,7 @@ final class Cache_Enabler {
      *
      * This runs on the 'update_option' action.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  string  $option     Name of the option to update.
      * @param  mixed   $old_value  The old option value.
@@ -463,8 +457,7 @@ final class Cache_Enabler {
      *
      * This runs on the 'updated_option' action.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  string  $option     Name of the updated option.
      * @param  mixed   $old_value  The old option value.
@@ -569,9 +562,13 @@ final class Cache_Enabler {
     /**
      * Enter each site and call a callback with an array of parameters.
      *
-     * This assumes that the callback function exists on the site being entered.
+     * This assumes that the callback function exists on the site being entered. It
+     * will not perform the callback or restart the cache engine on sites that do not
+     * have Cache Enabler active, unless it is a must-use plugin or it is being
+     * activated or uninstalled.
      *
      * @since   1.5.0
+     * @since   1.8.0  The `$restart_engine` parameter was added.
      * @change  1.8.0
      *
      * @param   bool    $sites            Whether to enter all sites or the current site.
@@ -579,13 +576,12 @@ final class Cache_Enabler {
      * @param   array   $callback_params  (Optional) Callback function parameters. Default empty array.
      * @param   bool    $restart_engine   (Optional) Whether to restart the cache engine. Default false.
      * @return  array                     An array of callback returns with blog IDs as the keys.
-     *
      */
     private static function each_site( $sites, $callback, $callback_params = array(), $restart_engine = false ) {
 
         $blog_ids          = $sites ? self::get_blog_ids() : array( get_current_blog_id() );
         $last_blog_id      = end( $blog_ids );
-        $skip_active_check = ! self::is_cache_enabler_active(); // Must-use plugin or when being activated and uninstalled.
+        $skip_active_check = ! self::is_cache_enabler_active();
         $callback_return   = array();
 
         foreach ( $blog_ids as $blog_id ) {
@@ -609,8 +605,7 @@ final class Cache_Enabler {
      * This is a wrapper for switch_to_blog() that can restart the cache engine,
      * allowing the correct site data to be picked up after the switch.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   int   $blog_id         The ID of the blog to switch to.
      * @param   bool  $restart_engine  (Optional) Whether to restart the cache engine after the switch. Default false.
@@ -638,8 +633,7 @@ final class Cache_Enabler {
      * This is a wrapper for restore_current_blog() that can restart the cache engine,
      * allowing the correct site data to be picked up after the switch.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   bool  $restart_engine  (Optional) Whether to restart the cache engine after the switch. Default false.
      * @param   bool  $force_restart   (Optional) Whether to force restart the cache engine. Default false.
@@ -667,8 +661,7 @@ final class Cache_Enabler {
      * that list when installed as a must-use plugin. This copies is_plugin_active().
      * That function is not being used directly because of its availability.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @return  bool  True if Cache Enabler is in the active plugins list, false if not.
      */
@@ -716,9 +709,10 @@ final class Cache_Enabler {
      * @since   1.8.0  The `$update` parameter was added.
      * @change  1.8.0
      *
-     * @param   bool   $update  Whether to update the disk and backend requirements if the settings are
-     *                          outdated. Default true.
-     * @return  array           Plugin settings from the database.
+     * @param   bool        $update  Whether to update the disk and backend requirements if the settings are
+     *                               outdated. Default true.
+     * @return  array|bool           Plugin settings from the database, false if settings do not exist and update
+     *                               was skipped or failed.
      */
     public static function get_settings( $update = true ) {
 
@@ -737,8 +731,7 @@ final class Cache_Enabler {
     /**
      * Get the blog ID for the current site or of a given site.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   WP_Site|int|string  $site  (Optional) Site instance or site blog ID. Default is the current site.
      * @return  int                        The blog ID or 0 if not found.
@@ -814,8 +807,7 @@ final class Cache_Enabler {
     /**
      * Get the blog path from a given URL.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @return  string  Blog path from URL (with leading and trailing slashes), '/' if not found.
      */
@@ -863,8 +855,7 @@ final class Cache_Enabler {
     /**
      * Get the WP-Cron events.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @return  string[]  An array of events with action hooks as the keys and recurrences as the values.
      */
@@ -901,8 +892,7 @@ final class Cache_Enabler {
     /**
      * Get the cache index for the current site.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @return  array[]  Cache index from the disk.
      */
@@ -944,8 +934,7 @@ final class Cache_Enabler {
     /**
      * Get the name of the transient that is used in the cache clear notice.
      *
-     * @since   1.5.0
-     * @change  1.5.0
+     * @since  1.5.0
      *
      * @return  string  Name of the transient.
      */
@@ -1004,8 +993,7 @@ final class Cache_Enabler {
     /**
      * Get the subpages that do not belong to the root blog in a subdirectory network.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @return  string[]  Blog paths to the other sites in a network if the current site is the root blog
      *                    in a subdirectory network, empty otherwise.
@@ -1032,8 +1020,7 @@ final class Cache_Enabler {
      * This runs when self::update_backend() is called. An empty replacement value
      * means the setting will be removed.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   array  $settings  Plugin settings.
      * @return  array             The plugin settings after maybe being upgraded.
@@ -1184,8 +1171,7 @@ final class Cache_Enabler {
      * This runs on the 'admin_bar_menu' action. It adds the clear cache buttons to
      * the admin bar.
      *
-     * @since   1.6.0
-     * @change  1.6.0
+     * @since  1.6.0
      *
      * @param  WP_Admin_Bar  $wp_admin_bar  Admin bar instance, passed by reference.
      */
@@ -1248,8 +1234,7 @@ final class Cache_Enabler {
      * structure by adding the plugin settings page as a submenu page in the Settings
      * main menu.
      *
-     * @since   1.0.0
-     * @change  1.0.0
+     * @since  1.0.0
      */
     public static function add_settings_page() {
 
@@ -1376,8 +1361,7 @@ final class Cache_Enabler {
      * This runs on the 'pre_post_update' action. It will clear the cache when any
      * published post type is about to be updated but not trashed.
      *
-     * @since   1.7.0
-     * @change  1.7.0
+     * @since  1.7.0
      *
      * @param  int    $post_id    Post ID.
      * @param  array  $post_data  Array of unslashed post data.
@@ -1458,8 +1442,7 @@ final class Cache_Enabler {
      * This runs on the 'edit_terms' action. It will clear the cache before a term is
      * updated in the database and its taxonomy is viewable.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  int     $term_id   Term ID
      * @param  string  $taxonomy  Taxonomy name that `$term_id` is part of.
@@ -1478,8 +1461,7 @@ final class Cache_Enabler {
      * cache after a term has been updated or deleted from the database and its
      * taxonomy is viewable.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  int     $term_id   Term ID.
      * @param  int     $tt_id     Term taxonomy ID.
@@ -1499,8 +1481,7 @@ final class Cache_Enabler {
      * It will clear the cache after a new user is registered or an existing user is
      * updated, and before a user is deleted from the database.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  int  $user_id  ID of the newly registered, updated, or about to be deleted user.
      */
@@ -1515,8 +1496,7 @@ final class Cache_Enabler {
      * This runs on the 'deleted_user' action. It will clear the cache after a user is
      * deleted from the database and the old posts of that user were reassigned.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  int       $user_id   ID of the deleted user.
      * @param  int|null  $reassign  ID of the user reassigned to the old posts of `$user_id`.
@@ -1578,6 +1558,7 @@ final class Cache_Enabler {
      * Clear the site cache for the current site or of a given site.
      *
      * @since   1.6.0
+     * @since   1.8.0  The `$site` parameter was added.
      * @change  1.8.0
      *
      * @param  WP_Site|int|string  $site  (Optional) Site instance or site blog ID. Default is the current site.
@@ -1590,8 +1571,7 @@ final class Cache_Enabler {
     /**
      * Clear the expired cache for the current site or of a given site.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Site|int|string  $site  (Optional) Site instance or site blog ID. Default is the current site.
      */
@@ -1606,8 +1586,7 @@ final class Cache_Enabler {
     /**
      * Clear the post cache for the current post or of a given post.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
@@ -1630,8 +1609,7 @@ final class Cache_Enabler {
     /**
      * Clear the comment cache for the current comment or of a given comment.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Comment|int|string  $comment  (Optional) Comment instance or comment ID. Default is the current comment if set.
      */
@@ -1647,8 +1625,7 @@ final class Cache_Enabler {
     /**
      * Clear the term cache of a given term.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Term|int  $term      Term instance or term ID.
      * @param  string       $taxonomy  (Optional) Taxonomy name that `$term` is part of. Default empty string.
@@ -1671,8 +1648,7 @@ final class Cache_Enabler {
     /**
      * Clear the user cache for the current user or of a given user.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_User|int|string  $user  (Optional) User instance or user ID. Default is the current user if logged in.
      */
@@ -1725,8 +1701,7 @@ final class Cache_Enabler {
     /**
      * Clear the post type archive cache for the current post or of a given post.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
@@ -1746,8 +1721,7 @@ final class Cache_Enabler {
     /**
      * Clear the post terms archives cache for the current post or of a given post.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
@@ -1773,8 +1747,7 @@ final class Cache_Enabler {
     /**
      * Clear the post author archive cache for the current post or of a given post.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
@@ -1790,8 +1763,7 @@ final class Cache_Enabler {
     /**
      * Clear the post date archives cache for the current post or of a given post.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Post|int|string  $post  (Optional) Post instance or post ID. Default is the current post if set.
      */
@@ -1851,8 +1823,7 @@ final class Cache_Enabler {
     /**
      * Clear the term archive cache of a given term.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Term|int  $term      Term instance or term ID.
      * @param  string       $taxonomy  (Optional) Taxonomy name that `$term` is part of. Default empty string.
@@ -1877,8 +1848,7 @@ final class Cache_Enabler {
     /**
      * Clear the term children archives cache of a given term.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Term|int  $term      Term instance or term ID.
      * @param  string       $taxonomy  (Optional) Taxonomy name that `$term` is part of. Default empty string.
@@ -1901,8 +1871,7 @@ final class Cache_Enabler {
     /**
      * Clear the term parents archives cache of a given term.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Term|int  $term      Term instance or term ID.
      * @param  string       $taxonomy  (Optional) Taxonomy name that `$term` is part of. Default empty string.
@@ -1923,8 +1892,7 @@ final class Cache_Enabler {
     /**
      * Clear the author archive cache for the current user or of a given user.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_User|int|string  $author  (Optional) User instance or user ID of the author. Default is the current user
      *                                      if logged in.
@@ -1953,8 +1921,7 @@ final class Cache_Enabler {
     /**
      * Clear the page cache associated with a given site.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Site|int|string  $site  Site instance or site blog ID.
      * @param  array|string        $args  (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
@@ -1993,8 +1960,7 @@ final class Cache_Enabler {
     /**
      * Clear the page cache of a given post.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Post|int|string  $post  Post instance or post ID.
      * @param  array|string        $args  (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
@@ -2020,8 +1986,7 @@ final class Cache_Enabler {
     /**
      * Clear the page cache of the post associated with a given comment.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Comment|int|string  $comment  Comment instance or comment ID.
      * @param  array|string           $args     (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
@@ -2045,8 +2010,7 @@ final class Cache_Enabler {
      *
      * This clears the page cache of the posts that have the term set.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Term|int   $term      Term instance or term ID.
      * @param  string        $taxonomy  (Optional) Taxonomy name that `$term` is part of. Default empty string.
@@ -2089,8 +2053,7 @@ final class Cache_Enabler {
      * This clears the page cache of the posts that the user is the author of or has
      * commented on.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_User|int|string  $user  User instance or user ID.
      * @param  array|string        $args  (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
@@ -2143,9 +2106,10 @@ final class Cache_Enabler {
      * Clear the page cache of a given URL.
      *
      * @since   1.0.0
+     * @since   1.8.0  The `$args` parameter was added.
      * @change  1.8.0
      *
-     * @param  string        $url   URL to a cached page (with or without scheme and wildcard path).
+     * @param  string        $url   URL to a cached page (with or without scheme, wildcard path, and query string).
      * @param  array|string  $args  (Optional) See Cache_Enabler_Disk::cache_iterator() for the available
      *                              arguments. Default empty array.
      */
@@ -2193,8 +2157,7 @@ final class Cache_Enabler {
     /**
      * Clear the cache when a comment been posted, updated, spammed, or trashed.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Comment|int|string  $comment  Comment instance or comment ID.
      */
@@ -2210,8 +2173,7 @@ final class Cache_Enabler {
     /**
      * Clear the cache when any term has been added, updated, or deleted.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_Term|int  $term      Term instance or term ID.
      * @param  string       $taxonomy  (Optional) Taxonomy name that `$term` is part of. Default empty string.
@@ -2228,8 +2190,7 @@ final class Cache_Enabler {
     /**
      * Clear the cache when any user has been added, updated, or deleted.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  WP_User|int|string  $user  User instance or user ID.
      */
@@ -2245,8 +2206,7 @@ final class Cache_Enabler {
     /**
      * Clear the cache when an option is about to be updated or already has been.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  string  $option     Name of the option.
      * @param  mixed   $old_value  The old option value.
@@ -2310,7 +2270,7 @@ final class Cache_Enabler {
                 '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Cache Enabler 2. advanced-cache.php 3. wp-content/plugins/cache-enabler 4. wp-content
-                    esc_html__( '%1$s requires the %2$s drop-in. Please deactivate and then activate this plugin to automatically create this file. You can manually create an %2$s file by locating the sample file named %3$s (located in the %4$s directory), editing it as required, and then saving it as %2$s in the %5$s directory.', 'cache-enabler' ),
+                    esc_html__( '%1$s was unable to create the required %2$s drop-in file. You can manually create it by locating the sample file named %3$s (located in the %4$s directory), editing it as required, and then saving it as %2$s in the %5$s directory.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
                     '<code>advanced-cache.php</code>',
                     '<code>advanced-cache-sample.php</code>',
@@ -2354,10 +2314,8 @@ final class Cache_Enabler {
 
         // Check the file permissions.
         $dirs = array( CACHE_ENABLER_CACHE_DIR, CACHE_ENABLER_SETTINGS_DIR );
-
         foreach ( $dirs as $dir ) {
             $parent_dir = dirname( $dir );
-
             if ( file_exists( $parent_dir ) && ! is_writable( $parent_dir ) ) {
                 printf(
                     '<div class="notice notice-warning"><p>%s</p></div>',
@@ -2398,8 +2356,7 @@ final class Cache_Enabler {
     /**
      * Load plugin's translated strings.
      *
-     * @since   1.0.0
-     * @change  1.0.0
+     * @since  1.0.0
      */
     public static function register_textdomain() {
 
@@ -2420,8 +2377,7 @@ final class Cache_Enabler {
     /**
      * Schedule WP-Cron events.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      */
     public static function schedule_events() {
 
@@ -2447,8 +2403,7 @@ final class Cache_Enabler {
     /**
      * Unschedule WP-Cron events.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      */
     public static function unschedule_events() {
 

@@ -2,8 +2,7 @@
 /**
  * Plugin constants.
  *
- * @since   1.8.0
- * @change  1.8.0
+ * @since  1.8.0
  */
 
 $cache_enabler_constants = array(

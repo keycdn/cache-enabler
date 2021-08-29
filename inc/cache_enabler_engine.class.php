@@ -14,6 +14,7 @@ final class Cache_Enabler_Engine {
      * Start the cache engine.
      *
      * @since   1.5.2
+     * @since   1.8.0  The `$force` parameter was added.
      * @change  1.8.0
      *
      * @param   bool  Whether the cache engine should be force started.
@@ -31,8 +32,7 @@ final class Cache_Enabler_Engine {
     /**
      * Whether the cache engine is started.
      *
-     * @since   1.5.0
-     * @change  1.5.0
+     * @since  1.5.0
      *
      * @var  bool
      */
@@ -41,8 +41,7 @@ final class Cache_Enabler_Engine {
     /**
      * Specific HTTP request headers from the current request.
      *
-     * @since   1.7.0
-     * @change  1.7.0
+     * @since  1.7.0
      *
      * @var  string[]
      */
@@ -54,8 +53,7 @@ final class Cache_Enabler_Engine {
      * The settings will be from the disk when a frontend page is loaded and from the
      * database when an admin page is loaded.
      *
-     * @since   1.5.0
-     * @change  1.5.0
+     * @since  1.5.0
      *
      * @var  array
      */
@@ -65,11 +63,12 @@ final class Cache_Enabler_Engine {
      * Constructor.
      *
      * This is called by self::start() and starts up the cache engine. If the cache
-     * engine is already started that means it is being restarted. If that occurs the
-     * WordPress rewrite component will be reinitialized. This is to pick up the
-     * correct data for url_to_postid(), user_trailingslashit(), and the pagination
-     * bases. The disk and backend requirements will not be updated if the cache
-     * engine is being restarted and the settings do not exist or are outdated.
+     * engine is already started that means it is being restarted. This can occur when
+     * switching sites in a multisite network. If restarted, the WordPress rewrite
+     * component will be reinitialized. This is to pick up the correct data for
+     * url_to_postid(), user_trailingslashit(), and the pagination bases. The disk and
+     * backend requirements will not be updated if the cache engine is being restarted
+     * and the settings do not exist or are outdated.
      *
      * @since   1.5.0
      * @change  1.8.0
@@ -323,8 +322,7 @@ final class Cache_Enabler_Engine {
     /**
      * Whether to exclude search queries from the cache.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @return  bool  True if search queries should be excluded from the cache, false if not.
      */
