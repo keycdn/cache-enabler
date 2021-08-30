@@ -21,8 +21,7 @@ final class Cache_Enabler_Disk {
     /**
      * File path to the cached page for the current request.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @var  string
      */
@@ -143,10 +142,9 @@ final class Cache_Enabler_Disk {
      * Until this can be improved, see PR #237 for more information.
      *
      * @since   1.8.0
-     * @change  1.8.0
      * @access  private
      *
-     * @param   string        $url   URL to a cached page (with or without scheme and wildcard path).
+     * @param   string        $url   URL to a cached page (with or without scheme, wildcard path, and query string).
      * @param   array|string  $args  See description.
      * @return  array                Cache data.
      */
@@ -236,7 +234,7 @@ final class Cache_Enabler_Disk {
             }
         }
 
-        // Sort the cache index so that the path with the least amount of slashes is first.
+        // Sort the cache index by forward slashes from the lowest to highest.
         uksort( $cache['index'], 'self::sort_dir_objects' );
 
         if ( $args['clear'] ) {
@@ -275,8 +273,7 @@ final class Cache_Enabler_Disk {
     /**
      * Create the advanced-cache.php drop-in file.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @return  string|bool  Path to the created file, false on failure.
      */
@@ -394,11 +391,26 @@ final class Cache_Enabler_Disk {
 
         $new_settings_file_contents  = '<?php' . PHP_EOL;
         $new_settings_file_contents .= '/**' . PHP_EOL;
-        $new_settings_file_contents .= ' * Cache Enabler settings for ' . home_url() . PHP_EOL;
+        $new_settings_file_contents .= ' * The settings file for Cache Enabler.' . PHP_EOL;
         $new_settings_file_contents .= ' *' . PHP_EOL;
-        $new_settings_file_contents .= ' * @since    1.5.0' . PHP_EOL;
-        $new_settings_file_contents .= ' * @change   1.8.0' . PHP_EOL;
-        $new_settings_file_contents .= ' * @created  ' . self::get_current_time() . PHP_EOL;
+        $new_settings_file_contents .= ' * This file is automatically created, mirroring the plugin settings saved in the' . PHP_EOL;
+        $new_settings_file_contents .= ' * database. It is used to cache and deliver pages.' . PHP_EOL;
+        $new_settings_file_contents .= ' *' . PHP_EOL;
+        $new_settings_file_contents .= ' * @site  ' . home_url() . PHP_EOL;
+        $new_settings_file_contents .= ' * @time  ' . self::get_current_time() . PHP_EOL;
+        $new_settings_file_contents .= ' *' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.5.0' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.6.0  The `clear_site_cache_on_saved_post` setting was added.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.6.0  The `clear_complete_cache_on_saved_post` setting was removed.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.6.0  The `clear_site_cache_on_new_comment` setting was added.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.6.0  The `clear_complete_cache_on_new_comment` setting was removed.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.6.0  The `clear_site_cache_on_changed_plugin` setting was added.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.6.0  The `clear_complete_cache_on_changed_plugin` setting was removed.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.6.1  The `clear_site_cache_on_saved_comment` setting was added.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.6.1  The `clear_site_cache_on_new_comment` setting was removed.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.7.0  The `mobile_cache` setting was added.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.8.0  The `use_trailing_slashes` setting was added.' . PHP_EOL;
+        $new_settings_file_contents .= ' * @since  1.8.0  The `permalink_structure` setting was deprecated.' . PHP_EOL;
         $new_settings_file_contents .= ' */' . PHP_EOL;
         $new_settings_file_contents .= PHP_EOL;
         $new_settings_file_contents .= 'return ' . var_export( $settings, true ) . ';';
@@ -415,8 +427,7 @@ final class Cache_Enabler_Disk {
     /**
      * Fire the cache cleared hooks.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param  array[]  $cache_cleared_index  Index of the cache cleared.
      * @param  array[]  $hooks                Cache cleared hooks to 'include' and/or 'exclude' from being fired.
@@ -492,8 +503,7 @@ final class Cache_Enabler_Disk {
     /**
      * Filters whether a file or directory should be included or excluded.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   string   $dir_object  File or directory path to filter (without trailing slash).
      * @param   array[]  $filter      File or directory path(s) to 'include' and/or 'exclude' (without trailing slash).
@@ -521,10 +531,10 @@ final class Cache_Enabler_Disk {
             return true;
         }
 
-        ksort( $filter ); // Sort keys in alphabetical order to check for an exclusion first.
+        ksort( $filter ); // Sort the keys in alphabetical order to check for an exclusion first.
 
         if ( is_dir( $dir_object ) ) {
-            $dir_object = $dir_object . '/'; // Append trailing slash to prevent a false match.
+            $dir_object = $dir_object . '/'; // Append a trailing slash to prevent a false match.
         }
 
         foreach ( $filter as $filter_type => $filter_value ) {
@@ -570,8 +580,7 @@ final class Cache_Enabler_Disk {
      * untrailingslashit() function is not being used to remove the trailing slash
      * because it is not available when the cache engine is started early.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   string  $url  (Optional) Full URL to a cached page (with or without wildcard path). Default
      *                        is the current URL.
@@ -610,8 +619,7 @@ final class Cache_Enabler_Disk {
     /**
      * Get the cache iterator arguments.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @global  WP_Rewrite  $wp_rewrite  WordPress rewrite component.
      *
@@ -674,7 +682,7 @@ final class Cache_Enabler_Disk {
      * This does not check whether the returned cache file exists. It sets the
      * $cache_file property to prevent different paths being returned on the same
      * request. This can occur because the $_SERVER['REQUEST_URI'] superglobal can be
-     * updated by, like by other plugins, between trying to deliver a cached page and
+     * updated, like by another plugin, between trying to deliver a cached page and
      * then actually creating it.
      *
      * @since   1.7.0
@@ -700,8 +708,7 @@ final class Cache_Enabler_Disk {
     /**
      * Get the name of the cache file for the current request.
      *
-     * @since   1.7.0
-     * @change  1.7.0
+     * @since  1.7.0
      *
      * @return  string  Name of the cache file.
      */
@@ -784,8 +791,7 @@ final class Cache_Enabler_Disk {
      *     * #^(?=.*https)(?!.*webp).+$#
      *     * #^.+$#
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   array[]  $cache_keys  Cache keys to 'include' and/or 'exclude'.
      * @return  string                Cache keys regex, false on failure.
@@ -825,8 +831,7 @@ final class Cache_Enabler_Disk {
      *
      * This gets the HTML comment that is inserted at the bottom of a new cache file.
      *
-     * @since   1.7.0
-     * @change  1.7.0
+     * @since  1.7.0
      *
      * @param   string  $cache_file_name  Name of the new cache file.
      * @return  string                    HTML comment with the current time in HTTP-date format and the new cache file name.
@@ -869,8 +874,7 @@ final class Cache_Enabler_Disk {
      * It does not check whether the URL returned is from a cache directory that
      * exists.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   string  $dir  Directory path to a cached page.
      * @return  string        Full cache URL (with trailing slash if set), empty string if the directory path
@@ -1001,7 +1005,7 @@ final class Cache_Enabler_Disk {
      * was started late. It can update the disk and backend requirements and then
      * clear the complete cache if the settings are outdated. Having the backend
      * updated will trigger a new settings file to be created, which if created would
-     * result in this returning the settings from that new file.
+     * result the settings from that new file being returned.
      *
      * @since   1.5.0
      * @since   1.8.0  The `$update` parameter was added.
@@ -1056,6 +1060,8 @@ final class Cache_Enabler_Disk {
      * Get the files and directories inside of a given directory.
      *
      * @since   1.4.7
+     * @since   1.8.0  The `$recursive` parameter was added.
+     * @since   1.8.0  The `$filter` parameter was added.
      * @change  1.8.0
      *
      * @param   string    $dir        Directory path to scan (without trailing slash).
@@ -1073,7 +1079,7 @@ final class Cache_Enabler_Disk {
             return $dir_objects;
         }
 
-        $dir_object_names = scandir( $dir ); // Sorted order is alphabetical in ascending order.
+        $dir_object_names = scandir( $dir ); // The sorted order is alphabetical in ascending order.
 
         if ( is_array( $filter ) && empty( $filter['full_path'] ) ) {
             $filter['full_path'] = 1;
@@ -1149,8 +1155,7 @@ final class Cache_Enabler_Disk {
     /**
      * Get the current time.
      *
-     * @since   1.7.0
-     * @change  1.7.0
+     * @since  1.7.0
      *
      * @return  string  Current time in HTTP-date format.
      */
@@ -1296,8 +1301,7 @@ final class Cache_Enabler_Disk {
      * This is a wrapper for rmdir() that can delete empty parent directories and will
      * call clearstatcache() when necessary. It suppresses errors on failure.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   string         $dir      Directory path to remove.
      * @param   bool           $parents  (Optional) Whether empty parent directories should also be removed. Default false.
@@ -1379,12 +1383,11 @@ final class Cache_Enabler_Disk {
     }
 
     /**
-     * Sort file and directory paths by the number of slashes.
+     * Sort file and directory paths by the number of forward slashes.
      *
-     * This sorts paths by the lowest amount of slashes to the highest.
+     * This sorts paths by the lowest amount of forward slashes to the highest.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   string  $a  File or directory path to compare in sort.
      * @param   string  $b  File or directory path to compare in sort.
@@ -1476,13 +1479,13 @@ final class Cache_Enabler_Disk {
 
         foreach ( $image_urls as &$image_url ) {
             $image_url       = trim( $image_url, ' ' );
-            $image_url_webp  = preg_replace( $image_extension_regex, '$1.webp', $image_url ); // Append .webp extension.
+            $image_url_webp  = preg_replace( $image_extension_regex, '$1.webp', $image_url ); // Append the .webp extension.
             $image_path_webp = self::get_image_path( $image_url_webp );
 
             if ( is_file( $image_path_webp ) ) {
                 $image_url = $image_url_webp;
             } else {
-                $image_url_webp  = preg_replace( $image_extension_regex, '', $image_url_webp ); // Remove default extension.
+                $image_url_webp  = preg_replace( $image_extension_regex, '', $image_url_webp ); // Remove the default extension.
                 $image_path_webp = self::get_image_path( $image_url_webp );
 
                 if ( is_file( $image_path_webp ) ) {
@@ -1567,6 +1570,7 @@ final class Cache_Enabler_Disk {
      * directories. It suppresses errors on failure.
      *
      * @since   1.5.0
+     * @since   1.8.0  The `$settings_file` parameter was added.
      * @change  1.8.0
      *
      * @param  string  (Optional) Path to the settings file. Default is the settings file for the
@@ -1597,8 +1601,7 @@ final class Cache_Enabler_Disk {
     /**
      * Validate the cache iterator arguments.
      *
-     * @since   1.8.0
-     * @change  1.8.0
+     * @since  1.8.0
      *
      * @param   array  $args  Cache iterator arguments.
      * @return  array         Validated cache iterator arguments.
@@ -1615,7 +1618,7 @@ final class Cache_Enabler_Disk {
                     if ( is_string( $filter_value ) ) {
                         $filter_value = ( substr_count( $filter_value, '|' ) > 0 ) ? explode( '|', $filter_value ) : explode( ',', $filter_value );
                     } elseif ( ! is_array( $filter_value ) ) {
-                        $filter_value = array(); // Not converting type to avoid unwanted values.
+                        $filter_value = array(); // The type is not being converting to avoid unwanted values.
                     }
 
                     foreach ( $filter_value as $filter_value_key => &$filter_value_item ) {
