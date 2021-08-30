@@ -279,7 +279,7 @@ final class Cache_Enabler_Disk {
      */
     public static function create_advanced_cache_file() {
 
-        $advanced_cache_sample_file = CACHE_ENABLER_DIR . '/advanced-cache-sample.php';
+        $advanced_cache_sample_file = CACHE_ENABLER_DIR . '/advanced-cache.php';
 
         if ( ! is_readable( $advanced_cache_sample_file ) ) {
             return false;
