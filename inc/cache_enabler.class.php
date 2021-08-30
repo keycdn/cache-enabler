@@ -2288,7 +2288,7 @@ final class Cache_Enabler {
                     '<strong>Cache Enabler</strong>',
                     '<code>' . CACHE_ENABLER_INDEX_FILE . '</code>',
                     '<code>CACHE_ENABLER_INDEX_FILE</code>',
-                    '<code>wp-config.php</code>',
+                    '<code>wp-config.php</code>'
                 )
             );
         }

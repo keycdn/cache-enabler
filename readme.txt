@@ -55,6 +55,9 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.8.1 =
+* Fix requirements check (#285)
+
 = 1.8.0 =
 * Update `advanced-cache.php` drop-in file handling to improve reliability and compatibility (#283 and #260)
 * Update settings file to be deleted before the `home` option is updated to prevent a leftover settings file (#279)
