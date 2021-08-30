@@ -1337,9 +1337,8 @@ final class Cache_Enabler {
     /**
      * When a post has been saved or before it is sent to the trash.
      *
-     * This runs on the 'save_post' and 'wp_trash_post' actions. It will clear the
-     * cache when any published post type has been created, updated, or about to be
-     * trashed.
+     * This runs on the 'save_post' and 'wp_trash_post' actions. It will clear the cache
+     * when any published post type has been created, updated, or about to be trashed.
      *
      * @since   1.5.0
      * @change  1.7.0

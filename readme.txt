@@ -55,6 +55,31 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.8.0 =
+* Update `advanced-cache.php` drop-in file handling to improve reliability and compatibility (#283 and #260)
+* Update settings file to be deleted before the `home` option is updated to prevent a leftover settings file (#279)
+* Update `cache_enabler_bypass_cache` filter hook default value to allow a complete override (#277)
+* Update cache size transient to be in real time (#269 and #237)
+* Update cache expiry time to always be a non-negative integer (#265)
+* Update WP-CLI `clear` subcommand (#261)
+* Update required WordPress version from 5.1 to 5.5 (#260)
+* Update plugin upgrade process to improve reliability and compatibility (#260)
+* Update getting the cache file path to improve creating cache files (#256)
+* Update HTML5 doctype check to be less strict (#254)
+* Update permalink structure handling (#263 and #251)
+* Update requirements check to improve notices shown (#260 and #249)
+* Update cache clearing structure to enhance the automatic cache clearing actions (#247)
+* Add WP-Cron event to clear the expired cache on an hourly basis (#281, #268, and #237)
+* Add new cache clearing structure for option actions (#280 and #272)
+* Add cache engine restart support (#278 and #271)
+* Add `constants.php` file to plugin directory to allow constant overrides (#260)
+* Add wildcard cache clearing support (#246)
+* Add Brotli compression support (#243 @nlemoine)
+* Add new cache clearing structure for term actions (#234 @davelit)
+* Add cache iterator to improve cache object handling (#237)
+* Fix WebP URL conversion edge case (#275)
+* Deprecate `cache_enabler_clear_site_cache_by_blog_id` and `cache_enabler_clear_page_cache_by_post_id` action hooks in favor of replacements (#274 and #247)
+
 = 1.7.2 =
 * Update string to be translatable (#235 @timse201)
 * Add `cache_enabler_mkdir_mode` filter hook (#233)

@@ -870,9 +870,8 @@ final class Cache_Enabler_Disk {
     /**
      * Get the cache URL for a given directory path.
      *
-     * This only checks if the given directory path is in the plugin cache directory.
-     * It does not check whether the URL returned is from a cache directory that
-     * exists.
+     * This only checks if the given directory path is in the plugin cache directory. It
+     * does not check whether the URL returned is from a cache directory that exists.
      *
      * @since  1.8.0
      *
