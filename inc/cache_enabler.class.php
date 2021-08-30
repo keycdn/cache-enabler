@@ -2270,10 +2270,9 @@ final class Cache_Enabler {
                 '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
                     // translators: 1. Cache Enabler 2. advanced-cache.php 3. wp-content/plugins/cache-enabler 4. wp-content
-                    esc_html__( '%1$s was unable to create the required %2$s drop-in file. You can manually create it by locating the sample file named %3$s (located in the %4$s directory), editing it as required, and then saving it as %2$s in the %5$s directory.', 'cache-enabler' ),
+                    esc_html__( '%1$s was unable to create the required %2$s drop-in file. You can manually create it by locating the sample file in the %3$s directory, editing it as needed, and then saving it in the %4$s directory.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
                     '<code>advanced-cache.php</code>',
-                    '<code>advanced-cache-sample.php</code>',
                     '<code>' . str_replace( ABSPATH, '', CACHE_ENABLER_DIR ) . '</code>',
                     '<code>' . basename( WP_CONTENT_DIR ) . '</code>'
                 )

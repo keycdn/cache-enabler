@@ -2,9 +2,9 @@
 /**
  * The advanced-cache.php drop-in file for Cache Enabler.
  *
- * The advanced-cache.php creation method uses this during the disk setup and requirements
- * check. You can copy this file, edit the $cache_enabler_constants_file value, and save it
- * as "advanced-cache.php" in the wp-content directory.
+ * The advanced-cache.php creation method uses this during the disk setup and
+ * requirements check. You can copy this file to the wp-content directory and
+ * edit the $cache_enabler_constants_file value as needed.
  *
  * @since   1.2.0
  * @change  1.8.0
