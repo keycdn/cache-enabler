@@ -248,9 +248,12 @@ final class Cache_Enabler {
      *
      * This runs on the 'cache_enabler_page_cache_created',
      * 'cache_enabler_site_cache_cleared', and 'cache_enabler_page_cache_cleared'
-     * actions. It keeps the 'cache_enabler_cache_size' transient up to date.
+     * actions. It keeps the 'cache_enabler_cache_size' transient up to date. The
+     * cache index count can only be greater than 1 when the cache has been cleared,
+     * which can be the case for both cache cleared hooks.
      *
-     * @since  1.8.0
+     * @since   1.8.0
+     * @change  1.8.2
      *
      * @param  string  $url    Site or post URL.
      * @param  int     $id     Blog or post ID
@@ -264,17 +267,22 @@ final class Cache_Enabler {
 
         $current_cache_size = get_transient( 'cache_enabler_cache_size' );
 
-        if ( $current_cache_size === false ) {
-            self::get_cache_size();
-        } else {
-            if ( count( $index ) > 1 ) {
-                // Prevent incorrect cache size being built just in case cache cleared index is not entire site.
+        if ( count( $index ) > 1 ) {
+            if ( $current_cache_size !== false ) {
+                // Prevent an incorrect cache size being built when the cache cleared index is not the entire site.
                 delete_transient( 'cache_enabler_cache_size' );
+            }
+        } else {
+            // The changed cache size is negative when the cache is cleared.
+            $changed_cache_size = array_sum( current( $index )['versions'] );
+
+            if ( $current_cache_size === false ) {
+                if ( $changed_cache_size > 0 ) {
+                    self::get_cache_size();
+                }
             } else {
-                // The changed cache size is negative when the cache is cleared.
-                $changed_cache_size = array_sum( current( $index )['versions'] );
-                $new_cache_size     = $current_cache_size + $changed_cache_size;
-                $new_cache_size     = ( $new_cache_size >= 0 ) ? $new_cache_size : 0;
+                $new_cache_size = $current_cache_size + $changed_cache_size;
+                $new_cache_size = ( $new_cache_size >= 0 ) ? $new_cache_size : 0;
 
                 set_transient( 'cache_enabler_cache_size', $new_cache_size, DAY_IN_SECONDS );
             }
@@ -2227,7 +2235,7 @@ final class Cache_Enabler {
      * Check plugin's requirements.
      *
      * @since   1.1.0
-     * @change  1.8.0
+     * @change  1.8.1
      *
      * @global  string  $wp_version  WordPress version.
      */
