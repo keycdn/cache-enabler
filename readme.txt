@@ -55,6 +55,9 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.8.3 =
+* Update index file handling (#289)
+
 = 1.8.2 =
 * Update cache size transient handling (#287)
 

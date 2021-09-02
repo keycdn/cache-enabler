@@ -182,14 +182,24 @@ final class Cache_Enabler_Engine {
     /**
      * Whether the script being executed is the installation directory index file.
      *
+     * This uses $_SERVER['SCRIPT_NAME'] instead of $_SERVER['SCRIPT_FILENAME']
+     * because it is in the CGI/1.1 specification. It checks whether
+     * CACHE_ENABLER_INDEX_FILE ends with $_SERVER['SCRIPT_NAME'].
+     *
      * @since   1.5.0
-     * @change  1.8.0
+     * @change  1.8.3
      *
      * @return  bool  True if the script being executed is the index file, false if not.
      */
     private static function is_index() {
 
-        if ( defined( 'CACHE_ENABLER_INDEX_FILE' ) && $_SERVER['SCRIPT_FILENAME'] === CACHE_ENABLER_INDEX_FILE ) {
+        if ( ! defined( 'CACHE_ENABLER_INDEX_FILE' ) ) {
+            return false;
+        }
+
+        $script_name_length = strlen( $_SERVER['SCRIPT_NAME'] );
+
+        if ( substr( CACHE_ENABLER_INDEX_FILE, -$script_name_length, $script_name_length ) === $_SERVER['SCRIPT_NAME'] ) {
             return true;
         }
 
