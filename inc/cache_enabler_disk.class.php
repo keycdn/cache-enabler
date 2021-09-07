@@ -273,7 +273,8 @@ final class Cache_Enabler_Disk {
     /**
      * Create the advanced-cache.php drop-in file.
      *
-     * @since  1.8.0
+     * @since   1.8.0
+     * @change  1.8.4
      *
      * @return  string|bool  Path to the created file, false on failure.
      */
@@ -289,7 +290,7 @@ final class Cache_Enabler_Disk {
         $advanced_cache_file_contents = file_get_contents( $advanced_cache_sample_file );
         $advanced_cache_file_contents = str_replace( '/your/path/to/wp-content/plugins/cache-enabler', CACHE_ENABLER_DIR, $advanced_cache_file_contents );
 
-        if ( ! self::mkdir_p( dirname( $advanced_cache_file ) ) ) {
+        if ( ! is_writable( dirname( $advanced_cache_file ) ) ) {
             return false;
         }
 

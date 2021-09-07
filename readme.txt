@@ -55,6 +55,9 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.8.4 =
+* Update `advanced-cache.php` drop-in file handling (#292)
+
 = 1.8.3 =
 * Update index file handling (#289)
 
