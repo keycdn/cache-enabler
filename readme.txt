@@ -1,7 +1,7 @@
 === Cache Enabler ===
 Contributors: keycdn
 Tags: cache, caching, performance, webp, gzip, brotli, mobile, speed
-Requires at least: 5.5
+Requires at least: 5.1
 Tested up to: 5.8
 Requires PHP: 5.6
 Stable tag: trunk
@@ -54,6 +54,10 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 
 == Changelog ==
+
+= 1.8.5 =
+* Update required WordPress version from 5.5 to 5.1 (#295)
+* Fix plugin upgrade process when disk settings are outdated and a frontend page is requested (#295)
 
 = 1.8.4 =
 * Update `advanced-cache.php` drop-in file handling (#292)
