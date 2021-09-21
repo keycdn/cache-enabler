@@ -1002,18 +1002,20 @@ final class Cache_Enabler_Disk {
      * Get the plugin settings from the settings file for the current site.
      *
      * This will create the settings file if it does not exist and the cache engine
-     * was started late. It can update the disk and backend requirements and then
-     * clear the complete cache if the settings are outdated. Having the backend
-     * updated will trigger a new settings file to be created, which if created would
-     * result the settings from that new file being returned.
+     * was started late. If that occurs, the settings from the new settings file will
+     * be returned.
+     *
+     * This can update the disk and backend requirements and then clear the complete
+     * cache if the settings are outdated. If that occurs, a new settings file will be
+     * created and an empty array returned.
      *
      * @since   1.5.0
      * @since   1.8.0  The `$update` parameter was added.
-     * @change  1.8.0
+     * @change  1.8.5
      *
      * @param   bool   $update  Whether to update the disk and backend requirements if the settings are
      *                          outdated. Default true.
-     * @return  array           Plugin settings from the settings file, empty array on failure.
+     * @return  array           Plugin settings from the settings file, empty array when outdated or on failure.
      */
     public static function get_settings( $update = true ) {
 
@@ -1041,8 +1043,6 @@ final class Cache_Enabler_Disk {
             if ( $outdated_settings ) {
                 if ( $update ) {
                     Cache_Enabler::update();
-                    wp_opcache_invalidate( $settings_file );
-                    $settings = self::get_settings( false );
                 }
             } else {
                 $settings_file = self::create_settings_file( Cache_Enabler::get_settings() );
