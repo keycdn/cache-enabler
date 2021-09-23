@@ -288,7 +288,8 @@ final class Cache_Enabler_Disk {
 
         $advanced_cache_file          = WP_CONTENT_DIR . '/advanced-cache.php';
         $advanced_cache_file_contents = file_get_contents( $advanced_cache_sample_file );
-        $advanced_cache_file_contents = str_replace( '/your/path/to/wp-content/plugins/cache-enabler', CACHE_ENABLER_DIR, $advanced_cache_file_contents );
+        $replace = "defined('CACHE_ENABLER_CONSTANTS_FILE') ? CACHE_ENABLER_CONSTANTS_FILE : '" . CACHE_ENABLER_DIR . "/constants.php'";
+        $advanced_cache_file_contents = str_replace( '\'/your/path/to/wp-content/plugins/cache-enabler/constants.php\'', $replace, $advanced_cache_file_contents );
 
         if ( ! is_writable( dirname( $advanced_cache_file ) ) ) {
             return false;
