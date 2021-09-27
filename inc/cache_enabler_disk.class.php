@@ -274,11 +274,15 @@ final class Cache_Enabler_Disk {
      * Create the advanced-cache.php drop-in file.
      *
      * @since   1.8.0
-     * @change  1.8.4
+     * @change  1.8.6
      *
      * @return  string|bool  Path to the created file, false on failure.
      */
     public static function create_advanced_cache_file() {
+
+        if ( ! is_writable( WP_CONTENT_DIR ) ) {
+            return false;
+        }
 
         $advanced_cache_sample_file = CACHE_ENABLER_DIR . '/advanced-cache.php';
 
@@ -288,13 +292,12 @@ final class Cache_Enabler_Disk {
 
         $advanced_cache_file          = WP_CONTENT_DIR . '/advanced-cache.php';
         $advanced_cache_file_contents = file_get_contents( $advanced_cache_sample_file );
-        $advanced_cache_file_contents = str_replace( '/your/path/to/wp-content/plugins/cache-enabler', CACHE_ENABLER_DIR, $advanced_cache_file_contents );
 
-        if ( ! is_writable( dirname( $advanced_cache_file ) ) ) {
-            return false;
-        }
+        $search  = '/your/path/to/wp-content/plugins/cache-enabler/constants.php';
+        $replace = CACHE_ENABLER_CONSTANTS_FILE;
 
-        $advanced_cache_file_created = file_put_contents( $advanced_cache_file, $advanced_cache_file_contents, LOCK_EX );
+        $advanced_cache_file_contents = str_replace( $search, $replace, $advanced_cache_file_contents );
+        $advanced_cache_file_created  = file_put_contents( $advanced_cache_file, $advanced_cache_file_contents, LOCK_EX );
 
         return ( $advanced_cache_file_created === false ) ? false : $advanced_cache_file;
     }
