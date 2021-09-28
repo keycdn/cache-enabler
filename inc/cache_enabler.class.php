@@ -341,7 +341,7 @@ final class Cache_Enabler {
      * is activated, but in this case even if the backend was not truly updated.
      *
      * @since   1.5.0
-     * @change  1.8.0
+     * @change  1.8.6
      *
      * @return  array  The new or current option value.
      */
@@ -357,8 +357,6 @@ final class Cache_Enabler {
 
         $old_value = get_option( 'cache_enabler', array() );
         $value     = self::upgrade_settings( $old_value );
-        $value     = wp_parse_args( self::get_default_settings( 'system' ), $value );
-        $value     = wp_parse_args( $value, self::get_default_settings() );
         $value     = self::validate_settings( $value );
 
         update_option( 'cache_enabler', $value );
@@ -957,24 +955,53 @@ final class Cache_Enabler {
      * Get the default plugin settings.
      *
      * @since   1.5.0
-     * @change  1.8.0
+     * @since   1.8.6  The `$settings_type` parameter was updated to also accept 'user'.
+     * @change  1.8.6
      *
-     * @param   string  $settings_type  (Optional) The default 'system' settings or all default settings if empty.
+     * @param   string  $settings_type  (Optional) The default plugin 'system' or 'user' settings, all default plugin
+     *                                  settings otherwise.
      * @return  array                   Default plugin settings.
      */
-    private static function get_default_settings( $settings_type = null ) {
+    private static function get_default_settings( $settings_type = '' ) {
 
-        $system_default_settings = array(
+        switch ( $settings_type ) {
+            case 'system':
+                return self::get_default_system_settings();
+            case 'user':
+                return self::get_default_user_settings();
+            default:
+                return wp_parse_args( self::get_default_user_settings(), self::get_default_system_settings() );
+        }
+    }
+
+    /**
+     * Get the default plugin system settings.
+     *
+     * @since  1.8.6
+     *
+     * @return  array  Default plugin system settings.
+     */
+    private static function get_default_system_settings() {
+
+        $default_system_settings = array(
             'version'              => (string) CACHE_ENABLER_VERSION,
             'use_trailing_slashes' => (int) ( substr( get_option( 'permalink_structure' ), -1, 1 ) === '/' ),
             'permalink_structure'  => (string) self::get_permalink_structure(), // Deprecated in 1.8.0.
         );
 
-        if ( $settings_type === 'system' ) {
-            return $system_default_settings;
-        }
+        return $default_system_settings;
+    }
 
-        $user_default_settings = array(
+    /**
+     * Get the default plugin user settings.
+     *
+     * @since  1.8.6
+     *
+     * @return  array  Default plugin user settings.
+     */
+    private static function get_default_user_settings() {
+
+        $default_user_settings = array(
             'cache_expires'                      => 0,
             'cache_expiry_time'                  => 0,
             'clear_site_cache_on_saved_post'     => 0,
@@ -993,9 +1020,7 @@ final class Cache_Enabler {
             'excluded_cookies'                   => '',
         );
 
-        $default_settings = wp_parse_args( $user_default_settings, $system_default_settings );
-
-        return $default_settings;
+        return $default_user_settings;
     }
 
     /**
@@ -1028,7 +1053,8 @@ final class Cache_Enabler {
      * This runs when self::update_backend() is called. An empty replacement value
      * means the setting will be removed.
      *
-     * @since  1.8.0
+     * @since   1.8.0
+     * @change  1.8.6
      *
      * @param   array  $settings  Plugin settings.
      * @return  array             The plugin settings after maybe being upgraded.
@@ -1053,6 +1079,7 @@ final class Cache_Enabler {
         $settings_names = array(
             // 1.4.0
             'excl_regexp'                            => 'excluded_page_paths',
+            'incl_attributes'                        => '',
 
             // 1.5.0
             'expires'                                => 'cache_expiry_time',
@@ -2452,14 +2479,29 @@ final class Cache_Enabler {
      * Validate plugin settings.
      *
      * @since   1.0.0
-     * @change  1.8.0
+     * @change  1.8.6
      *
      * @param   array  $settings  Plugin settings.
      * @return  array             Validated plugin settings.
      */
     public static function validate_settings( $settings ) {
 
-        $validated_settings = array(
+        /**
+         * Filters the plugin settings before being validated and added or maybe updated.
+         *
+         * This can be an empty array or not contain all plugin settings. It will depend
+         * on if the plugin was just installed, the plugin version being upgraded from, or
+         * the form submitted in the plugin settings page. The plugin system settings are
+         * protected and cannot be overwritten.
+         *
+         * @since  1.8.6
+         *
+         * @param  array  $settings  Plugin settings.
+         */
+        $settings = (array) apply_filters( 'cache_enabler_settings_before_validation', $settings );
+        $settings = wp_parse_args( $settings, self::get_default_settings( 'user' ) );
+
+        $validated_settings = wp_parse_args( array(
             'cache_expires'                      => (int) ( ! empty( $settings['cache_expires'] ) ),
             'cache_expiry_time'                  => absint( $settings['cache_expiry_time'] ),
             'clear_site_cache_on_saved_post'     => (int) ( ! empty( $settings['clear_site_cache_on_saved_post'] ) ),
@@ -2476,9 +2518,7 @@ final class Cache_Enabler {
             'excluded_page_paths'                => (string) self::validate_regex( $settings['excluded_page_paths'] ),
             'excluded_query_strings'             => (string) self::validate_regex( $settings['excluded_query_strings'] ),
             'excluded_cookies'                   => (string) self::validate_regex( $settings['excluded_cookies'] ),
-        );
-
-        $validated_settings = wp_parse_args( $validated_settings, self::get_default_settings( 'system' ) );
+        ), self::get_default_settings( 'system' ) );
 
         if ( ! empty( $settings['clear_site_cache_on_saved_settings'] ) ) {
             self::clear_site_cache();
