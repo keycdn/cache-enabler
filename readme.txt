@@ -55,6 +55,13 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.8.6 =
+* Add `cache_enabler_settings_before_validation` filter hook (#298)
+* Add additional validation when creating cached files (#299)
+* Add type casts to several filter hooks (#299)
+* Update requirements check notices (#300)
+* Update `advanced-cache.php` drop-in file handling (#297)
+
 = 1.8.5 =
 * Update required WordPress version from 5.5 to 5.1 (#295)
 * Fix plugin upgrade process when disk settings are outdated and a frontend page is requested (#295)
