@@ -61,7 +61,7 @@ final class Cache_Enabler_Disk {
      * Create a static HTML file from the page contents received from the cache engine.
      *
      * @since   1.5.0
-     * @change  1.7.0
+     * @change  1.8.6
      *
      * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
      */
@@ -74,8 +74,8 @@ final class Cache_Enabler_Disk {
          *
          * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
          */
-        $page_contents = apply_filters( 'cache_enabler_page_contents_before_store', $page_contents );
-        $page_contents = apply_filters_deprecated( 'cache_enabler_before_store', array( $page_contents ), '1.6.0', 'cache_enabler_page_contents_before_store' );
+        $page_contents = (string) apply_filters( 'cache_enabler_page_contents_before_store', $page_contents );
+        $page_contents = (string) apply_filters_deprecated( 'cache_enabler_before_store', array( $page_contents ), '1.6.0', 'cache_enabler_page_contents_before_store' );
 
         self::create_cache_file( $page_contents );
     }
@@ -306,7 +306,7 @@ final class Cache_Enabler_Disk {
      * Create a static HTML file.
      *
      * @since   1.5.0
-     * @change  1.8.0
+     * @change  1.8.6
      *
      * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
      */
@@ -328,6 +328,10 @@ final class Cache_Enabler_Disk {
 
         if ( strpos( $new_cache_file_name, 'webp' ) !== false ) {
             $page_contents = self::converter( $page_contents );
+        }
+
+        if ( ! Cache_Enabler_Engine::is_cacheable( $page_contents ) ) {
+            return; // Filter, HTML minification, or WebP conversion failed.
         }
 
         switch ( substr( $new_cache_file_name, -2, 2 ) ) {
@@ -1258,7 +1262,7 @@ final class Cache_Enabler_Disk {
      * and will attempt to update any existing directories accordingly.
      *
      * @since   1.7.0
-     * @change  1.7.2
+     * @change  1.8.6
      *
      * @param   string  $dir  Directory path to create.
      * @return  bool          True if the directory either already exists or was created *and* has the
@@ -1274,7 +1278,7 @@ final class Cache_Enabler_Disk {
          * @param  int  $mode  Mode that defines the access permissions for the created directory. The mode
          *                     must be an octal number, which means it should have a leading zero. Default is 0755.
          */
-        $mode_octal  = apply_filters( 'cache_enabler_mkdir_mode', 0755 );
+        $mode_octal  = (int) apply_filters( 'cache_enabler_mkdir_mode', 0755 );
         $mode_string = decoct( $mode_octal ); // Get the last three digits (e.g. '755').
         $parent_dir  = dirname( $dir );
         $fs          = self::get_filesystem();
@@ -1414,7 +1418,7 @@ final class Cache_Enabler_Disk {
      * This handles converting inline image URLs for the WebP cache version.
      *
      * @since   1.7.0
-     * @change  1.8.0
+     * @change  1.8.6
      *
      * @param   string  $page_contents  Page contents from the cache engine as raw HTML.
      * @return  string                  Page contents after maybe being converted.
@@ -1453,8 +1457,8 @@ final class Cache_Enabler_Disk {
          *
          * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
          */
-        $converted_page_contents = apply_filters( 'cache_enabler_page_contents_after_webp_conversion', preg_replace_callback( $image_urls_regex, 'self::convert_webp', $page_contents ) );
-        $converted_page_contents = apply_filters_deprecated( 'cache_enabler_disk_webp_converted_data', array( $converted_page_contents ), '1.6.0', 'cache_enabler_page_contents_after_webp_conversion' );
+        $converted_page_contents = (string) apply_filters( 'cache_enabler_page_contents_after_webp_conversion', preg_replace_callback( $image_urls_regex, 'self::convert_webp', $page_contents ) );
+        $converted_page_contents = (string) apply_filters_deprecated( 'cache_enabler_disk_webp_converted_data', array( $converted_page_contents ), '1.6.0', 'cache_enabler_page_contents_after_webp_conversion' );
 
         return $converted_page_contents;
     }
