@@ -210,12 +210,16 @@ final class Cache_Enabler_Engine {
      * Whether the contents from the output buffer can be cached.
      *
      * @since   1.5.0
-     * @change  1.8.0
+     * @change  1.8.6
      *
      * @param   string  $contents  Contents from the output buffer.
      * @return  bool               True if contents from the output buffer are cacheable, false if not.
      */
-    private static function is_cacheable( $contents ) {
+    public static function is_cacheable( $contents ) {
+
+        if ( ! is_string( $contents ) ) {
+            return false;
+        }
 
         $has_html_tag       = ( stripos( $contents, '<html' ) !== false );
         $has_html5_doctype  = preg_match( '/^<!DOCTYPE.+html\s*>/i', ltrim( $contents ) );
