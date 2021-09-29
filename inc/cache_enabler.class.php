@@ -2262,7 +2262,7 @@ final class Cache_Enabler {
      * Check plugin's requirements.
      *
      * @since   1.1.0
-     * @change  1.8.1
+     * @change  1.8.6
      *
      * @global  string  $wp_version  WordPress version.
      */
@@ -2303,12 +2303,12 @@ final class Cache_Enabler {
             printf(
                 '<div class="notice notice-warning"><p>%s</p></div>',
                 sprintf(
-                    // translators: 1. Cache Enabler 2. advanced-cache.php 3. wp-content/plugins/cache-enabler 4. wp-content
+                    // translators: 1. Cache Enabler 2. advanced-cache.php 3. /path/to/wp-content/plugins/cache-enabler 4. /path/to/wp-content
                     esc_html__( '%1$s was unable to create the required %2$s drop-in file. You can manually create it by locating the sample file in the %3$s directory, editing it as needed, and then saving it in the %4$s directory.', 'cache-enabler' ),
                     '<strong>Cache Enabler</strong>',
                     '<code>advanced-cache.php</code>',
-                    '<code>' . str_replace( ABSPATH, '', CACHE_ENABLER_DIR ) . '</code>',
-                    '<code>' . basename( WP_CONTENT_DIR ) . '</code>'
+                    '<code>' . CACHE_ENABLER_DIR . '</code>',
+                    '<code>' . WP_CONTENT_DIR . '</code>'
                 )
             );
         }
@@ -2353,11 +2353,11 @@ final class Cache_Enabler {
                 printf(
                     '<div class="notice notice-warning"><p>%s</p></div>',
                     sprintf(
-                        // translators: 1. Cache Enabler 2. 755 3. wp-content/cache 4. file permissions
+                        // translators: 1. Cache Enabler 2. 755 3. /path/to/wp-content/cache 4. file permissions
                         esc_html__( '%1$s requires write permissions %2$s in the %3$s directory. Please change the %4$s.', 'cache-enabler' ),
                         '<strong>Cache Enabler</strong>',
                         '<code>755</code>',
-                        '<code>' . str_replace( ABSPATH, '', $parent_dir ) . '</code>',
+                        '<code>' . $parent_dir . '</code>',
                         sprintf(
                             '<a href="%s" target="_blank" rel="nofollow noopener">%s</a>',
                             'https://wordpress.org/support/article/changing-file-permissions/',
