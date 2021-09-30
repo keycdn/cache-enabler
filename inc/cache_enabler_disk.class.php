@@ -1343,10 +1343,17 @@ final class Cache_Enabler_Disk {
     /**
      * Set or unset the WP_CACHE constant in the wp-config.php file.
      *
-     * @since   1.5.0
-     * @change  1.7.0
+     * This has some functionality copied from wp-load.php when trying to find the
+     * wp-config.php file. It will only set the WP_CACHE constant if the wp-config.php
+     * file is considered to be default and it is not already set. It will only unset
+     * the WP_CACHE constant if previously set by the plugin.
      *
-     * @param  bool  $set  (Optional) True to set the WP_CACHE constant, false to unset. Default true.
+     * @since   1.5.0
+     * @since   1.8.7  The return value was updated.
+     * @change  1.8.7
+     *
+     * @param   bool         $set  (Optional) True to set the WP_CACHE constant, false to unset. Default true.
+     * @return  string|bool        Path to the updated wp-config.php file, false otherwise.
      */
     private static function set_wp_cache_constant( $set = true ) {
 
@@ -1357,36 +1364,57 @@ final class Cache_Enabler_Disk {
             // The config file resides one level above ABSPATH but is not part of another installation.
             $wp_config_file = dirname( ABSPATH ) . '/wp-config.php';
         } else {
-            $wp_config_file = false;
+            // The config file could not be found.
+            return false;
         }
 
-        if ( ! $wp_config_file || ! is_writable( $wp_config_file ) ) {
-            return;
+        if ( ! is_writable( $wp_config_file ) ) {
+            return false;
         }
 
         $wp_config_file_contents = file_get_contents( $wp_config_file );
 
         if ( ! is_string( $wp_config_file_contents ) ) {
-            return;
+            return false;
         }
 
-        $found_wp_cache_constant = preg_match( '/define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,.+\);/', $wp_config_file_contents );
+        if ( $set ) {
+            $default_wp_config_file = ( strpos( $wp_config_file_contents, '/** Sets up WordPress vars and included files. */' ) !== false );
 
-        if ( $set && ! $found_wp_cache_constant ) {
-            $ce_wp_config_lines  = '/** Enables page caching for Cache Enabler. */' . PHP_EOL;
-            $ce_wp_config_lines .= "if ( ! defined( 'WP_CACHE' ) ) {" . PHP_EOL;
-            $ce_wp_config_lines .= "\tdefine( 'WP_CACHE', true );" . PHP_EOL;
-            $ce_wp_config_lines .= '}' . PHP_EOL;
-            $ce_wp_config_lines .= PHP_EOL;
-            $wp_config_file_contents = preg_replace( '/(\/\*\* Sets up WordPress vars and included files\. \*\/)/', $ce_wp_config_lines . '$1', $wp_config_file_contents );
+            if ( ! $default_wp_config_file ) {
+                return false;
+            }
+
+            $found_wp_cache_constant = preg_match( '#define\s*\(\s*[\'\"]WP_CACHE[\'\"]\s*,.+\);#', $wp_config_file_contents );
+
+            if ( $found_wp_cache_constant ) {
+                return false;
+            }
+
+            $new_wp_config_lines  = '/** Enables page caching for Cache Enabler. */' . PHP_EOL;
+            $new_wp_config_lines .= "if ( ! defined( 'WP_CACHE' ) ) {" . PHP_EOL;
+            $new_wp_config_lines .= "\tdefine( 'WP_CACHE', true );" . PHP_EOL;
+            $new_wp_config_lines .= '}' . PHP_EOL;
+            $new_wp_config_lines .= PHP_EOL;
+
+            $new_wp_config_file_contents = preg_replace( '#(/\*\* Sets up WordPress vars and included files\. \*/)#', $new_wp_config_lines . '$1', $wp_config_file_contents );
+        } else { // Unset.
+            if ( strpos( $wp_config_file_contents, '/** Enables page caching for Cache Enabler. */' ) !== false ) {
+                $new_wp_config_file_contents = preg_replace( '#/\*\* Enables page caching for Cache Enabler\. \*/' . PHP_EOL . '.+' . PHP_EOL . '.+' . PHP_EOL . '\}' . PHP_EOL . PHP_EOL . '#', '', $wp_config_file_contents );
+            } elseif ( strpos( $wp_config_file_contents, '// Added by Cache Enabler' ) !== false ) { // < 1.5.0
+                $new_wp_config_file_contents = preg_replace( '#.+Added by Cache Enabler\r\n#', '', $wp_config_file_contents );
+            } else {
+                return false; // Not previously set by the plugin.
+            }
         }
 
-        if ( ! $set ) {
-            $wp_config_file_contents = preg_replace( '/.+Added by Cache Enabler\r\n/', '', $wp_config_file_contents ); // < 1.5.0
-            $wp_config_file_contents = preg_replace( '/\/\*\* Enables page caching for Cache Enabler\. \*\/' . PHP_EOL . '.+' . PHP_EOL . '.+' . PHP_EOL . '\}' . PHP_EOL . PHP_EOL . '/', '', $wp_config_file_contents );
+        if ( ! is_string( $new_wp_config_file_contents ) || empty( $new_wp_config_file_contents ) ) {
+            return false;
         }
 
-        file_put_contents( $wp_config_file, $wp_config_file_contents, LOCK_EX );
+        $wp_config_file_updated = file_put_contents( $wp_config_file, $new_wp_config_file_contents, LOCK_EX );
+
+        return ( $wp_config_file_updated === false ) ? false : $wp_config_file;
     }
 
     /**
