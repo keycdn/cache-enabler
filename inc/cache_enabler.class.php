@@ -232,8 +232,8 @@ final class Cache_Enabler {
      * When the plugin is uninstalled.
      *
      * This runs on the 'uninstall_cache-enabler/cache-enabler.php' action. It deletes
-     * the 'cache_enabler' option and 'cache_enabler_cache_size' transient from the
-     * database for each site.
+     * the 'cache_enabler' option and plugin transients from the database for each
+     * site in the installation.
      *
      * @since   1.0.0
      * @change  1.6.0
@@ -313,27 +313,28 @@ final class Cache_Enabler {
     }
 
     /**
-     * Update the disk and backend requirements.
+     * Update the disk and backend requirements for the current site.
      *
      * This update process begins by first deleting the settings and
      * advanced-cache.php files and then maybe unsets the WP_CACHE constant in the
      * wp-config.php file. A new advanced-cache.php file is then created and the
-     * WP_CACHE constant is maybe set. Next, the 'cache_enabler' option is updated in
-     * the database for each site Cache Enabler is considered active, which triggers a
-     * new settings file to be created each time that occurs. Lastly, the complete
-     * cache is cleared.
+     * WP_CACHE constant is maybe set. If a multisite network, the preceding actions
+     * will only be done when the first site in the network is updated. Next, the
+     * 'cache_enabler' option is updated in the database for the current site, which
+     * triggers a new settings file to be created. Lastly, the site cache is cleared.
      *
-     * @since  1.8.0
+     * @since   1.8.0
+     * @change  1.8.7
      */
     public static function update() {
 
         self::update_disk();
-        self::each_site( is_multisite(), 'self::update_backend' );
-        self::clear_complete_cache();
+        self::update_backend();
+        self::clear_site_cache();
     }
 
     /**
-     * Add or update backend requirements.
+     * Add or update the backend requirements for the current site.
      *
      * This adds or updates the 'cache_enabler' option in the database, which triggers
      * the creation of the settings file. It will call self::on_update_backend() when
@@ -369,19 +370,29 @@ final class Cache_Enabler {
     }
 
     /**
-     * Update the disk requirements.
+     * Update the disk requirements for the current site.
      *
      * This deletes the settings and advanced-cache.php files and then maybe unsets
      * the WP_CACHE constant in the wp-config.php file. A new advanced-cache.php file
-     * is then created and the WP_CACHE constant is maybe set.
+     * is then created and the WP_CACHE constant is maybe set. If a multisite network,
+     * the 'cache_enabler_disk_updated' site transient is set afterward to only allow
+     * this to be ran once.
      *
-     * @since  1.8.0
+     * @since   1.8.0
+     * @change  1.8.7
      */
     public static function update_disk() {
 
-        self::each_site( is_multisite(), 'Cache_Enabler_Disk::clean' );
-
-        Cache_Enabler_Disk::setup();
+        if ( is_multisite() ) {
+            if ( get_site_transient( 'cache_enabler_disk_updated' ) !== CACHE_ENABLER_VERSION ) {
+                self::each_site( true, 'Cache_Enabler_Disk::clean' );
+                Cache_Enabler_Disk::setup();
+                set_site_transient( 'cache_enabler_disk_updated', CACHE_ENABLER_VERSION, HOUR_IN_SECONDS );
+            }
+        } else {
+            Cache_Enabler_Disk::clean();
+            Cache_Enabler_Disk::setup();
+        }
     }
 
     /**
@@ -557,12 +568,13 @@ final class Cache_Enabler {
      * Uninstall backend requirements.
      *
      * @since   1.5.0
-     * @change  1.8.0
+     * @change  1.8.7
      */
     private static function uninstall_backend() {
 
         delete_option( 'cache_enabler' );
         delete_transient( 'cache_enabler_cache_size' );
+        delete_site_transient( 'cache_enabler_disk_updated' );
     }
 
     /**
@@ -707,7 +719,7 @@ final class Cache_Enabler {
     /**
      * Get the plugin settings from the database for the current site.
      *
-     * This can update the disk and backend requirements and then clear the complete
+     * This can update the disk and backend requirements and then clear the site
      * cache if the settings do not exist or are outdated. If that occurs, the
      * settings after the update will be returned.
      *

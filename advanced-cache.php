@@ -4,8 +4,8 @@
  *
  * The advanced-cache.php creation method uses this during the disk setup and
  * requirements check. You can copy this file to the wp-content directory and edit
- * the $cache_enabler_constants_file value as needed. It will be deleted if stale
- * or abandoned.
+ * the $cache_enabler_constants_file value as needed. It will automatically delete
+ * itself if stale or abandoned.
  *
  * @since   1.2.0
  * @change  1.8.6
