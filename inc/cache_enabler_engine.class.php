@@ -32,6 +32,9 @@ final class Cache_Enabler_Engine {
     /**
      * Whether the cache engine is started.
      *
+     * The cache engine is considered to have been started early when started in the
+     * advanced-cache.php drop-in file and started late when started on the 'init' action.
+     *
      * @since  1.5.0
      *
      * @var  bool

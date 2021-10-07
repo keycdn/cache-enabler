@@ -922,6 +922,11 @@ final class Cache_Enabler_Disk {
     /**
      * Get the name of the settings file for the current site.
      *
+     * This uses home_url() in the late cache engine start to get the settings file
+     * name when creating and deleting the settings file or when getting the plugin
+     * settings from the settings file. Otherwise, it finds the name of the settings
+     * file in the settings directory when the cache engine is started early.
+     *
      * @since   1.5.5
      * @change  1.8.0
      *
@@ -934,7 +939,6 @@ final class Cache_Enabler_Disk {
 
         $settings_file_name = '';
 
-        // When creating or deleting the settings file.
         if ( function_exists( 'home_url' ) ) {
             $settings_file_name = parse_url( home_url(), PHP_URL_HOST );
 
@@ -944,7 +948,6 @@ final class Cache_Enabler_Disk {
             }
 
             $settings_file_name .= '.php';
-        // When getting the plugin settings from the settings file.
         } elseif ( is_dir( CACHE_ENABLER_SETTINGS_DIR ) ) {
             if ( $fallback ) {
                 $settings_files      = array_map( 'basename', self::get_dir_objects( CACHE_ENABLER_SETTINGS_DIR ) );
@@ -1010,15 +1013,17 @@ final class Cache_Enabler_Disk {
      *
      * This will create the settings file if it does not exist and the cache engine
      * was started late. If that occurs, the settings from the new settings file will
-     * be returned.
+     * be returned. Before it is created, checking if the settings file exists after
+     * retrieving the database settings is done in case an update occurred, which
+     * would have resulted in a new settings file being created.
      *
-     * This can update the disk and backend requirements and then clear the complete
-     * cache if the settings are outdated. If that occurs, a new settings file will be
+     * This can update the disk and backend requirements and then clear the site cache
+     * if the settings are outdated. If that occurs, a new settings file will be
      * created and an empty array returned.
      *
      * @since   1.5.0
      * @since   1.8.0  The `$update` parameter was added.
-     * @change  1.8.5
+     * @change  1.8.7
      *
      * @param   bool   $update  Whether to update the disk and backend requirements if the settings are
      *                          outdated. Default true.
@@ -1052,10 +1057,17 @@ final class Cache_Enabler_Disk {
                     Cache_Enabler::update();
                 }
             } else {
-                $settings_file = self::create_settings_file( Cache_Enabler::get_settings() );
+                $_settings = Cache_Enabler::get_settings();
+                $settings_file = self::get_settings_file();
 
-                if ( $settings_file !== false ) {
+                if ( is_file( $settings_file ) ) {
                     $settings = include $settings_file;
+                } else {
+                    $settings_file = self::create_settings_file( $_settings );
+
+                    if ( $settings_file !== false ) {
+                        $settings = include $settings_file;
+                    }
                 }
             }
         }
