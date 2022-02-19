@@ -85,6 +85,8 @@ final class Cache_Enabler {
         add_action( 'profile_update', array( __CLASS__, 'on_register_update_delete_user' ) );
         add_action( 'delete_user', array( __CLASS__, 'on_register_update_delete_user' ) );
         add_action( 'deleted_user', array( __CLASS__, 'on_deleted_user' ), 10, 2 );
+		add_action( 'updated_post_meta', array( __CLASS__, 'on_post_meta_updated' ), 10, 4);
+		add_action( 'added_post_meta', array( __CLASS__, 'on_post_meta_updated' ), 10, 4);
 
         // Third party clear cache hooks.
         add_action( 'autoptimize_action_cachepurged', array( __CLASS__, 'clear_complete_cache' ) );
@@ -1421,6 +1423,24 @@ final class Cache_Enabler {
             self::clear_cache_on_post_save( $post_id );
         }
     }
+
+	/**
+     * After an existing post has its meta updated.
+     *
+     * This runs on the 'added_post_meta' and 'updated_post_meta' actions. It will clear the cache when a post meta
+     * is added or updated.
+     * The KK Star Plugin update post meta on new rating and needs the post cache to be cleared.
+     *
+     * @since  1.8.8
+     *
+     * @param  int    $meta_id    Meta ID.
+     * @param  int    $post_id    Post ID.
+     * @param  string    $meta_key   Meta key.
+     * @param  mixed  $meta_value  Meta value.
+     */
+    public static function on_post_meta_updated( $meta_id, $post_id, $meta_key, $meta_value ) {
+		self::clear_post_cache($post_id);
+	}
 
     /**
      * After a comment is inserted into the database.
