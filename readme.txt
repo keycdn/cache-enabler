@@ -29,7 +29,7 @@ Cache Enabler is a simple, yet powerful WordPress caching plugin that is easy to
 * Real-time cache size display in the WordPress dashboard
 * Custom post type support
 * `304 Not Modified` support
-* Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/) and the majority of other third party plugins
+* Works perfectly with [Autoptimize](https://wordpress.org/plugins/autoptimize/)
 
 
 = How does the caching work? =
