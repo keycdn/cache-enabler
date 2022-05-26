@@ -154,6 +154,45 @@ final class Cache_Enabler_Engine {
     }
 
     /**
+     * Sanitize server input string.
+     *
+     * @since   1.8.8
+     * @change  1.8.8
+     *
+     * @param   string  $str Input string.
+     * @param   bool    $strict Strictly sanitized.
+     * @return  string  Sanitized input string.
+     */
+    public static function sanitize_server_input($str, $strict = true) {
+
+        if ( is_object( $str ) || is_array( $str ) ) {
+            return '';
+        }
+
+        $str = (string) $str;
+        if ( 0 === strlen( $str ) ) {
+            return '';
+        }
+
+        $filtered = preg_replace( '/[\r\n\t ]+/', ' ', $str );
+        $filtered = trim( $filtered );
+
+        if ( $strict ) {
+            $found = false;
+            while ( preg_match( '/%[a-f0-9]{2}/i', $filtered, $match ) ) {
+                $filtered = str_replace( $match[0], '', $filtered );
+                $found    = true;
+            }
+
+            if ( $found ) {
+                $filtered = trim( preg_replace( '/ +/', ' ', $filtered ) );
+            }
+        }
+
+        return $filtered;
+    }
+
+    /**
      * Get the required HTTP request headers from the current request.
      *
      * @since   1.7.0
@@ -170,14 +209,19 @@ final class Cache_Enabler_Engine {
         $request_headers = function_exists( 'apache_request_headers' ) ? apache_request_headers() : array();
 
         $request_headers = array(
-            'Accept'             => isset( $request_headers['Accept'] ) ? $request_headers['Accept'] : ( isset( $_SERVER[ 'HTTP_ACCEPT' ] ) ? $_SERVER[ 'HTTP_ACCEPT' ] : '' ),
-            'Accept-Encoding'    => isset( $request_headers['Accept-Encoding'] ) ? $request_headers['Accept-Encoding'] : ( isset( $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] ) ? $_SERVER[ 'HTTP_ACCEPT_ENCODING' ] : '' ),
-            'Host'               => isset( $request_headers['Host'] ) ? $request_headers['Host'] : ( isset( $_SERVER[ 'HTTP_HOST' ] ) ? $_SERVER[ 'HTTP_HOST' ] : '' ),
-            'If-Modified-Since'  => isset( $request_headers['If-Modified-Since'] ) ? $request_headers['If-Modified-Since'] : ( isset( $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] ) ? $_SERVER[ 'HTTP_IF_MODIFIED_SINCE' ] : '' ),
-            'User-Agent'         => isset( $request_headers['User-Agent'] ) ? $request_headers['User-Agent'] : ( isset( $_SERVER[ 'HTTP_USER_AGENT' ] ) ? $_SERVER[ 'HTTP_USER_AGENT' ] : '' ),
-            'X-Forwarded-Proto'  => isset( $request_headers['X-Forwarded-Proto'] ) ? $request_headers['X-Forwarded-Proto'] : ( isset( $_SERVER[ 'HTTP_X_FORWARDED_PROTO' ] ) ? $_SERVER[ 'HTTP_X_FORWARDED_PROTO' ] : '' ),
-            'X-Forwarded-Scheme' => isset( $request_headers['X-Forwarded-Scheme'] ) ? $request_headers['X-Forwarded-Scheme'] : ( isset( $_SERVER[ 'HTTP_X_FORWARDED_SCHEME' ] ) ? $_SERVER[ 'HTTP_X_FORWARDED_SCHEME' ] : '' ),
+            'Accept'             => isset( $request_headers['Accept'] ) ? $request_headers['Accept'] : ( isset( $_SERVER['HTTP_ACCEPT'] ) ? $_SERVER['HTTP_ACCEPT'] : '' ),
+            'Accept-Encoding'    => isset( $request_headers['Accept-Encoding'] ) ? $request_headers['Accept-Encoding'] : ( isset( $_SERVER['HTTP_ACCEPT_ENCODING'] ) ? $_SERVER['HTTP_ACCEPT_ENCODING'] : '' ),
+            'Host'               => isset( $request_headers['Host'] ) ? $request_headers['Host'] : ( isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER[ 'HTTP_HOST' ] : '' ),
+            'If-Modified-Since'  => isset( $request_headers['If-Modified-Since'] ) ? $request_headers['If-Modified-Since'] : ( isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ? $_SERVER['HTTP_IF_MODIFIED_SINCE'] : '' ),
+            'User-Agent'         => isset( $request_headers['User-Agent'] ) ? $request_headers['User-Agent'] : ( isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '' ),
+            'X-Forwarded-Proto'  => isset( $request_headers['X-Forwarded-Proto'] ) ? $request_headers['X-Forwarded-Proto'] : ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] : '' ),
+            'X-Forwarded-Scheme' => isset( $request_headers['X-Forwarded-Scheme'] ) ? $request_headers['X-Forwarded-Scheme'] : ( isset( $_SERVER['HTTP_X_FORWARDED_SCHEME'] ) ? $_SERVER['HTTP_X_FORWARDED_SCHEME'] : '' ),
         );
+
+        // Sanitize request header values
+        foreach ($request_headers as $key => $value) {
+            $request_headers[$key] = self::sanitize_server_input( $value );
+        }
 
         return $request_headers;
     }
@@ -200,10 +244,12 @@ final class Cache_Enabler_Engine {
             return false;
         }
 
-        $script_name_length = strlen( $_SERVER['SCRIPT_NAME'] );
+        if ( isset( $_SERVER['SCRIPT_NAME'] ) ) {
+            $script_name_length = strlen( $_SERVER['SCRIPT_NAME'] );
 
-        if ( substr( CACHE_ENABLER_INDEX_FILE, -$script_name_length, $script_name_length ) === $_SERVER['SCRIPT_NAME'] ) {
-            return true;
+            if ( substr( CACHE_ENABLER_INDEX_FILE, -$script_name_length, $script_name_length ) === $_SERVER['SCRIPT_NAME'] ) {
+                return true;
+            }
         }
 
         return false;
@@ -403,7 +449,7 @@ final class Cache_Enabler_Engine {
             header( 'X-Cache-Handler: cache-enabler-engine' );
 
             if ( strtotime( self::$request_headers['If-Modified-Since'] >= filemtime( $cache_file ) ) ) {
-                header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified', true, 304 );
+                header( self::sanitize_server_input( $_SERVER['SERVER_PROTOCOL'] ) . ' 304 Not Modified', true, 304 );
                 exit; // Deliver empty body.
             }
 

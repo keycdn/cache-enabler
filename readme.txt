@@ -2,7 +2,7 @@
 Contributors: keycdn
 Tags: cache, caching, performance, webp, gzip, brotli, mobile, speed
 Requires at least: 5.1
-Tested up to: 5.8
+Tested up to: 6.0
 Requires PHP: 5.6
 Stable tag: trunk
 License: GPLv2 or later
@@ -54,6 +54,9 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 
 == Changelog ==
+
+= 1.8.8 =
+* Add server input sanitization
 
 = 1.8.7 =
 * Update plugin upgrade process for multisite networks (#303)

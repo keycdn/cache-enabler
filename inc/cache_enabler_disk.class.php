@@ -597,7 +597,7 @@ final class Cache_Enabler_Disk {
     private static function get_cache_dir( $url = null ) {
 
         if ( empty ( $url ) ) {
-            $url = 'http://' . Cache_Enabler_Engine::$request_headers['Host'] . $_SERVER['REQUEST_URI'];
+            $url = 'http://' . Cache_Enabler_Engine::$request_headers['Host'] . Cache_Enabler_Engine::sanitize_server_input( $_SERVER['REQUEST_URI'], false );
         }
 
         $url_host = parse_url( $url, PHP_URL_HOST );
@@ -958,7 +958,7 @@ final class Cache_Enabler_Disk {
                     $settings_file_regex = str_replace( '.', '\.', $settings_file_regex );
 
                     if ( defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_blog_path ) {
-                        $url_path = trim( parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ), '/' );
+                        $url_path = trim( parse_url( Cache_Enabler_Engine::sanitize_server_input( $_SERVER['REQUEST_URI'], false ), PHP_URL_PATH ), '/' );
 
                         if ( ! empty( $url_path ) ) {
                             $url_path_regex = str_replace( '/', '|', $url_path );
@@ -983,7 +983,7 @@ final class Cache_Enabler_Disk {
                 $settings_file_name = strtolower( Cache_Enabler_Engine::$request_headers['Host'] );
 
                 if ( is_multisite() && defined( 'SUBDOMAIN_INSTALL' ) && ! SUBDOMAIN_INSTALL && ! $skip_blog_path ) {
-                    $url_path = $_SERVER['REQUEST_URI'];
+                    $url_path = Cache_Enabler_Engine::sanitize_server_input( $_SERVER['REQUEST_URI'], false );
                     $url_path_pieces = explode( '/', $url_path, 3 );
                     $blog_path = $url_path_pieces[1];
 
