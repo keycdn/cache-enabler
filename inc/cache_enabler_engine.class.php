@@ -196,7 +196,7 @@ final class Cache_Enabler_Engine {
      * Get the required HTTP request headers from the current request.
      *
      * @since   1.7.0
-     * @change  1.8.0
+     * @change  1.8.9
      *
      * @return  string[]  An array of HTTP request headers with names as the keys.
      */
@@ -209,19 +209,14 @@ final class Cache_Enabler_Engine {
         $request_headers = function_exists( 'apache_request_headers' ) ? apache_request_headers() : array();
 
         $request_headers = array(
-            'Accept'             => isset( $request_headers['Accept'] ) ? $request_headers['Accept'] : ( isset( $_SERVER['HTTP_ACCEPT'] ) ? $_SERVER['HTTP_ACCEPT'] : '' ),
-            'Accept-Encoding'    => isset( $request_headers['Accept-Encoding'] ) ? $request_headers['Accept-Encoding'] : ( isset( $_SERVER['HTTP_ACCEPT_ENCODING'] ) ? $_SERVER['HTTP_ACCEPT_ENCODING'] : '' ),
-            'Host'               => isset( $request_headers['Host'] ) ? $request_headers['Host'] : ( isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER[ 'HTTP_HOST' ] : '' ),
-            'If-Modified-Since'  => isset( $request_headers['If-Modified-Since'] ) ? $request_headers['If-Modified-Since'] : ( isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ? $_SERVER['HTTP_IF_MODIFIED_SINCE'] : '' ),
-            'User-Agent'         => isset( $request_headers['User-Agent'] ) ? $request_headers['User-Agent'] : ( isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '' ),
-            'X-Forwarded-Proto'  => isset( $request_headers['X-Forwarded-Proto'] ) ? $request_headers['X-Forwarded-Proto'] : ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] : '' ),
-            'X-Forwarded-Scheme' => isset( $request_headers['X-Forwarded-Scheme'] ) ? $request_headers['X-Forwarded-Scheme'] : ( isset( $_SERVER['HTTP_X_FORWARDED_SCHEME'] ) ? $_SERVER['HTTP_X_FORWARDED_SCHEME'] : '' ),
+            'Accept'             => isset( $request_headers['Accept'] ) ? self::sanitize_server_input( $request_headers['Accept'] ) : ( isset( $_SERVER['HTTP_ACCEPT'] ) ? self::sanitize_server_input( $_SERVER['HTTP_ACCEPT'] ) : '' ),
+            'Accept-Encoding'    => isset( $request_headers['Accept-Encoding'] ) ? self::sanitize_server_input( $request_headers['Accept-Encoding'] ) : ( isset( $_SERVER['HTTP_ACCEPT_ENCODING'] ) ? self::sanitize_server_input( $_SERVER['HTTP_ACCEPT_ENCODING'] ) : '' ),
+            'Host'               => isset( $request_headers['Host'] ) ? self::sanitize_server_input( $request_headers['Host'] ) : ( isset( $_SERVER['HTTP_HOST'] ) ? self::sanitize_server_input( $_SERVER[ 'HTTP_HOST' ] ) : '' ),
+            'If-Modified-Since'  => isset( $request_headers['If-Modified-Since'] ) ? self::sanitize_server_input( $request_headers['If-Modified-Since'] ) : ( isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ? self::sanitize_server_input( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) : '' ),
+            'User-Agent'         => isset( $request_headers['User-Agent'] ) ? self::sanitize_server_input( $request_headers['User-Agent'] ) : ( isset( $_SERVER['HTTP_USER_AGENT'] ) ? self::sanitize_server_input( $_SERVER['HTTP_USER_AGENT'] ) : '' ),
+            'X-Forwarded-Proto'  => isset( $request_headers['X-Forwarded-Proto'] ) ? self::sanitize_server_input( $request_headers['X-Forwarded-Proto'] ) : ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) ? self::sanitize_server_input( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) : '' ),
+            'X-Forwarded-Scheme' => isset( $request_headers['X-Forwarded-Scheme'] ) ? self::sanitize_server_input( $request_headers['X-Forwarded-Scheme'] ) : ( isset( $_SERVER['HTTP_X_FORWARDED_SCHEME'] ) ? self::sanitize_server_input( $_SERVER['HTTP_X_FORWARDED_SCHEME'] ) : '' ),
         );
-
-        // Sanitize request header values
-        foreach ($request_headers as $key => $value) {
-            $request_headers[$key] = self::sanitize_server_input( $value );
-        }
 
         return $request_headers;
     }
