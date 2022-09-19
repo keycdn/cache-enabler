@@ -602,7 +602,7 @@ final class Cache_Enabler_Disk {
 
         $url_host = parse_url( $url, PHP_URL_HOST );
         if ( ! is_string( $url_host ) ) {
-            return '';
+            return CACHE_ENABLER_CACHE_DIR;
         }
 
         $url_path = parse_url( $url, PHP_URL_PATH );
@@ -1297,6 +1297,11 @@ final class Cache_Enabler_Disk {
 
         if ( $fs->is_dir( $dir ) && $fs->getchmod( $dir ) === $mode_string && $fs->getchmod( $parent_dir ) === $mode_string ) {
             return true;
+        }
+
+        // Safety check - must be inside cache directory and not attempting to traverse out
+        if ( strpos( $dir, CACHE_ENABLER_CACHE_DIR ) === false || strpos( $dir, '../' ) !== false ) {
+            return false;
         }
 
         if ( ! wp_mkdir_p( $dir ) ) {
