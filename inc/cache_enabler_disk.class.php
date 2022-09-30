@@ -1274,7 +1274,7 @@ final class Cache_Enabler_Disk {
      * and will attempt to update any existing directories accordingly.
      *
      * @since   1.7.0
-     * @change  1.8.6
+     * @change  1.8.11
      *
      * @param   string  $dir  Directory path to create.
      * @return  bool          True if the directory either already exists or was created *and* has the
@@ -1299,8 +1299,7 @@ final class Cache_Enabler_Disk {
             return true;
         }
 
-        // Safety check - must be inside cache directory and not attempting to traverse out
-        if ( strpos( $dir, CACHE_ENABLER_CACHE_DIR ) === false || strpos( $dir, '../' ) !== false ) {
+        if ( strpos( $dir, '../' ) !== false ) {
             return false;
         }
 
