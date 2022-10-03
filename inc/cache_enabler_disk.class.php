@@ -1307,7 +1307,7 @@ final class Cache_Enabler_Disk {
         if ( ! empty( CACHE_ENABLER_SETTINGS_DIR ) && strpos( $dir, CACHE_ENABLER_SETTINGS_DIR ) === 0 ) {
             $valid = true;
         }
-        if ( ! $valid ) {
+        if ( ! $valid || strpos( $dir, '../' ) !== false ) {
             return false;
         }
 
