@@ -293,8 +293,8 @@ final class Cache_Enabler_Disk {
         $advanced_cache_file          = WP_CONTENT_DIR . '/advanced-cache.php';
         $advanced_cache_file_contents = file_get_contents( $advanced_cache_sample_file );
 
-        $search  = '/your/path/to/wp-content/plugins/cache-enabler/constants.php';
-        $replace = CACHE_ENABLER_CONSTANTS_FILE;
+        $search  = "realpath(__DIR__) . '/constants.php'";
+        $replace = "'" . CACHE_ENABLER_CONSTANTS_FILE . "'";
 
         $advanced_cache_file_contents = str_replace( $search, $replace, $advanced_cache_file_contents );
         $advanced_cache_file_created  = file_put_contents( $advanced_cache_file, $advanced_cache_file_contents, LOCK_EX );
