@@ -266,10 +266,19 @@ final class Cache_Enabler_Engine {
         }
 
         $has_html_tag       = ( stripos( $contents, '<html' ) !== false );
-        $has_html5_doctype  = preg_match( '/^<!DOCTYPE.+html\s*>/i', ltrim( $contents ) );
+
+        # This "html" regex should match at least html4, html5,
+        # xhtml1.0, and xhtml1.1:
+        #
+        #   https://www.w3.org/QA/2002/04/valid-dtd-list.html
+        #
+        # Note that xhtml can have an <?xml ... ?> tag before
+        # the doctype.
+        $html_doctype_regex = '/^\s*(<\?xml.+\?>)?\s*<!DOCTYPE\s+html\s*(PUBLIC\s+.+)?>/i';
+        $has_html_doctype  = preg_match( $html_doctype_regex, $contents );
         $has_xsl_stylesheet = ( stripos( $contents, '<xsl:stylesheet' ) !== false || stripos( $contents, '<?xml-stylesheet' ) !== false );
 
-        if ( $has_html_tag && $has_html5_doctype && ! $has_xsl_stylesheet ) {
+        if ( $has_html_tag && $has_html_doctype && ! $has_xsl_stylesheet ) {
             return true;
         }
 
