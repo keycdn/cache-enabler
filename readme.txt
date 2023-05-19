@@ -1,8 +1,8 @@
 === Cache Enabler ===
 Contributors: keycdn
 Tags: cache, caching, performance, webp, gzip, brotli, mobile, speed
-Tested up to: 6.1
-Stable tag: 1.8.12
+Tested up to: 6.2
+Stable tag: 1.8.13
 Requires at least: 5.1
 Requires PHP: 5.6
 License: GPLv2 or later
