@@ -1030,6 +1030,8 @@ final class Cache_Enabler {
             'excluded_page_paths'                => '',
             'excluded_query_strings'             => '',
             'excluded_cookies'                   => '',
+            'included_cookie'                    => '',
+            'included_cookie_values'             => '',
         );
 
         return $default_user_settings;
@@ -1104,6 +1106,8 @@ final class Cache_Enabler {
             'excl_ids'                               => 'excluded_post_ids',
             'excl_paths'                             => 'excluded_page_paths',
             'excl_cookies'                           => 'excluded_cookies',
+            'incl_cookie'                            => 'included_cookie',
+            'incl_cookie_values'                     => 'included_cookie_values',
             'incl_parameters'                        => '',
 
             // 1.6.0
@@ -2530,6 +2534,8 @@ final class Cache_Enabler {
             'excluded_page_paths'                => (string) self::validate_regex( $settings['excluded_page_paths'] ),
             'excluded_query_strings'             => (string) self::validate_regex( $settings['excluded_query_strings'] ),
             'excluded_cookies'                   => (string) self::validate_regex( $settings['excluded_cookies'] ),
+            'included_cookie'                    => (string) sanitize_text_field( $settings['included_cookie'] ),
+            'included_cookie_values'             => (string) sanitize_text_field( $settings['included_cookie_values'] ),
         ), self::get_default_settings( 'system' ) );
 
         if ( ! empty( $settings['clear_site_cache_on_saved_settings'] ) ) {
@@ -2692,6 +2698,24 @@ final class Cache_Enabler {
                                     );
                                     ?>
                                 </label>
+
+                                <br />
+
+                                <p class="subheading"><?php esc_html_e( 'Cookie Cache', 'cache-enabler' ); ?></p>
+
+                                <label for="cache_enabler_included_cookie">
+                                    <input name="cache_enabler[included_cookie]" type="text" id="cache_enabler_included_cookie" value="<?php echo esc_attr( Cache_Enabler_Engine::$settings['included_cookie'] ) ?>" class="regular-text code" />
+                                    <p class="description"><?php esc_html_e( 'Specify a cookie name to create an extra cache for that cookie.', 'cache-enabler' ); ?></p>
+                                    <p><?php esc_html_e( 'Example:', 'cache-enabler-theme' ); ?> <code class="code--form-control">my-theme</code></p>
+                                </label>
+
+                                <br />
+
+                                <label for="cache_enabler_included_cookie_values">
+                                    <input name="cache_enabler[included_cookie_values]" type="text" id="cache_enabler_included_cookie_values" value="<?php echo esc_attr( Cache_Enabler_Engine::$settings['included_cookie_values'] ) ?>" class="regular-text code" />
+                                    <p class="description"><?php esc_html_e( 'Specify valid cookie values delimited by commas as URL friendly slugs to create an extra cache for those cookie values.', 'cache-enabler' ); ?></p>
+                                    <p><?php esc_html_e( 'Example:', 'cache-enabler' ); ?> <code class="code--form-control">bright-theme, dark-theme</code></p>
+                                </label>
                             </fieldset>
                         </td>
                     </tr>
@@ -2745,6 +2769,7 @@ final class Cache_Enabler {
                                     <p><?php esc_html_e( 'Example:', 'cache-enabler' ); ?> <code class="code--form-control">/^(comment_author|woocommerce_items_in_cart|wp_woocommerce_session)_?/</code></p>
                                     <p><?php esc_html_e( 'Default if unset:', 'cache-enabler' ); ?> <code class="code--form-control">/^(wp-postpass|wordpress_logged_in|comment_author)_/</code></p>
                                 </label>
+
                             </fieldset>
                         </td>
                     </tr>

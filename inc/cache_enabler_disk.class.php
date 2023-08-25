@@ -723,7 +723,7 @@ final class Cache_Enabler_Disk {
     private static function get_cache_file_name() {
 
         $cache_keys      = self::get_cache_keys();
-        $cache_file_name = $cache_keys['scheme'] . 'index' . $cache_keys['device'] . $cache_keys['webp'] . '.html' . $cache_keys['compression'];
+        $cache_file_name = $cache_keys['scheme'] . 'index' . $cache_keys['cookie'] . $cache_keys['device'] . $cache_keys['webp'] . '.html' . $cache_keys['compression'];
 
         return $cache_file_name;
     }
@@ -742,6 +742,7 @@ final class Cache_Enabler_Disk {
 
         $cache_keys = array(
             'scheme'      => 'http-',
+            'cookie'      => '',
             'device'      => '',
             'webp'        => '',
             'compression' => '',
@@ -755,6 +756,28 @@ final class Cache_Enabler_Disk {
             || Cache_Enabler_Engine::$request_headers['X-Forwarded-Scheme'] === 'https'
         ) {
             $cache_keys['scheme'] = 'https-';
+        }
+
+        $cookie = Cache_Enabler_Engine::$settings['included_cookie'];
+        if ( $cookie ) {
+            if ( ! empty( $_COOKIE[$cookie] ) && $_COOKIE[$cookie] ) {
+                $cookie_value = trim( $_COOKIE[$cookie] );
+
+                $cookie_values = Cache_Enabler_Engine::$settings['included_cookie_values'];
+                $tmp_cookie_values_array = explode( ',', $cookie_values );
+
+                // trim values
+                $valid_cookie_values_array = array();
+                foreach ( $tmp_cookie_values_array as $tmp_cookie_value ) {
+                    if ( $tmp_cookie_value ) {
+                        $valid_cookie_values_array[] = trim( $tmp_cookie_value );
+                    }
+                }
+
+                if ( in_array( $cookie_value, $valid_cookie_values_array ) ) {
+                    $cache_keys['cookie'] = '-cookie' . '-' . $cookie_value;
+                }
+            }
         }
 
         if ( Cache_Enabler_Engine::$settings['mobile_cache'] ) {
