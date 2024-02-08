@@ -2263,7 +2263,7 @@ final class Cache_Enabler {
         switch ( $option ) {
             case 'page_for_posts':
             case 'page_on_front':
-                array_map( 'self::clear_page_cache_by_post', array( $old_value, $value ) );
+                array_map( array( self::class, 'clear_page_cache_by_post' ), array( $old_value, $value ) );
                 break;
             default:
                 self::clear_site_cache();
