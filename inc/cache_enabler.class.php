@@ -134,7 +134,7 @@ final class Cache_Enabler {
      */
     public static function on_activation( $network_wide ) {
 
-        self::each_site( $network_wide, 'self::update_backend' );
+        self::each_site( $network_wide, array( self::class, 'update_backend' ) );
 
         Cache_Enabler_Disk::setup();
     }
@@ -224,8 +224,8 @@ final class Cache_Enabler {
     public static function on_deactivation( $network_wide ) {
 
         self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
-        self::each_site( $network_wide, 'self::clear_site_cache', array(), true );
-        self::each_site( $network_wide, 'self::unschedule_events' );
+        self::each_site( $network_wide, array( self::class, 'clear_site_cache' ), array(), true );
+        self::each_site( $network_wide, array( self::class, 'unschedule_events' ) );
     }
 
     /**
@@ -240,7 +240,7 @@ final class Cache_Enabler {
      */
     public static function on_uninstall() {
 
-        self::each_site( is_multisite(), 'self::uninstall_backend' );
+        self::each_site( is_multisite(), array( self::class, 'uninstall_backend' ) );
     }
 
     /**
@@ -1344,7 +1344,7 @@ final class Cache_Enabler {
         if ( $_GET['_action'] === 'clearurl' ) {
             self::clear_page_cache_by_url( Cache_Enabler_Engine::$request_headers['Host'] . Cache_Enabler_Engine::sanitize_server_input($_SERVER['REQUEST_URI'], false) );
         } elseif ( $_GET['_action'] === 'clear' ) {
-            self::each_site( ( is_multisite() && is_network_admin() ), 'self::clear_site_cache', array(), true );
+            self::each_site( ( is_multisite() && is_network_admin() ), array( self::class, 'clear_site_cache' ), array(), true );
         }
 
         // Redirect to the same page.
@@ -1586,7 +1586,7 @@ final class Cache_Enabler {
      */
     public static function clear_complete_cache() {
 
-        self::each_site( is_multisite(), 'self::clear_site_cache', array(), true );
+        self::each_site( is_multisite(), array( self::class, 'clear_site_cache' ), array(), true );
     }
 
     /**
