@@ -2357,19 +2357,26 @@ final class Cache_Enabler {
             );
         }
 
-        // Check the file permissions.
+        // Check file and directory permissions. The cache directory
+        // is created on-demand, so we can't simply warn if it doesn't
+        // exist. Instead we warn if (a) it exists but isn't writable,
+        // or (b) it doesn't exist and it doesn't look like we'll be
+        // able to create it.
         $dirs = array( CACHE_ENABLER_CACHE_DIR, CACHE_ENABLER_SETTINGS_DIR );
         foreach ( $dirs as $dir ) {
             $parent_dir = dirname( $dir );
-            if ( file_exists( $parent_dir ) && ! is_writable( $parent_dir ) ) {
+            if (
+                ( file_exists( $parent_dir ) && ! is_writable( $parent_dir ) ) ||
+                ( ! file_exists( $parent_dir ) && ! is_writable( dirname($parent_dir) ) )
+            ) {
                 printf(
                     '<div class="notice notice-warning"><p>%s</p></div>',
                     sprintf(
-                        // translators: 1. Cache Enabler 2. 755 3. /path/to/wp-content/cache 4. file permissions
-                        esc_html__( '%1$s requires write permissions %2$s in the %3$s directory. Please change the %4$s.', 'cache-enabler' ),
+                        // translators: 1. Cache Enabler 2. /path/to/wp-content/cache 3. 755 4. file permissions
+                        esc_html__( '%1$s requires the directory %2$s to exist and be writable (mode %3$s, for example). Please create it and/or change its %4$s.', 'cache-enabler' ),
                         '<strong>Cache Enabler</strong>',
-                        '<code>755</code>',
                         '<code>' . $parent_dir . '</code>',
+                        '<code>755</code>',
                         sprintf(
                             '<a href="%s" target="_blank" rel="nofollow noopener">%s</a>',
                             'https://wordpress.org/support/article/changing-file-permissions/',
