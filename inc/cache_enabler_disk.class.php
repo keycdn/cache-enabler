@@ -235,7 +235,7 @@ final class Cache_Enabler_Disk {
         }
 
         // Sort the cache index by forward slashes from the lowest to highest.
-        uksort( $cache['index'], 'self::sort_dir_objects' );
+        uksort( $cache['index'], self::class . '::sort_dir_objects' );
 
         if ( $args['clear'] ) {
             self::fire_cache_cleared_hooks( $cache['index'], $args['hooks'] );
@@ -1509,7 +1509,7 @@ final class Cache_Enabler_Disk {
          *
          * @param  string  $page_contents  Page contents from the cache engine as raw HTML.
          */
-        $converted_page_contents = (string) apply_filters( 'cache_enabler_page_contents_after_webp_conversion', preg_replace_callback( $image_urls_regex, 'self::convert_webp', $page_contents ) );
+        $converted_page_contents = (string) apply_filters( 'cache_enabler_page_contents_after_webp_conversion', preg_replace_callback( $image_urls_regex, self::class . '::convert_webp', $page_contents ) );
         $converted_page_contents = (string) apply_filters_deprecated( 'cache_enabler_disk_webp_converted_data', array( $converted_page_contents ), '1.6.0', 'cache_enabler_page_contents_after_webp_conversion' );
 
         return $converted_page_contents;

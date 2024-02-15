@@ -6,7 +6,7 @@
  */
 
 $cache_enabler_constants = array(
-    'CACHE_ENABLER_VERSION'        => '1.8.7',
+    'CACHE_ENABLER_VERSION'        => '1.8.14',
     'CACHE_ENABLER_MIN_PHP'        => '5.6',
     'CACHE_ENABLER_MIN_WP'         => '5.1',
     'CACHE_ENABLER_DIR'            => __DIR__,

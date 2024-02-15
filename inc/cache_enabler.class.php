@@ -128,13 +128,13 @@ final class Cache_Enabler {
      * directory, and then maybe sets the WP_CACHE constant in the wp-config.php file.
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.8.14
      *
      * @param  bool  $network_wide  True if the plugin was network activated, false otherwise.
      */
     public static function on_activation( $network_wide ) {
 
-        self::each_site( $network_wide, 'self::update_backend' );
+        self::each_site( $network_wide, self::class . '::update_backend' );
 
         Cache_Enabler_Disk::setup();
     }
@@ -217,15 +217,15 @@ final class Cache_Enabler {
      * the WP-Cron events unscheduled.
      *
      * @since   1.0.0
-     * @change  1.8.0
+     * @change  1.8.14
      *
      * @param  bool  $network_wide  True if the plugin was network deactivated, false otherwise.
      */
     public static function on_deactivation( $network_wide ) {
 
         self::each_site( $network_wide, 'Cache_Enabler_Disk::clean' );
-        self::each_site( $network_wide, 'self::clear_site_cache', array(), true );
-        self::each_site( $network_wide, 'self::unschedule_events' );
+        self::each_site( $network_wide, self::class . '::clear_site_cache', array(), true );
+        self::each_site( $network_wide, self::class . '::unschedule_events' );
     }
 
     /**
@@ -236,11 +236,11 @@ final class Cache_Enabler {
      * site in the installation.
      *
      * @since   1.0.0
-     * @change  1.6.0
+     * @change  1.8.14
      */
     public static function on_uninstall() {
 
-        self::each_site( is_multisite(), 'self::uninstall_backend' );
+        self::each_site( is_multisite(), self::class . '::uninstall_backend' );
     }
 
     /**
@@ -1325,7 +1325,7 @@ final class Cache_Enabler {
      * is clicked in the admin bar.
      *
      * @since   1.5.0
-     * @change  1.8.0
+     * @change  1.8.14
      */
     public static function process_clear_cache_request() {
 
@@ -1344,7 +1344,7 @@ final class Cache_Enabler {
         if ( $_GET['_action'] === 'clearurl' ) {
             self::clear_page_cache_by_url( Cache_Enabler_Engine::$request_headers['Host'] . Cache_Enabler_Engine::sanitize_server_input($_SERVER['REQUEST_URI'], false) );
         } elseif ( $_GET['_action'] === 'clear' ) {
-            self::each_site( ( is_multisite() && is_network_admin() ), 'self::clear_site_cache', array(), true );
+            self::each_site( ( is_multisite() && is_network_admin() ), self::class . '::clear_site_cache', array(), true );
         }
 
         // Redirect to the same page.
@@ -1582,11 +1582,11 @@ final class Cache_Enabler {
      * Clear the site cache of a single site or all sites in a multisite network.
      *
      * @since   1.5.0
-     * @change  1.8.0
+     * @change  1.8.14
      */
     public static function clear_complete_cache() {
 
-        self::each_site( is_multisite(), 'self::clear_site_cache', array(), true );
+        self::each_site( is_multisite(), self::class . '::clear_site_cache', array(), true );
     }
 
     /**
@@ -2253,6 +2253,7 @@ final class Cache_Enabler {
      * Clear the cache when an option is about to be updated or already has been.
      *
      * @since  1.8.0
+     * @change 1.8.14
      *
      * @param  string  $option     Name of the option.
      * @param  mixed   $old_value  The old option value.
@@ -2263,7 +2264,7 @@ final class Cache_Enabler {
         switch ( $option ) {
             case 'page_for_posts':
             case 'page_on_front':
-                array_map( 'self::clear_page_cache_by_post', array( $old_value, $value ) );
+                array_map( self::class . '::clear_page_cache_by_post', array( $old_value, $value ) );
                 break;
             default:
                 self::clear_site_cache();

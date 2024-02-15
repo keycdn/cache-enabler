@@ -129,7 +129,7 @@ final class Cache_Enabler_Engine {
      */
     public static function start_buffering() {
 
-        ob_start( 'self::end_buffering' );
+        ob_start( self::class . '::end_buffering' );
     }
 
     /**
