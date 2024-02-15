@@ -312,9 +312,10 @@ final class Cache_Enabler_Engine {
 
         $bad_request_method = ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'GET' );
         $bad_response_code  = ( http_response_code() !== 200 );
+        $bad_accept_header  = ( isset( $_SERVER['HTTP_ACCEPT'] ) && false === strpos( $_SERVER['HTTP_ACCEPT'], 'text/html' ) );
         $donotcachepage     = ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE );
 
-        if ( $bad_request_method || $bad_response_code || $donotcachepage || self::is_wrong_permalink_structure() ) {
+        if ( $bad_request_method || $bad_response_code || $bad_accept_header || $donotcachepage || self::is_wrong_permalink_structure() ) {
             return true;
         }
 
