@@ -265,12 +265,28 @@ final class Cache_Enabler_Engine {
             return false;
         }
 
-        $has_html_tag       = ( stripos( $contents, '<html' ) !== false );
-        $has_html5_doctype  = preg_match( '/^<!DOCTYPE.+html\s*>/i', ltrim( $contents ) );
-        $has_xsl_stylesheet = ( stripos( $contents, '<xsl:stylesheet' ) !== false || stripos( $contents, '<?xml-stylesheet' ) !== false );
+        # Return true if we have an HTML tag, an "HTML" doctype, and no XSL stylesheet.
+        # The following checks are nested so that if any of them fail, we can return
+        # false immediately without running the others.
+        $has_html_tag = ( stripos( $contents, '<html' ) !== false );
+        if ( $has_html_tag ) {
+            # This "html" regex should match at least html4, html5,
+            # xhtml1.0, and xhtml1.1:
+            #
+            #   https://www.w3.org/QA/2002/04/valid-dtd-list.html
+            #
+            # Note that xhtml can have an <xml ... > tag (with
+            # question marks next to the brackets) before
+            # the doctype.
+            $html_doctype_regex = '/^\s*(<\?xml.+\?>)?\s*<!DOCTYPE\s+html\s*(PUBLIC\s+.+)?>/i';
+            $has_html_doctype   = preg_match( $html_doctype_regex, $contents );
 
-        if ( $has_html_tag && $has_html5_doctype && ! $has_xsl_stylesheet ) {
-            return true;
+            if ( $has_html_doctype ) {
+                $has_xsl_stylesheet = ( stripos( $contents, '<xsl:stylesheet' ) !== false || stripos( $contents, '<?xml-stylesheet' ) !== false );
+                if ( ! $has_xsl_stylesheet ) {
+                    return true;
+                }
+            }
         }
 
         return false;
