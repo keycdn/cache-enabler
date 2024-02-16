@@ -354,13 +354,6 @@ final class Cache_Enabler_Disk {
         $new_cache_file_created = file_put_contents( $new_cache_file, $page_contents, LOCK_EX );
 
         if ( $new_cache_file_created !== false ) {
-            clearstatcache();
-            $new_cache_file_stats = @stat( $new_cache_file_dir );
-            $new_cache_file_perms = $new_cache_file_stats['mode'] & 0007777;
-            $new_cache_file_perms = $new_cache_file_perms & 0000666;
-            @chmod( $new_cache_file, $new_cache_file_perms );
-            clearstatcache();
-
             $page_created_url = self::get_cache_url( $new_cache_file_dir );
             $page_created_id  = url_to_postid( $page_created_url );
             $cache_created_index[ $new_cache_file_dir ]['url'] = $page_created_url;
@@ -1313,14 +1306,6 @@ final class Cache_Enabler_Disk {
 
         if ( ! wp_mkdir_p( $dir ) ) {
             return false;
-        }
-
-        if ( $fs->getchmod( $parent_dir ) !== $mode_string ) {
-            return $fs->chmod( $parent_dir, $mode_octal, true );
-        }
-
-        if ( $fs->getchmod( $dir ) !== $mode_string ) {
-            return $fs->chmod( $dir, $mode_octal );
         }
 
         return true;
