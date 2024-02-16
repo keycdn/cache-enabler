@@ -275,7 +275,8 @@ final class Cache_Enabler_Engine {
             #
             #   https://www.w3.org/QA/2002/04/valid-dtd-list.html
             #
-            # Note that xhtml can have an <?xml ... ?> tag before
+            # Note that xhtml can have an <xml ... > tag (with
+            # question marks next to the brackets) before
             # the doctype.
             $html_doctype_regex = '/^\s*(<\?xml.+\?>)?\s*<!DOCTYPE\s+html\s*(PUBLIC\s+.+)?>/i';
             $has_html_doctype   = preg_match( $html_doctype_regex, $contents );
