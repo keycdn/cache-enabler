@@ -52,7 +52,22 @@ final class Cache_Enabler_Disk {
         if ( ! is_dir( CACHE_ENABLER_SETTINGS_DIR ) ) {
             array_map( 'unlink', glob( WP_CONTENT_DIR . '/cache/cache-enabler-advcache-*.json' ) ); // < 1.4.0
             array_map( 'unlink', glob( ABSPATH . 'CE_SETTINGS_PATH-*.json' ) ); // = 1.4.0
-            @unlink( WP_CONTENT_DIR . '/advanced-cache.php' );
+
+            $file = WP_CONTENT_DIR . '/advanced-cache.php';
+
+            if ( ! is_link( $file )) {
+                @unlink( $file );
+            } else {
+                $target = readlink( $file );
+
+                $cwd = getcwd();
+                chdir( dirname( $file ) );
+
+                @unlink( realpath( $target ) );
+
+                chdir( $cwd );
+            }
+
             self::set_wp_cache_constant( false );
         }
     }
