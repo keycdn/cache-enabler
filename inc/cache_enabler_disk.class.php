@@ -280,10 +280,6 @@ final class Cache_Enabler_Disk {
      */
     public static function create_advanced_cache_file() {
 
-        if ( ! is_writable( WP_CONTENT_DIR ) ) {
-            return false;
-        }
-
         $advanced_cache_sample_file = CACHE_ENABLER_DIR . '/advanced-cache.php';
 
         if ( ! is_readable( $advanced_cache_sample_file ) ) {
