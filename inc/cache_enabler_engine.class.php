@@ -335,6 +335,11 @@ final class Cache_Enabler_Engine {
             return true;
         }
 
+        // For multi-site, check correct blog
+        if ( ! class_exists( 'Cache_Enabler' ) ) {
+            return true;
+        }
+
         // Post ID exclusions.
         if ( ! empty( self::$settings['excluded_post_ids'] ) && function_exists( 'is_singular' ) && is_singular() ) {
             $post_id = get_queried_object_id();
