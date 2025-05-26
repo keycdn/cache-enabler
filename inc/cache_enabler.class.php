@@ -2170,6 +2170,8 @@ final class Cache_Enabler {
         }
 
         Cache_Enabler_Disk::cache_iterator( $url, $args );
+
+        do_action( 'cleared_page_cache_by_url', $url );
     }
 
     /**
