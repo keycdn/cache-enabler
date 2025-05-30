@@ -335,11 +335,6 @@ final class Cache_Enabler_Engine {
             return true;
         }
 
-        // For multi-site, check correct blog
-        if ( ! class_exists( 'Cache_Enabler' ) ) {
-            return true;
-        }
-
         // Post ID exclusions.
         if ( ! empty( self::$settings['excluded_post_ids'] ) && function_exists( 'is_singular' ) && is_singular() ) {
             $post_id = get_queried_object_id();
@@ -391,6 +386,11 @@ final class Cache_Enabler_Engine {
 
         // When the output buffering is ending.
         if ( class_exists( 'WP' ) ) {
+            // For multi-site, check correct blog
+            if (! class_exists('Cache_Enabler')) {
+                return true;
+            }
+
             if ( is_admin() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() || self::exclude_search() ) {
                 return true;
             }
