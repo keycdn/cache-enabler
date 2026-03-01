@@ -386,6 +386,11 @@ final class Cache_Enabler_Engine {
 
         // When the output buffering is ending.
         if ( class_exists( 'WP' ) ) {
+            // For multi-site, check correct blog
+            if (! class_exists('Cache_Enabler')) {
+                return true;
+            }
+
             if ( is_admin() || is_feed() || is_trackback() || is_robots() || is_preview() || post_password_required() || self::exclude_search() ) {
                 return true;
             }
