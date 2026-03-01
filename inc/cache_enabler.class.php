@@ -2486,7 +2486,7 @@ final class Cache_Enabler {
                 $regex = '/' . $regex . '/';
             }
 
-            if ( @preg_match( $regex, null ) === false ) {
+            if ( @preg_match( $regex, '' ) === false ) {
                 return '';
             }
 
