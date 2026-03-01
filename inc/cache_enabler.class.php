@@ -2367,8 +2367,11 @@ final class Cache_Enabler {
         foreach ( $dirs as $dir ) {
             $parent_dir = dirname( $dir );
             if (
-                ( file_exists( $parent_dir ) && ! is_writable( $parent_dir ) ) ||
-                ( ! file_exists( $parent_dir ) && ! is_writable( dirname($parent_dir) ) )
+                ( file_exists( $dir ) && ! is_writable( $dir ) && ! is_link( $dir ) ) || // dir exists but not writable and not a symlink
+                ( ! file_exists( $dir ) && (
+                    ( file_exists( $parent_dir ) && ! is_writable( $parent_dir ) ) || // parent exists but not writable
+                    ( ! file_exists( $parent_dir ) && ! is_writable( dirname( $parent_dir ) ) ) // parent doesn't exist, grandparent not writable
+                ) )
             ) {
                 printf(
                     '<div class="notice notice-warning"><p>%s</p></div>',
