@@ -1593,13 +1593,36 @@ final class Cache_Enabler_Disk {
         $ignore_tags_regex = implode( '|', $ignore_tags );
 
         // Remove HTML comments.
-        $minified_html = preg_replace( '#<!--[^\[><].*?-->#s', '', $html );
+        $minified_html = preg_replace('#<!--[^\[><].*?-->#s', '', $html);
 
-        if ( Cache_Enabler_Engine::$settings['minify_inline_css_js'] ) {
-            // Remove CSS and JavaScript comments.
-            $minified_html = preg_replace(
-                '#/\*(?!!)[\s\S]*?\*/|(?:^[ \t]*)//.*$|((?<!\()[ \t>;,{}[\]])//[^;\n]*$#m',
-                '$1',
+        if (Cache_Enabler_Engine::$settings['minify_inline_css_js']) {
+            // Remove CSS and JavaScript comments using a context-aware callback.
+            $minified_html = preg_replace_callback(
+                '~(<(script|style)\b[^>]*>)([\s\S]*?)(</\2>)~is',
+                function ($matches) {
+                    // $matches[1] is the opening tag, e.g., <script type="text/javascript">
+                    // $matches[3] is the content of the tag.
+                    // $matches[4] is the closing tag, e.g., </script>
+
+                    $opening_tag = $matches[1];
+                    $content = $matches[3];
+                    $closing_tag = $matches[4];
+
+                    // Do not strip comments from JSON-LD, speculation rules, or other non-JS script types. Actually JSON specification does not support comments
+                    if (strpos($opening_tag, 'application/ld+json') !== false || strpos($opening_tag, 'speculationrules') !== false) {
+                        return $opening_tag . $content . $closing_tag; // Return unmodified
+                    }
+
+                    // Only apply comment stripping to the content of the tag.
+                    $minified_content = preg_replace(
+                        '#/\*(?!!)[\s\S]*?\*/|(?:^[ \t]*)//.*$|((?<!\()[ \t>;,{}[\]])//[^;\n]*$#m',
+                        '$1',
+                        $content
+                    );
+
+                    // Reassemble the tag with its minified content.
+                    return $opening_tag . $minified_content . $closing_tag;
+                },
                 $minified_html
             );
         }
