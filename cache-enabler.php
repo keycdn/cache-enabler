@@ -6,11 +6,11 @@ Description: Simple and fast WordPress caching plugin.
 Author: KeyCDN
 Author URI: https://www.keycdn.com
 License: GPLv2 or later
-Version: 1.8.15
+Version: 1.8.16
 */
 
 /*
-Copyright (C) 2024 KeyCDN
+Copyright (C) 2026 KeyCDN
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

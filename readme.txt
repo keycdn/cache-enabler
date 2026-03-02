@@ -1,7 +1,7 @@
 === Cache Enabler ===
 Contributors: keycdn
 Tags: cache, caching, performance, webp, gzip, brotli, mobile, speed
-Tested up to: 6.8
+Tested up to: 6.9
 Stable tag: 1.8.15
 Requires at least: 5.1
 Requires PHP: 5.6
@@ -55,9 +55,17 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 == Changelog ==
 
+= 1.8.16 =
+* Fix caching logic flaw (thanks @8ctopus)
+* Fix: Prevent HTML minifier from corrupting JSON scripts (thanks @frappe64)
+* Fix caching takes place in multi-site if plugin is activated on one site (thanks @8ctopus)
+* Improve cache or settings dir may already exist (thanks @8ctopus)
+* Fix delete advanced cache when it is a symbolic link (thanks @8ctopus)
+* Fix advanced cache file may be writable while the directory it is located in may not (thanks @8ctopus)
+
 = 1.8.15 =
-Support more (html4, xhtml1.0, xhtml1.1) doctypes (thanks @orlitzky)
-Remove all chmod() calls (thanks @orlitzky)
+* Support more (html4, xhtml1.0, xhtml1.1) doctypes (thanks @orlitzky)
+* Remove all chmod() calls (thanks @orlitzky)
 
 = 1.8.14 =
 * PHP 8.2 compatibility
