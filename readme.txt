@@ -2,7 +2,7 @@
 Contributors: keycdn
 Tags: cache, caching, performance, webp, gzip, brotli, mobile, speed
 Tested up to: 6.9
-Stable tag: 1.8.15
+Stable tag: 1.8.16
 Requires at least: 5.1
 Requires PHP: 5.6
 License: GPLv2 or later
@@ -57,7 +57,7 @@ Cache Enabler captures page contents and saves it as a static HTML file on the s
 
 = 1.8.16 =
 * Fix caching logic flaw (thanks @8ctopus)
-* Fix: Prevent HTML minifier from corrupting JSON scripts (thanks @frappe64)
+* Fix HTML minifier from corrupting JSON scripts (thanks @frappe64)
 * Fix caching takes place in multi-site if plugin is activated on one site (thanks @8ctopus)
 * Improve cache or settings dir may already exist (thanks @8ctopus)
 * Fix delete advanced cache when it is a symbolic link (thanks @8ctopus)
